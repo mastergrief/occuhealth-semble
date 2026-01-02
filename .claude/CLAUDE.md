@@ -1,332 +1,212 @@
-# 🚀 CLAUDE DEVELOPMENT PROTOCOL
-> **TRIPLE DIRECTIVE**: SERENA tools for code operations + Aggressive cognitive gates + Continuous memory writes
+## SESSION START SEQUENCE (MANDATORY)
 
+1. **Read Context** (in order):
+- `.env.local` → `mcp__serena__list_memories()` → `mcp__serena__read_memory(name)` (relevant ones)
 
-PART 1 - IMPORTANT: SERENA CODE OPERATIONS**
+2. **Create Todo List** (if complex task):
+- TodoWrite tool with concrete steps
 
-**IMPORTANT**: ALWAYS use Serena MCP tools for ALL code operations
-
-**IMPORTANT:**
-- `mcp__serena__find_file`
-- `mcp__serena__search_for_pattern`
-- `mcp__serena__get_symbols_overview`
-- `mcp__serena__replace_symbol_body`
-- `mcp__serena__insert_after_symbol`
-- `mcp__serena__insert_before_symbol`
-
-**Forbidden:**
-- `Read()`
-- Bash commands (`grep`, `find`, `cat`, `head`, `tail`)
-- `Edit()`
-- `MultiEdit()`
-
-PART 2 - ENHANCED COGNITIVE GATE USAGE
-
-**IMPORTANT**: ALWAYS use Serena mcp cognitive gates
-
-```python
-# **IMPORTANT**:
-
-# After EVERY discovery 
-mcp__serena__think_about_collected_information()  
-
-# BEFORE and AFTER every modification
-mcp__serena__think_about_task_adherence()  # Pre-check
-# ... perform modification ...
-mcp__serena__think_about_task_adherence()  # Post-check
-
-# THREE times at completion (not just once)
-for i in range(3):
-    mcp__serena__think_about_whether_you_are_done()
-```
-
-PART 3 - SEMANTIC MEMORY
-**IMPORTANT**: AGGRESSIVE MEMORY WRITING
-**SERENA uses a flat file structure with descriptive naming**. No subdirectories or setup needed!
-
-#### Simple Format:
-```python
-# Category_Topic_Timestamp.md
-"sessions_start_20250909"
-"discoveries_auth_bug_20250909"
-"errors_type_mismatch_20250909"
-"decisions_architecture_20250909"
----
-
-```python
-# IMPORTANT: Write memory at EVERY significant point
-
-# 1. Session start (ALWAYS)
-mcp__serena__write_memory(f"sessions_start_{timestamp}", {
-    "task": current_task,
-    "context": initial_understanding,
-    "plan": approach
-})
-
-# 2. After EVERY discovery (not optional)
-mcp__serena__write_memory(f"discoveries_{item}_{timestamp}", {
-    "found": what_discovered,
-    "relevance": why_matters,
-    "next_steps": what_to_explore
-})
-
-# 3. After EVERY decision
-mcp__serena__write_memory(f"decisions_{choice}_{timestamp}", {
-    "decision": what_decided,
-    "rationale": why,
-    "alternatives": other_options
-})
-
-# 4. After EVERY error
-mcp__serena__write_memory(f"errors_{error}_{timestamp}", {
-    "error": what_failed,
-    "context": circumstances,
-    "solution": how_fixed
-})
-
-# 5. EVERY 5 operations (checkpoint)
-if operation_count % 5 == 0:
-    mcp__serena__write_memory(f"checkpoints_state_{timestamp}", {
-        "progress": current_state,
-        "completed": what_done,
-        "remaining": what_left
-    })
-
-# 6. Task completion (comprehensive)
-mcp__serena__write_memory(f"completions_task_{timestamp}", {
-    "summary": what_accomplished,
-    "lessons": what_learned,
-    "improvements": for_next_time
-})
-```
-
-
-
-**IMPORTANT**: COGNITIVE WORKFLOW PATTERN 
-
-```python
-def enhanced_v41_workflow():
-    # Initialize with memory
-    mcp__serena__write_memory(f"sessions_{timestamp}", context)
-    
-    # Discovery Phase - Reflect after EACH
-    for item in search_targets:
-        result = mcp__serena__search_for_pattern(item)
-        mcp__serena__think_about_collected_information()  # IMMEDIATE
-        mcp__serena__write_memory(f"discoveries_{item}_{timestamp}", result)
-        
-        symbols = mcp__serena__find_symbol(item)
-        mcp__serena__think_about_collected_information()  # AGAIN
-        mcp__serena__write_memory(f"cache_symbols_{timestamp}", symbols)
-    
-    # Modification Phase - Double validation
-    for change in modifications:
-        mcp__serena__think_about_task_adherence()  # PRE-CHECK
-        mcp__serena__write_memory(f"decisions_pre_{timestamp}", plan)
-        
-        mcp__serena__replace_symbol_body(...)
-        
-        mcp__serena__think_about_task_adherence()  # POST-CHECK
-        mcp__serena__write_memory(f"modifications_{timestamp}", result)
-    
-    # Completion Phase - Triple verification
-    for i in range(3):
-        mcp__serena__think_about_whether_you_are_done()
-        if i < 2:
-            validate_more()  # Additional validation between checks
-    
-    mcp__serena__write_memory(f"completions_{timestamp}", summary)
-```
-
-**No subdirectories needed!** All memories live in one flat directory with descriptive names.
+**Full-stack development directive (FE+BE+DB)** NO MOCK CODE, NO MOCK DATA, ONLY REAL WORKING FEATURES & FUNCTIONALITY
+- NO GIT ACTIONS unless explicitly requested
+- Read entire documentation files with 100% coverage i.e `.md` files, don't skim read
+- Typecheck is BLOCKING - failures must be fixed immediately
+- Auth: Convex Auth (coaches/clients), Clerk Auth (admins)
+- READ `.env.local` for API keys/implementations & test user credentials
+- Read `package.json` for dependencies & npm commands
+- LLM: gpt-5-mini key in `.env.local` uses default temperature of (1)
+- Serena memory structure: project subdirectory `.serena\memories\project` contains architecture, code conventions, project overview, tech stack etc
+- When presented with an image or screenshot analyse deeply with 100% content & coverage, think about what you're looking at in relation to the query or request given, leave no stones unturned & create ASCII wireframe diagram of what you have observed/analysed to present as findings.
+- Modular Architecture (Facade Pattern):
+- **Threshold**: >400 lines = flag as concern, >800 lines = must split before adding features
+- **Pattern**: Facade file (<100 lines, re-exports only) + focused modules (~150-400 lines each)
+- **Structure**: `module.ts` (facade) → `moduleModules/{mutations,queries,domain}.ts`
+- **Reference implementations**: `calendarWorkoutsModules/`, `trainingBlockMarkersModules/`
+- **Critical**: Preserve API paths - facade re-exports maintain `api.module.function` compatibility
+- **On analysis**: Flag monolithic files with split recommendation showing target structure
+- Always use planning mode for all analysis & implementation tasks
+- Never run subagents in the background, keep them in the foreground and wait for completion!
 
 ---
 
-**IMPORTANT: IMPLEMENTATION WORKFLOW**
+#**Serena Memory Management & Memory Lifecycle**
+**Initial Setup**:
+- `mcp__serena__check_onboarding_performed()` → verify if project has been explored
+- `mcp__serena__nboarding()` → initial project familiarization (if not performed)
+- Creates `.serena/memories/` with architectural insights
+**Working with Memories**:
+- `mcp__serena__list_memories()` → see available knowledge before starting work
+- `mcp__serena__read_memory(name)` → load relevant context (only if task-relevant)
+- `mcp__serena__write_memory(name, content)` → persist discoveries in markdown format
+- `mcp__serena__delete_memory(name)` → remove outdated/incorrect information (user request only)
+What to Memorise?
+**Architecture patterns**: How auth works, data flow, module organization
+**Key entry points**: Main services, routers, initialization
+**Conventions**: Naming patterns, testing approach, build process
+**Complex discoveries**: Multi-file investigations, dependency graphs
+**Session continuations**: Current state for resuming in new conversation
+When to Use Memories?
+**Read at start**: Check `mcp__serena__list_memories()` → avoid re-discovering existing knowledge
+**Write after discovery**: Significant architecture understanding, complex investigation results
+**Write before context limit**: Save progress for continuation in new session
+Essential Rules:
+1. **Read memories first** - don't re-explore what's already known
+2. **Memory names are descriptive** - `authentication_architecture_[Timestamp]`
+3. **Write after significant discovery** - not every small finding, just architectural insights
+4. **Memories persist across sessions** - future-you will thank present-you
 
-### 📋 PHASE 1: CONTEXT (ENHANCED)
-```python
-# Read context with immediate memory write
-memories = mcp__serena__list_memories()
-mcp__serena__write_memory(f"context_loaded_{timestamp}", memories)  # NEW
+#**Serena Symbolic Search Workflow (SEMANTIC ANALYSIS PROTOCOL)**
+3-Phase Pattern: LOCATE → UNDERSTAND → VALIDATE
+**Phase 1: LOCATE** (structure without bodies)
+- Files known (from memories) → Direct to symbolic tools
+- `mcp__serena__get_symbols_overview(file)` → See all symbols without reading implementations
+- `mcp__serena__find_symbol(name_path, include_body=False, depth=1, relative_path=<file>)` → Map class/interface structure
+**Phase 2: UNDERSTAND** (targeted deep reads)
+- `mcp__serena__find_symbol(name_path, include_body=True, relative_path=<specific>)` → read ONLY needed symbols
+- `mcp__serena__find_referencing_symbols(name_path, file)` → analyze usage/dependencies
+- `mcp__serena__search_for_pattern(regex)` → for strings/pattern/non-code only
+**Phase 3: VALIDATE**
+- `mcp__serena__think_about_collected_information()` → verify sufficiency before proceeding
+Essential Rules:
+1. **Never `include_body=True` until you know exactly which symbol** - structure first, implementation last
+2. **Always restrict with `relative_path`** when context known - faster, fewer results
+3. **Name paths**: `"symbol"` (anywhere), `"Class/method"` (nested), `"/Class/method"` (absolute top-level)
+4. **Symbolic for code, pattern for text** - use `find_symbol` for functions/classes, `search_for_pattern` for strings
+5. **Call thinking tools after search sequences** - especially before editing code
+6. **Discovery hierarchy**: Memories > Serena symbolic tools
 
-env = mcp__serena__read_memory(".env.local")
-mcp__serena__write_memory(f"context_env_{timestamp}", env)  # NEW
+#**Editing Operations Workflow**
+**Replace entire symbol** (function, method, class):
+- `mcp__serena__replace_symbol_body(name_path, file, body)` → body includes signature, excludes docstrings/imports
+**Insert new code**:
+- `mcp__serena__insert_before_symbol(name_path, file, body)` → add imports (use first symbol as anchor)
+- `mcp__serena__insert_after_symbol(name_path, file, body)` → add new functions (use last symbol for end-of-file)
+**Refactor names**:
+- `mcp__serena__rename_symbol(name_path, file, new_name)` → updates all references codebase-wide
+Essential Rules:
+1. **Think before edit** - `mcp__serena__think_about_task_adherence()` is mandatory before modifications
+2. **Symbol bodies exclude docstrings/imports** - don't include preceding comments in replacement
+3. **Use anchors for position** - first symbol for imports, last symbol for end-of-file additions
+4. **Verify impact first** - call `mcp__serena__find_referencing_symbols` before signature changes
+5. **Editing tools are reliable** - no verification needed if no error returned
 
-prd = Read("DOCUMENTS/PRD.md")
-sprint = Read("DOCUMENTS/SPRINT.md")
-mcp__serena__write_memory(f"context_docs_{timestamp}", {prd, sprint})  # NEW
+#**Serena Reflection Workflow**
+3 Thinking Checkpoints:
+**After Search** (validate sufficiency):
+- `mcp__serena__think_about_collected_information()` → call after ANY non-trivial search sequence
+- Questions: Do I have what I need? Missing critical context? Ready to proceed?
+**Before Edit** (verify alignment):
+- `mcp__serena__think_about_task_adherence()` → **MANDATORY** before any code modification
+- Questions: Still on track? Plan matches user request? Assumptions valid?
+**Task Completion** (confirm done):
+- `mcp__serena__think_about_whether_you_are_done()` → call when you believe task is complete
+- Questions: All requirements met? Edge cases handled? Tests passing?
+When to Think:
+**Always after**: Multiple find_symbol calls, search_for_pattern sequences, referencing symbol checks
+**Always before**: replace_symbol_body, insert operations, rename_symbol
+**Always when**: Feeling "done" with a task or subtask
+Essential Rules:
+1. **Thinking is mandatory, not optional** - these aren't suggestions, they're quality gates
+2. **Think prevents drift** - catches mistakes before they propagate
+3. **Think saves tokens** - finding gaps early prevents redundant work later
+
+
+#**Convex-cli**
+Run CLI scripts directly (or via TypeScript SDK/advanced SDK for programmatic access)
+**Architecture** (3 layers: CLI → API → SDK, ~2,000 TypeScript lines, LRU cache, telemetry):
+- CLI scripts: 7 individual commands (status, tables, data, functions, run, env, logs)
+- TypeScript API: ConvexCLI class with Zod validation
+- Advanced SDK: Builder pattern, caching, batch operations, streaming, monitoring
+- Response format: `{ success, data, error, metadata }` with type safety
+- Performance: 2-4s per operation (cold start), < 1ms (cached)
+**Core Data Operations**: Query → Cache → Execute → Validate
+1. **Query** - CLI scripts or SDK builders construct operations
+2. **Cache** - LRU cache checks (60s TTL status/env, 300s tables/functions)
+3. **Execute** - Spawn `npx convex` subprocess with timeout (default: 30s)
+4. **Validate** - Zod schemas verify response structure
+**Essential Commands**
+```bash
+# Status & Discovery
+npx tsx CONVEX-CLI/SCRIPTS/convex-status.ts --json          # Deployment info (< 1ms)
+npx tsx CONVEX-CLI/SCRIPTS/convex-tables.ts --json          # List tables (3.5s cold, 300s cache)
+npx tsx CONVEX-CLI/SCRIPTS/convex-functions.ts --json       # List functions (2ms, 300s cache)
+# Data Operations
+npx tsx CONVEX-CLI/SCRIPTS/convex-data.ts <table> --limit=10 --json  # Query data (2.5s, no cache)
+npx tsx CONVEX-CLI/SCRIPTS/convex-run.ts <fn:name> '{}' --json       # Execute function (2.5s, no cache)
+# Environment Management
+npx tsx CONVEX-CLI/SCRIPTS/convex-env.ts list --json        # List env vars (2.5s, 60s cache)
+npx tsx CONVEX-CLI/SCRIPTS/convex-env.ts get VAR --json     # Get variable (2.5s, 60s cache)
+npx tsx CONVEX-CLI/SCRIPTS/convex-env.ts set VAR val        # Set variable (invalidates cache)
+npx tsx CONVEX-CLI/SCRIPTS/convex-env.ts list --masked      # Mask secrets (sk-p***z789)
+# Logs & Debugging
+npx tsx CONVEX-CLI/SCRIPTS/convex-logs.ts --history=20 --json       # Recent logs (5-10s)
+npx tsx CONVEX-CLI/SCRIPTS/convex-logs.ts --history=5 --timeout=15000  # With timeout
+npx tsx CONVEX-CLI/SCRIPTS/convex-logs.ts --follow          # Stream logs (EventEmitter)
+# Security Features
+- Auto-masks: /key|secret|token|password|jwks|jwt|api_key|private|auth|credential/i
+- Format: "sk-proj-xyz123" → "sk-p***z789" (first 4 + last 4 chars)
+- SDK default: masked=true (security by default)
 ```
-
-### 🧠 PHASE 2: ULTRATHINK VALIDATION (ENHANCED)
-
-```python
-def ultrathink_validation(feature):
-    # ALWAYS use ULTRATHINK with memory persistence
-    thinking_mode = "ultrathink"  # MANDATORY
-    
-    # Think and write
-    mcp__serena__think_about_collected_information()  # NEW
-    
-    questions = {
-        "1. Where will data be stored?": answer,
-        "2. What Convex function handles this?": answer,
-        "3. How will this survive page refresh?": answer,
-        "4. Can I demo this with REAL user actions?": answer
-    }
-    
-    # Persist validation results
-    mcp__serena__write_memory(f"decisions_validation_{timestamp}", questions)  # NEW
-    
-    if any_answer_is_negative:
-        mcp__serena__write_memory(f"errors_validation_failed_{timestamp}", reasons)  # NEW
-        return "STOP - Implement backend first"
-```
-
-### 🔄 ENHANCED ITERATION PROTOCOLS (v4.1)
-
-```python
-# Backend Iteration with memory at EACH iteration
-for iteration in range(1, 4):
-    mcp__serena__think_about_task_adherence()  # NEW - Pre-iteration check
-    
-    # ... implementation ...
-    
-    mcp__serena__write_memory(f"iterations_backend_{iteration}_{timestamp}", {
-        "changes": what_changed,
-        "improvements": what_improved,
-        "issues": what_remains
-    })
-    
-    mcp__serena__think_about_task_adherence()  # NEW - Post-iteration check
-
-# UI Iteration with checkpoint after EACH
-for iteration in range(1, 4):
-    mcp__serena__think_about_collected_information()  # NEW - Pre-UI check
-    
-    # ... implementation ...
-    mcp__playwright__browser_take_screenshot(f"iteration_{iteration}.png")
-    
-    mcp__serena__write_memory(f"iterations_ui_{iteration}_{timestamp}", {
-        "screenshot": filename,
-        "changes": ui_updates,
-        "feedback": visual_assessment
-    })
-```
-
-### 🚦 ENHANCED VERIFICATION GATES (v4.1)
-
-#### Gate 1: Post-Context (ENHANCED)
-```python
-gate1_checks = {
-    "memories_loaded": mcp__serena__list_memories() completed,
-    "context_written": memory_writes >= 3,  # NEW
-    "initial_reflection": think_called >= 1,  # NEW
-    "env_configured": .env.local verified,
-    "prd_understood": PRD.md analyzed,
-    "sprint_reviewed": SPRINT.md current
-}
-```
-
-#### Gate 2: Post-Validation (ENHANCED)
-```python
-gate2_checks = {
-    "ultrathink_used": thinking_mode == "ultrathink",
-    "validation_memory_written": validation_results_persisted,  # NEW
-    "decisions_documented": decision_memories >= 1,  # NEW
-    "data_storage_defined": specific_table_named,
-    "convex_functions_planned": api_endpoints_specified,
-    "persistence_strategy_clear": refresh_survival_proven,
-    "real_demo_possible": answer == "yes"
-}
-```
-
-#### Gate 3: Post-Backend (ENHANCED)
-```python
-gate3_checks = {
-    "tests_written_first": tdd_tests_exist,
-    "iteration_memories": iteration_memories >= 2,  # NEW
-    "checkpoint_written": checkpoint_exists,  # NEW
-    "tests_passing": all_tests_green,
-    "schema_defined": convex_schema_valid,
-    "crud_operations_work": create_read_update_delete_verified,
-    "data_persists_refresh": refresh_test_passed,
-    "no_type_errors": typescript_clean,
-    "minimum_iterations": backend_iterations >= 2,
-    "reflection_count": think_calls >= 4  # NEW
-}
-```
-
-### ⚡ v4.1 EXECUTION CHECKLIST
-```python
-class EnhancedRealSprintExecutor:
-    def __init__(self):
-        self.operation_count = 0
-        self.memory_writes = 0
-        self.think_calls = 0
-        
-    def track_metrics(self):
-        """Track v4.1 compliance metrics"""
-        self.operation_count += 1
-        
-        # Checkpoint every 5 operations
-        if self.operation_count % 5 == 0:
-            mcp__serena__write_memory(f"checkpoints_op_{self.operation_count}", state)
-            self.memory_writes += 1
-            
-        # Ensure minimum ratios
-        assert self.memory_writes >= self.operation_count // 2, "Not enough memory writes"
-        assert self.think_calls >= self.operation_count // 3, "Not enough reflection"
-```
-
-### 📊 v4.1 COMPLIANCE REQUIREMENTS
-
-```python
-MANDATORY_MINIMUMS = {
-    "cognitive_gates_per_task": 10,
-    "memory_writes_per_task": 5,
-    "checkpoints_per_session": "every_5_operations",
-    "discovery_reflections": "100%_immediate",
-    "modification_validations": "before_and_after",
-    "completion_verifications": 3,
-    "memory_categories_used": 8,  # At least 8 different categories
-    "forbidden_tool_usage": 0  # ZERO tolerance
-}
-```
-
----
-
-## 🎓 v4.1 QUICK REFERENCE
-
-### EVERY Operation Pattern
-```python
-# 1. Think before
-cognitive_gate()
-
-# 2. Execute with SERENA
-serena_operation()
-
-# 3. Think after
-cognitive_gate()
-
-# 4. Write memory
-write_memory()
-
-# 5. Checkpoint if needed
-if operation_count % 5 == 0:
-    checkpoint()
-```
-
-### Forbidden → Required Replacements
-```python
-# NEVER → ALWAYS
-Read("file.ts")              → mcp__serena__get_symbols_overview("file.ts")
-Write("file.ts", content)    → mcp__serena__replace_symbol_body(...)
-Edit(file, old, new)         → mcp__serena__replace_symbol_body(...)
-bash("grep pattern")         → mcp__serena__search_for_pattern("pattern")
-bash("find -name")           → mcp__serena__find_file("mask")
+**Critical Rules**
+- **Always use --json flag** → Ensures parseable output, no mixed messages
+- **Respect cache TTLs** → Status/env 60s, tables/functions 300s, data/run no cache
+- **Timeout parameter required for logs** → Default 30s, increase for large history
+- **Mask secrets in production** → Use `--masked` flag to hide sensitive env vars
+- **Input validation** → Rejects NaN/negative limits (FIX-009), validates var existence (FIX-007)
+- **Builder pattern for queries** → `.limit()`, `.order()`, `.noCache()` chaining
+- **Stream for large datasets** → Reduces memory 99% (50MB → 500KB for 10K docs)
+- **Batch parallel for independence** → Reduces latency 33% (6s → 4s for 3 ops)
+**Performance Optimization**:
+- **Reuse SDK instances** → Connection pooling reduces overhead (6s → 4s for 3 ops)
+- **Cache repeated queries** → Eliminates redundant API calls (6s → 2s for repeated status)
+- **Stream large datasets** → Memory-efficient iteration (15s/50MB → 1s/500KB)
+- **Batch parallel operations** → Execute independent ops concurrently (8s → 4s)
+**Debugging**
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Timeout (> 30s) | Logs without timeout, large history | Add `--timeout=60000`, reduce `--history=10` |
+| Empty results | Table empty, limit too small | Verify table exists (`tables`), increase `--limit` |
+| Invalid JSON | Mixed output modes | Use `--json` only, avoid mixing flags |
+| Function not found | Wrong path format | Use `module:functionName` not `module.functionName` |
+| Cache stale data | Long TTL, data changed | Use `.noCache()` or `clearCache()` for fresh data |
+| Memory high | Loading large datasets | Use `sdk.stream()` instead of `.execute()` |
+| Slow repeated queries | Cache disabled | Enable cache: `{ cache: { enabled: true } }` |
+| Cold start slow (3.5s) | Convex CLI initialization | Expected first-command penalty, subsequent calls faster |
+**Golden Operations Workflow**
+```bash
+# Status → Tables → Query → Run → Verify
+npx tsx CONVEX-CLI/SCRIPTS/convex-status.ts --json  # Check deployment
+npx tsx CONVEX-CLI/SCRIPTS/convex-tables.ts --json  # List available tables
+npx tsx CONVEX-CLI/SCRIPTS/convex-data.ts users --limit=5 --json  # Query data
+npx tsx CONVEX-CLI/SCRIPTS/convex-run.ts users:list '{}' --json   # Execute function
+npx tsx CONVEX-CLI/SCRIPTS/convex-env.ts list --masked            # Verify config
 ```
 
 ---
+#**SEQUENTIAL FILE MODIFICATIONS**
+- **ONE edit per file per message** → Prevents concurrent hook execution
+- **Batch changes** → Combine multiple edits into single tool call
+- **Hook awareness** → PostToolUse:Edit triggers typecheck (1-60s), never stack edits
 
-*Protocol v4.1 | Cognitive-First | Memory-Intensive | Reflection-Driven Development*
+#**CONFIGURATION EDITING DISCIPLINE**
+When editing `.claude/` configs (agents, CLAUDE.md, commands):
+- **Preserve structure** → Match existing formatting (bullets, sections, headers)
+- **Match tone** → Imperative, terse, no fluff (e.g., "Do X" not "You should consider doing X")
+- **Add value** → Every word must serve purpose (examples only if essential)
+- **No verbosity** → If edit adds >25% word count, refactor for conciseness
+- **Maintain style & patterns** → Use existing conventions
+- **No duplication** → Don't repeat information already present elsewhere
+- **Verify integration** → New content must flow naturally with surrounding text
+
+---
+
+**ANTI-PATTERNS TO AVOID**
+1. Reading entire code files with Read() (use Serena symbolic tools)
+2. Using search_for_pattern on .md files (use Read for documentation)
+3. Skipping typecheck after mutations (BLOCKING requirement)
+4. UI testing on backend-only changes (no UI = skip STEP 4)
+5. Creating files unnecessarily (prefer editing existing files)
+6. Multiple edits to same file in one message (concurrent hook errors)
+7. Calling Edit/replace_symbol_body on same file before hook completes
+8. Skipping memory check before analysis (Discovery Hierarchy violation)
+9. Running subagents in the background (always run in foreground and wait for completion)
+
