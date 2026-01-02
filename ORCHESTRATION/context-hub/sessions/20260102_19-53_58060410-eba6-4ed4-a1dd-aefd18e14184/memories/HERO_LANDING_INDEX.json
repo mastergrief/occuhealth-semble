@@ -1,0 +1,17 @@
+{
+  "memoryName": "HERO_LANDING_INDEX",
+  "linkedAt": "2026-01-02T19:54:04.066Z",
+  "serenaPath": ".serena/memories/HERO_LANDING_INDEX.md",
+  "summary": "Memory HERO_LANDING_INDEX linked to session",
+  "forAgents": [
+    "developer",
+    "browser"
+  ],
+  "traceabilityData": {
+    "analyzed_symbols": [],
+    "entry_points": [
+      "SCRIPTS/browser"
+    ],
+    "data_flow_map": {}
+  }
+}

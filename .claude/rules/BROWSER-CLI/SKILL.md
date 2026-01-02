@@ -1,6 +1,6 @@
 
 #**Browser-cli**
-- First check if dev servers already active: `lsof -ti:5173`, `lsof -ti:5173`
+- First check if dev servers already active: `lsof -ti:5175`, `lsof -ti:5176`
 - If not `npm run dev`
 - If servers active and browser not responding kill process in wsl and restart browser manager
 - For app-specific navigational nuances read `.claude\rules\BROWSER-CLI\NAV-MAP.md`

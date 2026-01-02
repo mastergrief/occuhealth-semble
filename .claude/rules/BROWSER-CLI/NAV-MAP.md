@@ -1,5 +1,5 @@
 # Nav-Map for nuanced app-specific interactions
-**Application - Zenith Athlete**
+**Application - Occuhealth**
 
 ## Pre-Saved States (Quick Start)
 

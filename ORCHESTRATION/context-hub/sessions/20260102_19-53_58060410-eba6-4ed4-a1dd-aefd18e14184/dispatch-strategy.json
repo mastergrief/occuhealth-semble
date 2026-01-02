@@ -1,0 +1,575 @@
+{
+  "id": "dispatch-hero-landing-2026-01-02",
+  "type": "dispatch-strategy",
+  "metadata": {
+    "planId": "plan-hero-landing-2026-01-02",
+    "sessionId": "20260102_19-53_58060410-eba6-4ed4-a1dd-aefd18e14184",
+    "generatedAt": "2026-01-02T19:55:00.000Z",
+    "version": "1.0.0"
+  },
+  "summary": "6-phase execution strategy for hero landing page implementation. Phases 1-5 use developer agent, Phase 6 uses browser agent. All phases are sequential with dependency enforcement.",
+  "tokenBudget": {
+    "total": 133000,
+    "byPhase": {
+      "phase-1": 13000,
+      "phase-2": 19000,
+      "phase-3": 30000,
+      "phase-4": 19000,
+      "phase-5": 18000,
+      "phase-6": 34000
+    },
+    "utilization": "111%"
+  },
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Foundation & Theme Setup",
+      "agentType": "developer",
+      "memoryRefs": ["HERO_LANDING_SPRINT_01_FOUNDATION"],
+      "estimatedTokens": 13000,
+      "parallelGroups": [
+        {
+          "groupId": "pg-1.1",
+          "description": "Independent foundation tasks - can run in parallel",
+          "tasks": [
+            {
+              "taskId": "task-1.1",
+              "description": "Add medical blue CSS variables to src/index.css",
+              "estimatedTokens": 5000
+            },
+            {
+              "taskId": "task-1.4",
+              "description": "Create directory structure: src/components/{layout,landing,auth}/",
+              "estimatedTokens": 1000
+            }
+          ],
+          "dispatchPattern": "spawn-parallel-background"
+        }
+      ],
+      "sequentialTasks": [
+        {
+          "taskId": "task-1.2",
+          "description": "Install shadcn/ui components: input, label, dialog, navigation-menu, sheet, avatar, badge, separator",
+          "dependsOn": ["task-1.1"],
+          "estimatedTokens": 3000
+        },
+        {
+          "taskId": "task-1.3",
+          "description": "Add medical button variant to src/components/ui/button.tsx",
+          "dependsOn": ["task-1.1"],
+          "estimatedTokens": 4000
+        }
+      ],
+      "promptTemplate": {
+        "role": "developer",
+        "context": "Read memory HERO_LANDING_SPRINT_01_FOUNDATION for detailed implementation guide",
+        "tasks": [
+          "1. Add medical blue CSS variables to src/index.css (--medical-blue, --medical-blue-foreground, --medical-blue-light, --medical-blue-dark, --trust-green) in :root section with oklch values. Add dark mode variants in .dark selector. Add @theme inline mappings.",
+          "2. Create directories: src/components/layout/, src/components/landing/, src/components/auth/",
+          "3. Install shadcn components: npx shadcn@latest add input label dialog navigation-menu sheet avatar badge separator",
+          "4. Add 'medical' and 'medical-outline' button variants to src/components/ui/button.tsx in buttonVariants cva config"
+        ],
+        "acceptanceCriteria": [
+          "Medical blue colors visible in CSS variables with oklch values",
+          "All 8 shadcn components installed in src/components/ui/",
+          "Button has 'medical' and 'medical-outline' variants",
+          "Directory structure created",
+          "npm run typecheck passes"
+        ],
+        "evidenceCommands": [
+          "grep 'medical-blue' src/index.css",
+          "ls src/components/ui/",
+          "grep 'medical' src/components/ui/button.tsx",
+          "npm run typecheck"
+        ]
+      },
+      "gateValidation": {
+        "command": "npm run typecheck",
+        "expectedOutcome": "Exit code 0, no TypeScript errors",
+        "requiredFiles": [
+          "src/index.css",
+          "src/components/ui/button.tsx",
+          "src/components/ui/input.tsx",
+          "src/components/ui/label.tsx",
+          "src/components/ui/dialog.tsx",
+          "src/components/ui/navigation-menu.tsx",
+          "src/components/ui/sheet.tsx",
+          "src/components/ui/avatar.tsx",
+          "src/components/ui/badge.tsx",
+          "src/components/ui/separator.tsx"
+        ]
+      }
+    },
+    {
+      "id": "phase-2",
+      "name": "Layout Components",
+      "agentType": "developer",
+      "memoryRefs": ["HERO_LANDING_SPRINT_02_LAYOUT"],
+      "estimatedTokens": 19000,
+      "parallelGroups": [
+        {
+          "groupId": "pg-2.1",
+          "description": "Container must be created first (dependency for Nav/Footer)",
+          "tasks": [
+            {
+              "taskId": "task-2.1",
+              "description": "Create Container component at src/components/layout/Container.tsx",
+              "estimatedTokens": 3000
+            }
+          ],
+          "dispatchPattern": "spawn-sequential"
+        },
+        {
+          "groupId": "pg-2.2",
+          "description": "NavigationBar and Footer can be created in parallel (both depend on Container)",
+          "tasks": [
+            {
+              "taskId": "task-2.2",
+              "description": "Create NavigationBar component with Stethoscope logo, nav links, and mobile Sheet menu",
+              "estimatedTokens": 8000
+            },
+            {
+              "taskId": "task-2.3",
+              "description": "Create Footer component with 4-column grid and compliance badges",
+              "estimatedTokens": 7000
+            }
+          ],
+          "dispatchPattern": "spawn-parallel-background"
+        }
+      ],
+      "sequentialTasks": [
+        {
+          "taskId": "task-2.4",
+          "description": "Create barrel export at src/components/layout/index.ts",
+          "dependsOn": ["task-2.1", "task-2.2", "task-2.3"],
+          "estimatedTokens": 1000
+        }
+      ],
+      "promptTemplate": {
+        "role": "developer",
+        "context": "Read memory HERO_LANDING_SPRINT_02_LAYOUT for detailed implementation guide. Container, NavigationBar, Footer components.",
+        "tasks": [
+          "1. Create Container.tsx wrapper with container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl classes (~15 lines)",
+          "2. Create NavigationBar.tsx with Stethoscope icon, nav links (Features, Testimonials, Pricing, About), Login/Request Demo buttons, responsive Sheet for mobile (~90 lines)",
+          "3. Create Footer.tsx with 4-column grid (brand, services, company, compliance), Shield/Lock icons for HIPAA/SSL badges (~85 lines)",
+          "4. Create index.ts barrel export for all three components"
+        ],
+        "acceptanceCriteria": [
+          "Container provides consistent max-width and padding",
+          "NavigationBar has responsive mobile menu (Sheet)",
+          "NavigationBar shows medical blue branding (Stethoscope icon)",
+          "Footer has 4-column grid layout with compliance badges",
+          "All components use medical theme colors",
+          "npm run typecheck passes"
+        ],
+        "evidenceCommands": [
+          "ls src/components/layout/",
+          "grep 'lucide-react' src/components/layout/*.tsx",
+          "npm run typecheck"
+        ]
+      },
+      "gateValidation": {
+        "command": "npm run typecheck",
+        "expectedOutcome": "Exit code 0, no TypeScript errors",
+        "requiredFiles": [
+          "src/components/layout/Container.tsx",
+          "src/components/layout/NavigationBar.tsx",
+          "src/components/layout/Footer.tsx",
+          "src/components/layout/index.ts"
+        ]
+      }
+    },
+    {
+      "id": "phase-3",
+      "name": "Landing Page Sections",
+      "agentType": "developer",
+      "memoryRefs": ["HERO_LANDING_SPRINT_03_SECTIONS"],
+      "estimatedTokens": 30000,
+      "parallelGroups": [
+        {
+          "groupId": "pg-3.1",
+          "description": "All 4 landing sections can be created in parallel (all depend only on phase-2 completion)",
+          "tasks": [
+            {
+              "taskId": "task-3.1",
+              "description": "Create HeroSection with gradient background, HIPAA badge, headline, stats, CTAs",
+              "estimatedTokens": 9000
+            },
+            {
+              "taskId": "task-3.2",
+              "description": "Create FeaturesSection with 6 feature cards and icons",
+              "estimatedTokens": 8000
+            },
+            {
+              "taskId": "task-3.3",
+              "description": "Create TestimonialsSection with 3 testimonial cards",
+              "estimatedTokens": 7000
+            },
+            {
+              "taskId": "task-3.4",
+              "description": "Create CTASection with full-width medical blue background",
+              "estimatedTokens": 5000
+            }
+          ],
+          "dispatchPattern": "spawn-parallel-background"
+        }
+      ],
+      "sequentialTasks": [
+        {
+          "taskId": "task-3.5",
+          "description": "Create barrel export at src/components/landing/index.ts",
+          "dependsOn": ["task-3.1", "task-3.2", "task-3.3", "task-3.4"],
+          "estimatedTokens": 1000
+        }
+      ],
+      "promptTemplate": {
+        "role": "developer",
+        "context": "Read memory HERO_LANDING_SPRINT_03_SECTIONS for detailed implementation guide. HeroSection, FeaturesSection, TestimonialsSection, CTASection.",
+        "tasks": [
+          "1. Create HeroSection.tsx with gradient bg from-medical-blue-light to-background, HIPAA badge, headline 'Occupational Health Reports Simplified', stats (24h, 99.9%, 500+), Request Demo/Watch Video CTAs, mock report card illustration (~85 lines)",
+          "2. Create FeaturesSection.tsx with 6 cards: Pre-Employment (Building2), Health Surveillance (Activity), 24-Hour Turnaround (Clock), HIPAA Compliant (Shield), Multi-Provider Network (Users), Digital Reports (FileText) (~75 lines)",
+          "3. Create TestimonialsSection.tsx with 3 testimonials: Dr. Sarah Chen/TechCorp, James Mitchell/BuildRight, Dr. Emily Rodriguez/SafeWork. Use Quote icon, Avatar component (~80 lines)",
+          "4. Create CTASection.tsx with full-width bg-medical-blue, headline about transformation, Get Started Today/Schedule a Call CTAs (~50 lines)",
+          "5. Create index.ts barrel export"
+        ],
+        "acceptanceCriteria": [
+          "HeroSection has gradient background with medical blue",
+          "HeroSection displays stats (24h, 99.9%, 500+)",
+          "FeaturesSection shows 6 feature cards with icons",
+          "TestimonialsSection displays 3 testimonial cards",
+          "CTASection has full-width medical blue background",
+          "All sections use Container for consistent layout",
+          "npm run typecheck passes"
+        ],
+        "evidenceCommands": [
+          "ls src/components/landing/",
+          "grep 'medical-blue' src/components/landing/*.tsx",
+          "npm run typecheck"
+        ]
+      },
+      "gateValidation": {
+        "command": "npm run typecheck",
+        "expectedOutcome": "Exit code 0, no TypeScript errors",
+        "requiredFiles": [
+          "src/components/landing/HeroSection.tsx",
+          "src/components/landing/FeaturesSection.tsx",
+          "src/components/landing/TestimonialsSection.tsx",
+          "src/components/landing/CTASection.tsx",
+          "src/components/landing/index.ts"
+        ]
+      }
+    },
+    {
+      "id": "phase-4",
+      "name": "Auth Component Refactor",
+      "agentType": "developer",
+      "memoryRefs": ["HERO_LANDING_SPRINT_04_AUTH"],
+      "estimatedTokens": 19000,
+      "parallelGroups": [
+        {
+          "groupId": "pg-4.1",
+          "description": "SignOutButton has no dependencies, can start immediately. SignInForm depends on phase-1 shadcn components.",
+          "tasks": [
+            {
+              "taskId": "task-4.2",
+              "description": "Create SignOutButton component",
+              "estimatedTokens": 3000
+            }
+          ],
+          "dispatchPattern": "spawn-parallel-background"
+        },
+        {
+          "groupId": "pg-4.2",
+          "description": "SignInForm needs shadcn input/label from phase-1",
+          "tasks": [
+            {
+              "taskId": "task-4.1",
+              "description": "Create SignInForm with loading spinner, friendly errors, flow toggle",
+              "estimatedTokens": 10000
+            }
+          ],
+          "dispatchPattern": "spawn-sequential"
+        }
+      ],
+      "sequentialTasks": [
+        {
+          "taskId": "task-4.3",
+          "description": "Create AuthModal component wrapping SignInForm with Dialog",
+          "dependsOn": ["task-4.1"],
+          "estimatedTokens": 5000
+        },
+        {
+          "taskId": "task-4.4",
+          "description": "Create barrel export at src/components/auth/index.ts",
+          "dependsOn": ["task-4.1", "task-4.2", "task-4.3"],
+          "estimatedTokens": 1000
+        }
+      ],
+      "promptTemplate": {
+        "role": "developer",
+        "context": "Read memory HERO_LANDING_SPRINT_04_AUTH for detailed implementation guide. SignInForm, SignOutButton, AuthModal components. Uses @convex-dev/auth/react.",
+        "tasks": [
+          "1. Create SignInForm.tsx with email/password inputs, Loader2 spinner, friendlyErrors mapping, flow toggle (signIn/signUp), medical-blue focus rings, onSuccess callback (~95 lines)",
+          "2. Create SignOutButton.tsx that only renders when authenticated, uses signOut from @convex-dev/auth/react, optional LogOut icon (~25 lines)",
+          "3. Create AuthModal.tsx Dialog wrapper with Stethoscope icon header, controlled open state, closes on successful auth (~45 lines)",
+          "4. Create index.ts barrel export"
+        ],
+        "acceptanceCriteria": [
+          "SignInForm has loading spinner during submission",
+          "SignInForm shows user-friendly error messages (friendlyErrors object)",
+          "SignInForm clears errors on input change",
+          "SignOutButton only renders when authenticated",
+          "AuthModal can wrap any trigger element",
+          "All components use medical-blue theme",
+          "npm run typecheck passes"
+        ],
+        "evidenceCommands": [
+          "ls src/components/auth/",
+          "grep 'isLoading' src/components/auth/SignInForm.tsx",
+          "grep 'friendlyErrors' src/components/auth/SignInForm.tsx",
+          "npm run typecheck"
+        ]
+      },
+      "gateValidation": {
+        "command": "npm run typecheck",
+        "expectedOutcome": "Exit code 0, no TypeScript errors",
+        "requiredFiles": [
+          "src/components/auth/SignInForm.tsx",
+          "src/components/auth/SignOutButton.tsx",
+          "src/components/auth/AuthModal.tsx",
+          "src/components/auth/index.ts"
+        ]
+      }
+    },
+    {
+      "id": "phase-5",
+      "name": "Integration & Polish",
+      "agentType": "developer",
+      "memoryRefs": ["HERO_LANDING_SPRINT_05_INTEGRATION"],
+      "estimatedTokens": 18000,
+      "parallelGroups": [],
+      "sequentialTasks": [
+        {
+          "taskId": "task-5.1",
+          "description": "Update NavigationBar to use AuthModal for Login/Request Demo buttons",
+          "dependsOn": ["task-4.3"],
+          "estimatedTokens": 6000
+        },
+        {
+          "taskId": "task-5.2",
+          "description": "Replace App.tsx with modular version using all components",
+          "dependsOn": ["task-5.1", "task-3.5", "task-4.4"],
+          "estimatedTokens": 12000
+        }
+      ],
+      "promptTemplate": {
+        "role": "developer",
+        "context": "Read memory HERO_LANDING_SPRINT_05_INTEGRATION for detailed implementation guide. Final assembly of all components.",
+        "tasks": [
+          "1. Update NavigationBar.tsx: Import AuthModal, wrap Login button with AuthModal trigger, wrap Request Demo with AuthModal (initialFlow='signUp'), update both desktop and mobile menu sections",
+          "2. Replace App.tsx (~120 lines): Import layout (NavigationBar, Footer), landing (HeroSection, FeaturesSection, TestimonialsSection, CTASection), auth (AuthModal, SignOutButton). Create LandingPage, AuthenticatedNav, Dashboard internal components. Use Authenticated/Unauthenticated wrappers. Add floating Provider Login button in fixed position."
+        ],
+        "acceptanceCriteria": [
+          "NavigationBar imports and uses AuthModal",
+          "Desktop/Mobile Login and Request Demo buttons wrapped in AuthModal",
+          "App.tsx reduced from ~226 to ~120 lines",
+          "LandingPage renders all 4 sections",
+          "Floating Provider Login button in fixed position",
+          "Dashboard shows welcome message and demo stats",
+          "npm run typecheck passes",
+          "npm run dev serves landing page at localhost:5173"
+        ],
+        "evidenceCommands": [
+          "grep 'AuthModal' src/components/layout/NavigationBar.tsx",
+          "wc -l src/App.tsx",
+          "npm run typecheck"
+        ]
+      },
+      "gateValidation": {
+        "command": "npm run typecheck && curl -s -o /dev/null -w '%{http_code}' http://localhost:5173",
+        "expectedOutcome": "Typecheck exit 0, HTTP 200 from dev server",
+        "requiredFiles": [
+          "src/components/layout/NavigationBar.tsx",
+          "src/App.tsx"
+        ]
+      }
+    },
+    {
+      "id": "phase-6",
+      "name": "E2E Testing",
+      "agentType": "browser",
+      "memoryRefs": ["HERO_LANDING_SPRINT_06_E2E_TESTING"],
+      "estimatedTokens": 34000,
+      "parallelGroups": [
+        {
+          "groupId": "pg-6.1",
+          "description": "Dev server setup must complete first",
+          "tasks": [
+            {
+              "taskId": "task-6.1",
+              "description": "Start dev server on port 5175, verify Browser-CLI connection",
+              "estimatedTokens": 3000
+            }
+          ],
+          "dispatchPattern": "spawn-sequential"
+        },
+        {
+          "groupId": "pg-6.2",
+          "description": "After server setup, most tests can run in parallel",
+          "tasks": [
+            {
+              "taskId": "task-6.2",
+              "description": "Test landing page sections (Hero, Features, Testimonials, CTA, Footer)",
+              "estimatedTokens": 8000
+            },
+            {
+              "taskId": "task-6.3",
+              "description": "Test auth modal flow (open, validation, login, signout)",
+              "estimatedTokens": 10000
+            },
+            {
+              "taskId": "task-6.4",
+              "description": "Test responsive design (mobile 375x812, tablet 768x1024, desktop)",
+              "estimatedTokens": 5000
+            },
+            {
+              "taskId": "task-6.6",
+              "description": "Run accessibility audit, verify no critical violations",
+              "estimatedTokens": 3000
+            },
+            {
+              "taskId": "task-6.7",
+              "description": "Capture performance metrics (LCP < 2500ms, TTFB < 800ms)",
+              "estimatedTokens": 2000
+            }
+          ],
+          "dispatchPattern": "spawn-parallel-background"
+        }
+      ],
+      "sequentialTasks": [
+        {
+          "taskId": "task-6.5",
+          "description": "Save visual baselines (landing-hero, landing-features, landing-testimonials, landing-structure)",
+          "dependsOn": ["task-6.2"],
+          "estimatedTokens": 3000
+        }
+      ],
+      "promptTemplate": {
+        "role": "browser",
+        "context": "Read memory HERO_LANDING_SPRINT_06_E2E_TESTING for detailed test scripts. Use Browser-CLI on port 5175. Test credentials in .env.local.",
+        "setup": [
+          "1. Check if port 5175 is free: lsof -ti:5175",
+          "2. Start dev server: VITE_PORT=5175 npm run dev:frontend (run in background)",
+          "3. Navigate to localhost:5175 via Browser-CLI",
+          "4. Take initial snapshot and screenshot"
+        ],
+        "tests": [
+          "LANDING SECTIONS: Verify Hero (headline, HIPAA badge, stats, CTAs), Features (6 cards), Testimonials (3 cards), Footer (compliance badges). Take screenshots.",
+          "AUTH FLOW: Click Login, verify modal (form fields), test validation, enter credentials from .env.local (TEST_USER_NAME, TEST_PASSWORD), submit, verify dashboard, test sign out.",
+          "RESPONSIVE: resize 375 812 (mobile hamburger), resize 768 1024 (tablet), resize 1920 1080 (desktop). Screenshots at each breakpoint.",
+          "ACCESSIBILITY: auditAccessibility, getAccessibilityResults --format=summary, verify no critical violations.",
+          "PERFORMANCE: capturePerformanceMetrics, verify LCP < 2500ms, TTFB < 800ms.",
+          "BASELINES: saveScreenshotBaseline landing-hero/features/testimonials, saveSnapshotBaseline landing-structure"
+        ],
+        "acceptanceCriteria": [
+          "Dev server running on port 5175",
+          "All landing page sections render correctly",
+          "Auth modal opens and closes properly",
+          "Login flow completes successfully",
+          "Mobile responsive design works (hamburger menu)",
+          "Accessibility audit passes (no critical violations)",
+          "Performance metrics within targets",
+          "Visual regression baselines saved"
+        ],
+        "evidenceCommands": [
+          "npx tsx BROWSER-CLI/SCRIPTS/browser-cmd.ts snapshot",
+          "npx tsx BROWSER-CLI/SCRIPTS/browser-cmd.ts screenshot tests/final.png",
+          "npx tsx BROWSER-CLI/SCRIPTS/browser-cmd.ts getAssertionResults"
+        ]
+      },
+      "gateValidation": {
+        "command": "test -f BROWSER-CLI/baselines/landing-hero.png && test -f BROWSER-CLI/baselines/landing-structure.json",
+        "expectedOutcome": "Visual and snapshot baselines exist",
+        "requiredArtifacts": [
+          "BROWSER-CLI/baselines/landing-hero.png",
+          "BROWSER-CLI/baselines/landing-features.png",
+          "BROWSER-CLI/baselines/landing-testimonials.png",
+          "BROWSER-CLI/baselines/landing-structure.json"
+        ]
+      }
+    }
+  ],
+  "executionOrder": [
+    {
+      "step": 1,
+      "phaseId": "phase-1",
+      "parallelism": "pg-1.1 parallel (task-1.1 + task-1.4), then sequential (task-1.2, task-1.3)",
+      "estimatedDuration": "1-2 hours"
+    },
+    {
+      "step": 2,
+      "phaseId": "phase-2",
+      "parallelism": "task-2.1 first, then pg-2.2 parallel (task-2.2 + task-2.3), then task-2.4",
+      "estimatedDuration": "2-3 hours"
+    },
+    {
+      "step": 3,
+      "phaseId": "phase-3",
+      "parallelism": "pg-3.1 all 4 sections parallel, then task-3.5",
+      "estimatedDuration": "3-4 hours"
+    },
+    {
+      "step": 4,
+      "phaseId": "phase-4",
+      "parallelism": "task-4.2 parallel with task-4.1, then task-4.3, then task-4.4",
+      "estimatedDuration": "2-3 hours"
+    },
+    {
+      "step": 5,
+      "phaseId": "phase-5",
+      "parallelism": "Strictly sequential (task-5.1, task-5.2)",
+      "estimatedDuration": "1-2 hours"
+    },
+    {
+      "step": 6,
+      "phaseId": "phase-6",
+      "parallelism": "task-6.1 first, then pg-6.2 parallel (5 tests), then task-6.5 last",
+      "estimatedDuration": "2-3 hours"
+    }
+  ],
+  "riskMitigations": [
+    {
+      "risk": "shadcn component installation may fail",
+      "mitigation": "Run components one at a time, check package.json for conflicts after each",
+      "phase": "phase-1"
+    },
+    {
+      "risk": "CSS variables may not apply in dark mode",
+      "mitigation": "Test dark mode toggle during phase 1, verify oklch values render correctly",
+      "phase": "phase-1"
+    },
+    {
+      "risk": "Convex auth API may have changed",
+      "mitigation": "Read existing App.tsx before refactoring, verify @convex-dev/auth imports",
+      "phase": "phase-4"
+    },
+    {
+      "risk": "Port 5175 may be in use",
+      "mitigation": "Check lsof -ti:5175 before starting, kill existing process if needed",
+      "phase": "phase-6"
+    },
+    {
+      "risk": "Browser-CLI may timeout on slow page loads",
+      "mitigation": "Increase wait durations, use waitForSelector with explicit timeouts",
+      "phase": "phase-6"
+    }
+  ],
+  "recommendations": [
+    "For phases 1-5, spawn single developer agent per phase to maintain context continuity",
+    "Use run_in_background=true only for truly independent tasks within parallel groups",
+    "Always run typecheck gate before proceeding to next phase",
+    "For phase 6, browser agent should read .env.local for test credentials (TEST_USER_NAME, TEST_PASSWORD)",
+    "If a phase gate fails, document the error and retry before escalating",
+    "Save agent outputs to session directory for handoff continuity"
+  ]
+}

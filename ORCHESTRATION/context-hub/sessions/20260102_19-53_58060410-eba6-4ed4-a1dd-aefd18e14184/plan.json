@@ -1,0 +1,562 @@
+{
+  "id": "plan-hero-landing-2026-01-02",
+  "type": "plan",
+  "metadata": {
+    "promptId": "hero-landing-2026-01-02",
+    "sessionId": "20260102_19-53_58060410-eba6-4ed4-a1dd-aefd18e14184",
+    "timestamp": "2026-01-02T19:55:00.000Z",
+    "version": "1.0.0"
+  },
+  "summary": "Transform minimal dark login page into professional occupational health medical report provider landing page with light blue & white theme. Includes 6 phases: Foundation setup, Layout components, Landing sections, Auth refactor, Integration, and E2E testing.",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Foundation & Theme Setup",
+      "description": "Establish medical light blue & white color scheme and add required shadcn/ui components",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-1.1",
+          "description": "Add medical blue CSS variables to src/index.css - Add to :root section (--medical-blue, --medical-blue-foreground, --medical-blue-light, --medical-blue-dark, --trust-green) and @theme inline section. Include dark mode variants in .dark selector.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 5000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_01_FOUNDATION"],
+            "files": ["src/index.css"]
+          },
+          "acceptanceCriteria": [
+            "Medical blue colors visible in CSS variables",
+            "--medical-blue: oklch(0.628 0.167 243.872) in :root",
+            "Dark mode variants in .dark selector",
+            "@theme inline mappings for all medical colors"
+          ]
+        },
+        {
+          "id": "task-1.2",
+          "description": "Install shadcn/ui components: input, label, dialog, navigation-menu, sheet, avatar, badge, separator. Run npx shadcn@latest add for each component.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-1.1"],
+          "estimatedTokens": 3000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_01_FOUNDATION"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "8 new component files in src/components/ui/",
+            "input.tsx exists",
+            "label.tsx exists",
+            "dialog.tsx exists",
+            "navigation-menu.tsx exists",
+            "sheet.tsx exists",
+            "avatar.tsx exists",
+            "badge.tsx exists",
+            "separator.tsx exists"
+          ]
+        },
+        {
+          "id": "task-1.3",
+          "description": "Add medical button variant to src/components/ui/button.tsx - Add 'medical' and 'medical-outline' variants to buttonVariants cva config.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-1.1"],
+          "estimatedTokens": 4000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_01_FOUNDATION"],
+            "files": ["src/components/ui/button.tsx"]
+          },
+          "acceptanceCriteria": [
+            "Button has 'medical' variant with bg-medical-blue",
+            "Button has 'medical-outline' variant with border-medical-blue"
+          ]
+        },
+        {
+          "id": "task-1.4",
+          "description": "Create directory structure: src/components/layout/, src/components/landing/, src/components/auth/",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 1000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_01_FOUNDATION"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "src/components/layout/ directory exists",
+            "src/components/landing/ directory exists",
+            "src/components/auth/ directory exists"
+          ]
+        }
+      ],
+      "gateCondition": "npm run typecheck passes with no errors"
+    },
+    {
+      "id": "phase-2",
+      "name": "Layout Components",
+      "description": "Create reusable layout components: Container, NavigationBar, and Footer",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-2.1",
+          "description": "Create Container component at src/components/layout/Container.tsx - Wrapper with container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl classes, accepts children and className props.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-1.4"],
+          "estimatedTokens": 3000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_02_LAYOUT"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "Container.tsx created with ~15 lines",
+            "Uses cn() utility for className merging",
+            "Exports Container component"
+          ]
+        },
+        {
+          "id": "task-2.2",
+          "description": "Create NavigationBar component at src/components/layout/NavigationBar.tsx - Sticky header with Stethoscope logo, nav links (Features, Testimonials, Pricing, About), Login/Request Demo buttons, mobile Sheet menu.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-2.1", "task-1.2"],
+          "estimatedTokens": 8000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_02_LAYOUT"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "NavigationBar.tsx created with ~90 lines",
+            "Uses Stethoscope icon from lucide-react",
+            "Has responsive mobile menu using Sheet",
+            "Accepts onLoginClick and onDemoClick props"
+          ]
+        },
+        {
+          "id": "task-2.3",
+          "description": "Create Footer component at src/components/layout/Footer.tsx - 4-column grid with brand, services, company, compliance sections. Shield and Lock icons for HIPAA/SSL badges.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-2.1", "task-1.2"],
+          "estimatedTokens": 7000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_02_LAYOUT"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "Footer.tsx created with ~85 lines",
+            "4-column grid layout (md:grid-cols-4)",
+            "HIPAA Compliant badge with Shield icon",
+            "256-bit SSL Encryption badge with Lock icon",
+            "Dynamic copyright year"
+          ]
+        },
+        {
+          "id": "task-2.4",
+          "description": "Create barrel export at src/components/layout/index.ts - Export Container, NavigationBar, Footer",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": ["task-2.1", "task-2.2", "task-2.3"],
+          "estimatedTokens": 1000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_02_LAYOUT"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "index.ts exports Container",
+            "index.ts exports NavigationBar",
+            "index.ts exports Footer"
+          ]
+        }
+      ],
+      "gateCondition": "npm run typecheck passes with no errors"
+    },
+    {
+      "id": "phase-3",
+      "name": "Landing Page Sections",
+      "description": "Create main landing page content sections: Hero, Features, Testimonials, CTA",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-3.1",
+          "description": "Create HeroSection component at src/components/landing/HeroSection.tsx - Gradient background (medical-blue-light to background), HIPAA badge, headline 'Occupational Health Reports Simplified', stats (24h, 99.9%, 500+), Request Demo and Watch Video buttons, mock report card illustration.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-2.4"],
+          "estimatedTokens": 9000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_03_SECTIONS"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "HeroSection.tsx created with ~85 lines",
+            "Gradient background from-medical-blue-light to-background",
+            "HIPAA Compliant Platform badge",
+            "Stats: 24h Turnaround, 99.9% Uptime, 500+ Providers",
+            "Two CTAs: Request Demo, Watch Video"
+          ]
+        },
+        {
+          "id": "task-3.2",
+          "description": "Create FeaturesSection component at src/components/landing/FeaturesSection.tsx - 6 feature cards with icons: Pre-Employment Assessments (Building2), Health Surveillance (Activity), 24-Hour Turnaround (Clock), HIPAA Compliant (Shield), Multi-Provider Network (Users), Digital Reports (FileText).",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-2.4"],
+          "estimatedTokens": 8000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_03_SECTIONS"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "FeaturesSection.tsx created with ~75 lines",
+            "6 feature cards in grid (lg:grid-cols-3)",
+            "Each card has icon in medical-blue/10 background",
+            "Section has id='features' for nav scroll"
+          ]
+        },
+        {
+          "id": "task-3.3",
+          "description": "Create TestimonialsSection component at src/components/landing/TestimonialsSection.tsx - 3 testimonial cards with Quote icon, author info, company. Authors: Dr. Sarah Chen (TechCorp), James Mitchell (BuildRight), Dr. Emily Rodriguez (SafeWork).",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-2.4"],
+          "estimatedTokens": 7000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_03_SECTIONS"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "TestimonialsSection.tsx created with ~80 lines",
+            "3 testimonial cards with Avatar components",
+            "Quote icon positioned absolute",
+            "Section has id='testimonials' for nav scroll"
+          ]
+        },
+        {
+          "id": "task-3.4",
+          "description": "Create CTASection component at src/components/landing/CTASection.tsx - Full-width medical blue background, headline about transformation, two buttons: Get Started Today and Schedule a Call.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-2.4"],
+          "estimatedTokens": 5000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_03_SECTIONS"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "CTASection.tsx created with ~50 lines",
+            "Full-width bg-medical-blue background",
+            "White text with white/80 paragraph",
+            "Two CTAs with contrasting styles"
+          ]
+        },
+        {
+          "id": "task-3.5",
+          "description": "Create barrel export at src/components/landing/index.ts - Export HeroSection, FeaturesSection, TestimonialsSection, CTASection",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": ["task-3.1", "task-3.2", "task-3.3", "task-3.4"],
+          "estimatedTokens": 1000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_03_SECTIONS"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "index.ts exports all 4 landing components"
+          ]
+        }
+      ],
+      "gateCondition": "npm run typecheck passes with no errors"
+    },
+    {
+      "id": "phase-4",
+      "name": "Auth Component Refactor",
+      "description": "Extract and improve authentication components from App.tsx",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-4.1",
+          "description": "Create SignInForm component at src/components/auth/SignInForm.tsx - Form with email/password inputs, loading spinner (Loader2), user-friendly error mapping, flow toggle (signIn/signUp), medical-blue focus rings. Uses @convex-dev/auth/react signIn.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-1.2"],
+          "estimatedTokens": 10000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_04_AUTH"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "SignInForm.tsx created with ~95 lines",
+            "Loading spinner during submission",
+            "User-friendly error mapping (friendlyErrors object)",
+            "Auto-clear errors on input change",
+            "minLength=8 on password",
+            "onSuccess callback prop"
+          ]
+        },
+        {
+          "id": "task-4.2",
+          "description": "Create SignOutButton component at src/components/auth/SignOutButton.tsx - Button that only renders when authenticated, uses signOut from @convex-dev/auth/react, LogOut icon option.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 3000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_04_AUTH"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "SignOutButton.tsx created with ~25 lines",
+            "Only renders when isAuthenticated",
+            "Uses useConvexAuth and useAuthActions",
+            "Optional showIcon prop"
+          ]
+        },
+        {
+          "id": "task-4.3",
+          "description": "Create AuthModal component at src/components/auth/AuthModal.tsx - Dialog wrapper around SignInForm with Stethoscope icon header, controlled open state, closes on successful auth.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-4.1", "task-1.2"],
+          "estimatedTokens": 5000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_04_AUTH"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "AuthModal.tsx created with ~45 lines",
+            "Uses Dialog from shadcn/ui",
+            "Stethoscope icon in header",
+            "Accepts trigger, title, initialFlow props",
+            "Closes modal on successful sign in"
+          ]
+        },
+        {
+          "id": "task-4.4",
+          "description": "Create barrel export at src/components/auth/index.ts - Export SignInForm, SignOutButton, AuthModal",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": ["task-4.1", "task-4.2", "task-4.3"],
+          "estimatedTokens": 1000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_04_AUTH"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "index.ts exports all 3 auth components"
+          ]
+        }
+      ],
+      "gateCondition": "npm run typecheck passes with no errors"
+    },
+    {
+      "id": "phase-5",
+      "name": "Integration & Polish",
+      "description": "Integrate all components into App.tsx and finalize the complete landing page",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-5.1",
+          "description": "Update NavigationBar to use AuthModal - Replace Login button with AuthModal trigger, Request Demo button with AuthModal trigger (initialFlow='signUp'). Update both desktop and mobile menu sections.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-4.3"],
+          "estimatedTokens": 6000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_05_INTEGRATION"],
+            "files": ["src/components/layout/NavigationBar.tsx"]
+          },
+          "acceptanceCriteria": [
+            "NavigationBar imports AuthModal",
+            "Desktop Login button wrapped in AuthModal",
+            "Desktop Request Demo button wrapped in AuthModal with initialFlow='signUp'",
+            "Mobile menu buttons wrapped in AuthModal"
+          ]
+        },
+        {
+          "id": "task-5.2",
+          "description": "Replace App.tsx with modular version - Import layout (NavigationBar, Footer), landing (HeroSection, FeaturesSection, TestimonialsSection, CTASection), and auth (AuthModal, SignOutButton) components. Create LandingPage, AuthenticatedNav, and Dashboard internal components.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-5.1", "task-3.5", "task-4.4"],
+          "estimatedTokens": 12000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_05_INTEGRATION"],
+            "files": ["src/App.tsx"]
+          },
+          "acceptanceCriteria": [
+            "App.tsx reduced from 226 to ~120 lines",
+            "Uses Authenticated/Unauthenticated wrappers",
+            "LandingPage renders all 4 sections",
+            "Floating Provider Login button in fixed position",
+            "Dashboard shows welcome message and demo stats"
+          ]
+        }
+      ],
+      "gateCondition": "npm run typecheck passes AND npm run dev serves landing page at localhost:5173"
+    },
+    {
+      "id": "phase-6",
+      "name": "E2E Testing",
+      "description": "Comprehensive Browser-CLI tests for the hero landing page on port 5175",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-6.1",
+          "description": "Start dev server on port 5175 and verify Browser-CLI connection - Run VITE_PORT=5175 npm run dev:frontend, navigate to localhost:5175, take initial snapshot and screenshot.",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": ["task-5.2"],
+          "estimatedTokens": 3000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_06_E2E_TESTING"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "Dev server running on port 5175",
+            "Browser-CLI connects successfully",
+            "Initial snapshot shows landing page structure"
+          ]
+        },
+        {
+          "id": "task-6.2",
+          "description": "Test landing page sections - Verify Hero section elements (headline, HIPAA badge, stats, CTAs), Features section (6 cards), Testimonials section (3 cards), CTA section, Footer (compliance badges). Take screenshots for evidence.",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": ["task-6.1"],
+          "estimatedTokens": 8000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_06_E2E_TESTING"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "Hero section: headline, HIPAA badge, stats visible",
+            "Features section: all 6 cards render",
+            "Testimonials: all 3 testimonials visible",
+            "Footer: HIPAA Compliant and SSL badges visible",
+            "Screenshots captured for each section"
+          ]
+        },
+        {
+          "id": "task-6.3",
+          "description": "Test auth modal flow - Click Login button, verify modal opens with form fields, test form validation, enter test credentials from .env.local, submit and verify dashboard appears, test sign out returns to landing.",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": ["task-6.1"],
+          "estimatedTokens": 10000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_06_E2E_TESTING"],
+            "files": [".env.local"]
+          },
+          "acceptanceCriteria": [
+            "Auth modal opens on Login click",
+            "Form has Email and Password fields",
+            "Successful login shows dashboard",
+            "Sign out returns to landing page",
+            "Screenshots captured for modal states"
+          ]
+        },
+        {
+          "id": "task-6.4",
+          "description": "Test responsive design - Resize to mobile (375x812), verify hamburger menu appears and works. Resize to tablet (768x1024), verify layout adapts. Reset to desktop.",
+          "agentType": "browser",
+          "priority": "medium",
+          "dependencies": ["task-6.1"],
+          "estimatedTokens": 5000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_06_E2E_TESTING"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "Mobile: hamburger menu appears, Sheet opens",
+            "Tablet: layout adapts (2-column features)",
+            "Desktop: full nav visible",
+            "Screenshots at each breakpoint"
+          ]
+        },
+        {
+          "id": "task-6.5",
+          "description": "Save visual baselines - Save screenshot baselines for landing-hero, landing-features, landing-testimonials. Save snapshot baseline for landing-structure.",
+          "agentType": "browser",
+          "priority": "medium",
+          "dependencies": ["task-6.2"],
+          "estimatedTokens": 3000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_06_E2E_TESTING"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "landing-hero baseline saved",
+            "landing-features baseline saved",
+            "landing-testimonials baseline saved",
+            "landing-structure snapshot baseline saved"
+          ]
+        },
+        {
+          "id": "task-6.6",
+          "description": "Run accessibility audit - Execute auditAccessibility command, get results in summary format, verify no critical violations.",
+          "agentType": "browser",
+          "priority": "medium",
+          "dependencies": ["task-6.1"],
+          "estimatedTokens": 3000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_06_E2E_TESTING"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "Accessibility audit completes",
+            "No critical violations",
+            "Results documented"
+          ]
+        },
+        {
+          "id": "task-6.7",
+          "description": "Capture performance metrics - Run capturePerformanceMetrics, get metrics, verify LCP < 2500ms, TTFB < 800ms.",
+          "agentType": "browser",
+          "priority": "low",
+          "dependencies": ["task-6.1"],
+          "estimatedTokens": 2000,
+          "context": {
+            "memories": ["HERO_LANDING_SPRINT_06_E2E_TESTING"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "Performance metrics captured",
+            "LCP within acceptable range",
+            "TTFB within acceptable range"
+          ]
+        }
+      ],
+      "gateCondition": "All E2E tests pass, visual baselines saved, accessibility audit shows no critical violations"
+    }
+  ],
+  "totalEstimatedTokens": 133000,
+  "risks": [
+    {
+      "description": "shadcn component installation may fail or have version conflicts",
+      "mitigation": "Run components one at a time, check package.json for conflicts after each install",
+      "severity": "medium"
+    },
+    {
+      "description": "CSS variables may not apply correctly in dark mode",
+      "mitigation": "Test dark mode toggle during phase 1, verify oklch color values render correctly",
+      "severity": "low"
+    },
+    {
+      "description": "Convex auth flow may have changed since original implementation",
+      "mitigation": "Verify @convex-dev/auth API by reading existing App.tsx before refactoring",
+      "severity": "medium"
+    },
+    {
+      "description": "Port 5175 may conflict with existing processes",
+      "mitigation": "Check with lsof -ti:5175 before starting, kill existing process if needed",
+      "severity": "low"
+    },
+    {
+      "description": "Browser-CLI may timeout on slow page loads",
+      "mitigation": "Increase wait durations, use waitForSelector with explicit timeouts",
+      "severity": "low"
+    }
+  ]
+}

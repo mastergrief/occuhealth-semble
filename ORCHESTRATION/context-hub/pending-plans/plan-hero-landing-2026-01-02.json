@@ -1,0 +1,494 @@
+{
+  "id": "hero-landing-2026-01-02",
+  "title": "Hero Landing Page Implementation",
+  "description": "Transform minimal dark login page into professional occupational health medical report provider landing page with light blue & white theme",
+  "created": "2026-01-02T00:00:00Z",
+  "status": "archived",
+  "totalPhases": 6,
+  "estimatedHours": "14-17",
+  "phases": [
+    {
+      "id": 1,
+      "name": "Foundation & Theme Setup",
+      "status": "pending",
+      "estimatedHours": "1-2",
+      "dependencies": [],
+      "tasks": [
+        {
+          "id": "1.1",
+          "description": "Add medical blue CSS variables to src/index.css",
+          "file": "src/index.css",
+          "action": "EDIT",
+          "linesAdded": 25,
+          "details": "Add --medical-blue, --medical-blue-light, --medical-blue-dark, --trust-green to :root, .dark, and @theme inline sections"
+        },
+        {
+          "id": "1.2",
+          "description": "Install shadcn components",
+          "action": "BASH",
+          "command": "npx shadcn@latest add input label dialog navigation-menu sheet avatar badge separator",
+          "newFiles": 8,
+          "estimatedLines": 600
+        },
+        {
+          "id": "1.3",
+          "description": "Add medical button variant",
+          "file": "src/components/ui/button.tsx",
+          "action": "EDIT",
+          "linesAdded": 6,
+          "details": "Add 'medical' and 'medical-outline' variants to buttonVariants"
+        },
+        {
+          "id": "1.4",
+          "description": "Create directory structure",
+          "action": "BASH",
+          "command": "mkdir -p src/components/layout src/components/landing src/components/auth"
+        }
+      ],
+      "acceptanceCriteria": [
+        "Medical blue colors visible in CSS variables",
+        "All 8 shadcn components installed successfully",
+        "Button component has medical and medical-outline variants",
+        "Directory structure created",
+        "npm run typecheck passes"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Layout Components",
+      "status": "pending",
+      "estimatedHours": "2-3",
+      "dependencies": [
+        1
+      ],
+      "tasks": [
+        {
+          "id": "2.1",
+          "description": "Create Container component",
+          "file": "src/components/layout/Container.tsx",
+          "action": "CREATE",
+          "estimatedLines": 15
+        },
+        {
+          "id": "2.2",
+          "description": "Create NavigationBar component",
+          "file": "src/components/layout/NavigationBar.tsx",
+          "action": "CREATE",
+          "estimatedLines": 90,
+          "details": "Sticky nav with mobile Sheet, Stethoscope logo, nav links, Login/Demo CTAs"
+        },
+        {
+          "id": "2.3",
+          "description": "Create Footer component",
+          "file": "src/components/layout/Footer.tsx",
+          "action": "CREATE",
+          "estimatedLines": 85,
+          "details": "4-column grid: Brand, Services, Company, Compliance badges"
+        },
+        {
+          "id": "2.4",
+          "description": "Create barrel export",
+          "file": "src/components/layout/index.ts",
+          "action": "CREATE",
+          "estimatedLines": 5
+        }
+      ],
+      "acceptanceCriteria": [
+        "Container provides consistent max-width and padding",
+        "NavigationBar has responsive mobile menu (Sheet)",
+        "NavigationBar shows medical blue branding",
+        "Footer has 4-column grid with compliance badges",
+        "npm run typecheck passes"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Landing Page Sections",
+      "status": "pending",
+      "estimatedHours": "3-4",
+      "dependencies": [
+        2
+      ],
+      "tasks": [
+        {
+          "id": "3.1",
+          "description": "Create HeroSection component",
+          "file": "src/components/landing/HeroSection.tsx",
+          "action": "CREATE",
+          "estimatedLines": 85,
+          "details": "Gradient bg, HIPAA badge, headline, stats row (24h, 99.9%, 500+), mock dashboard"
+        },
+        {
+          "id": "3.2",
+          "description": "Create FeaturesSection component",
+          "file": "src/components/landing/FeaturesSection.tsx",
+          "action": "CREATE",
+          "estimatedLines": 75,
+          "details": "6 feature cards with lucide icons in 3-column grid"
+        },
+        {
+          "id": "3.3",
+          "description": "Create TestimonialsSection component",
+          "file": "src/components/landing/TestimonialsSection.tsx",
+          "action": "CREATE",
+          "estimatedLines": 80,
+          "details": "3 testimonial cards with Avatar component"
+        },
+        {
+          "id": "3.4",
+          "description": "Create CTASection component",
+          "file": "src/components/landing/CTASection.tsx",
+          "action": "CREATE",
+          "estimatedLines": 50,
+          "details": "Full-width medical blue background with white CTAs"
+        },
+        {
+          "id": "3.5",
+          "description": "Create barrel export",
+          "file": "src/components/landing/index.ts",
+          "action": "CREATE",
+          "estimatedLines": 6
+        }
+      ],
+      "acceptanceCriteria": [
+        "HeroSection has gradient from medical-blue-light to background",
+        "HeroSection displays stats (24h, 99.9%, 500+)",
+        "FeaturesSection shows 6 feature cards with icons",
+        "TestimonialsSection displays 3 testimonial cards",
+        "CTASection has full-width medical blue background",
+        "npm run typecheck passes"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Auth Component Refactor",
+      "status": "pending",
+      "estimatedHours": "2-3",
+      "dependencies": [
+        3
+      ],
+      "tasks": [
+        {
+          "id": "4.1",
+          "description": "Create SignInForm component",
+          "file": "src/components/auth/SignInForm.tsx",
+          "action": "CREATE",
+          "estimatedLines": 95,
+          "details": "Extract from App.tsx, add loading spinner, user-friendly error mapping, auto-clear errors"
+        },
+        {
+          "id": "4.2",
+          "description": "Create SignOutButton component",
+          "file": "src/components/auth/SignOutButton.tsx",
+          "action": "CREATE",
+          "estimatedLines": 25,
+          "details": "Conditional render based on auth state"
+        },
+        {
+          "id": "4.3",
+          "description": "Create AuthModal component",
+          "file": "src/components/auth/AuthModal.tsx",
+          "action": "CREATE",
+          "estimatedLines": 45,
+          "details": "Dialog wrapper with Stethoscope icon header"
+        },
+        {
+          "id": "4.4",
+          "description": "Create barrel export",
+          "file": "src/components/auth/index.ts",
+          "action": "CREATE",
+          "estimatedLines": 5
+        }
+      ],
+      "acceptanceCriteria": [
+        "SignInForm has loading spinner during submission",
+        "SignInForm shows user-friendly error messages",
+        "SignInForm clears errors on input change",
+        "SignOutButton only renders when authenticated",
+        "AuthModal wraps any trigger element",
+        "npm run typecheck passes"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Integration & Polish",
+      "status": "pending",
+      "estimatedHours": "1-2",
+      "dependencies": [
+        4
+      ],
+      "tasks": [
+        {
+          "id": "5.1",
+          "description": "Update NavigationBar for AuthModal integration",
+          "file": "src/components/layout/NavigationBar.tsx",
+          "action": "EDIT",
+          "linesAdded": 10,
+          "details": "Replace Login/Demo buttons with AuthModal triggers"
+        },
+        {
+          "id": "5.2",
+          "description": "Replace App.tsx with modular version",
+          "file": "src/App.tsx",
+          "action": "REPLACE",
+          "linesBefore": 226,
+          "linesAfter": 120,
+          "details": "Import from layout/, landing/, auth/. Create LandingPage, AuthenticatedNav, Dashboard components"
+        }
+      ],
+      "acceptanceCriteria": [
+        "Landing page shows all 4 sections",
+        "NavigationBar appears on public pages",
+        "AuthModal opens from nav and floating button",
+        "Dashboard appears after authentication",
+        "Sign out returns to landing page",
+        "Responsive breakpoints work",
+        "Dark mode toggles correctly",
+        "npm run typecheck passes"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "E2E Testing",
+      "status": "pending",
+      "estimatedHours": "2-3",
+      "dependencies": [
+        5
+      ],
+      "tasks": [
+        {
+          "id": "6.1",
+          "description": "Start dev server on port 5175",
+          "action": "BASH",
+          "command": "VITE_PORT=5175 npm run dev:frontend"
+        },
+        {
+          "id": "6.2",
+          "description": "Test landing page sections",
+          "action": "BROWSER_CLI",
+          "tests": [
+            "Hero visibility",
+            "Features section",
+            "Testimonials",
+            "Footer"
+          ]
+        },
+        {
+          "id": "6.3",
+          "description": "Test auth modal flow",
+          "action": "BROWSER_CLI",
+          "tests": [
+            "Modal open/close",
+            "Form validation",
+            "Login success",
+            "Sign out"
+          ]
+        },
+        {
+          "id": "6.4",
+          "description": "Test responsive design",
+          "action": "BROWSER_CLI",
+          "tests": [
+            "Mobile 375px",
+            "Tablet 768px"
+          ]
+        },
+        {
+          "id": "6.5",
+          "description": "Save visual baselines",
+          "action": "BROWSER_CLI",
+          "tests": [
+            "landing-hero",
+            "landing-features",
+            "landing-testimonials"
+          ]
+        },
+        {
+          "id": "6.6",
+          "description": "Run accessibility audit",
+          "action": "BROWSER_CLI",
+          "command": "auditAccessibility"
+        },
+        {
+          "id": "6.7",
+          "description": "Capture performance metrics",
+          "action": "BROWSER_CLI",
+          "command": "capturePerformanceMetrics"
+        }
+      ],
+      "acceptanceCriteria": [
+        "All landing page sections render correctly",
+        "Auth modal opens and closes properly",
+        "Login flow completes successfully",
+        "Mobile responsive design works",
+        "No critical accessibility violations",
+        "LCP < 2500ms, TTFB < 800ms"
+      ]
+    }
+  ],
+  "fileChanges": {
+    "newFiles": [
+      {
+        "path": "src/components/layout/Container.tsx",
+        "lines": 15,
+        "phase": 2
+      },
+      {
+        "path": "src/components/layout/NavigationBar.tsx",
+        "lines": 100,
+        "phase": 2
+      },
+      {
+        "path": "src/components/layout/Footer.tsx",
+        "lines": 85,
+        "phase": 2
+      },
+      {
+        "path": "src/components/layout/index.ts",
+        "lines": 5,
+        "phase": 2
+      },
+      {
+        "path": "src/components/landing/HeroSection.tsx",
+        "lines": 85,
+        "phase": 3
+      },
+      {
+        "path": "src/components/landing/FeaturesSection.tsx",
+        "lines": 75,
+        "phase": 3
+      },
+      {
+        "path": "src/components/landing/TestimonialsSection.tsx",
+        "lines": 80,
+        "phase": 3
+      },
+      {
+        "path": "src/components/landing/CTASection.tsx",
+        "lines": 50,
+        "phase": 3
+      },
+      {
+        "path": "src/components/landing/index.ts",
+        "lines": 6,
+        "phase": 3
+      },
+      {
+        "path": "src/components/auth/SignInForm.tsx",
+        "lines": 95,
+        "phase": 4
+      },
+      {
+        "path": "src/components/auth/SignOutButton.tsx",
+        "lines": 25,
+        "phase": 4
+      },
+      {
+        "path": "src/components/auth/AuthModal.tsx",
+        "lines": 45,
+        "phase": 4
+      },
+      {
+        "path": "src/components/auth/index.ts",
+        "lines": 5,
+        "phase": 4
+      }
+    ],
+    "modifiedFiles": [
+      {
+        "path": "src/index.css",
+        "linesBefore": 141,
+        "linesAfter": 175,
+        "phase": 1
+      },
+      {
+        "path": "src/components/ui/button.tsx",
+        "linesBefore": 59,
+        "linesAfter": 65,
+        "phase": 1
+      },
+      {
+        "path": "src/App.tsx",
+        "linesBefore": 226,
+        "linesAfter": 120,
+        "phase": 5
+      }
+    ],
+    "autoGeneratedFiles": [
+      {
+        "path": "src/components/ui/input.tsx",
+        "phase": 1
+      },
+      {
+        "path": "src/components/ui/label.tsx",
+        "phase": 1
+      },
+      {
+        "path": "src/components/ui/dialog.tsx",
+        "phase": 1
+      },
+      {
+        "path": "src/components/ui/navigation-menu.tsx",
+        "phase": 1
+      },
+      {
+        "path": "src/components/ui/sheet.tsx",
+        "phase": 1
+      },
+      {
+        "path": "src/components/ui/avatar.tsx",
+        "phase": 1
+      },
+      {
+        "path": "src/components/ui/badge.tsx",
+        "phase": 1
+      },
+      {
+        "path": "src/components/ui/separator.tsx",
+        "phase": 1
+      }
+    ]
+  },
+  "risks": [
+    {
+      "level": "high",
+      "description": "Auth flow breaks during refactor",
+      "impact": "Users cannot sign in",
+      "mitigation": "Keep original SignInForm until Sprint 05 integration; test auth on each sprint"
+    },
+    {
+      "level": "high",
+      "description": "Typecheck failures",
+      "impact": "Build blocked",
+      "mitigation": "Run npm run typecheck after each sprint; fix immediately"
+    },
+    {
+      "level": "medium",
+      "description": "Dark mode styling issues",
+      "impact": "Poor UX in dark mode",
+      "mitigation": "Test dark mode in Sprint 03; use CSS variables consistently"
+    },
+    {
+      "level": "medium",
+      "description": "Mobile responsiveness gaps",
+      "impact": "Poor mobile UX",
+      "mitigation": "Use Tailwind responsive prefixes; test at 375px, 768px"
+    },
+    {
+      "level": "low",
+      "description": "shadcn install fails",
+      "impact": "Sprint 01 blocked",
+      "mitigation": "Retry with --yes flag; install one-by-one if needed"
+    }
+  ],
+  "successCriteria": [
+    "All 6 sprints completed",
+    "npm run typecheck passes",
+    "npm run dev serves landing page at localhost:5173",
+    "Auth flow works end-to-end",
+    "Responsive design works (mobile, tablet, desktop)",
+    "Dark mode toggles correctly",
+    "E2E tests pass on port 5175",
+    "No accessibility critical violations"
+  ]
+}

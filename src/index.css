@@ -60,6 +60,13 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Medical color mappings */
+  --color-medical-blue: var(--medical-blue);
+  --color-medical-blue-foreground: var(--medical-blue-foreground);
+  --color-medical-blue-light: var(--medical-blue-light);
+  --color-medical-blue-dark: var(--medical-blue-dark);
+  --color-trust-green: var(--trust-green);
 }
 
 :root {
@@ -95,6 +102,13 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Medical Light Blue Accent */
+  --medical-blue: oklch(0.628 0.167 243.872);
+  --medical-blue-foreground: oklch(0.985 0.002 247.839);
+  --medical-blue-light: oklch(0.917 0.04 240.8);
+  --medical-blue-dark: oklch(0.456 0.145 243.84);
+  --trust-green: oklch(0.63 0.195 145.07);
 }
 
 .dark {
@@ -129,6 +143,13 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* Medical Light Blue in Dark Mode */
+  --medical-blue: oklch(0.827 0.119 221.3);
+  --medical-blue-foreground: oklch(0.145 0 0);
+  --medical-blue-light: oklch(0.277 0.06 240);
+  --medical-blue-dark: oklch(0.85 0.1 220);
+  --trust-green: oklch(0.72 0.19 145);
 }
 
 @layer base {
