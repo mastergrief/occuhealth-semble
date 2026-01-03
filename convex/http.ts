@@ -26,10 +26,12 @@ function getWorkOS() {
 http.route({
   path: "/auth/login",
   method: "GET",
-  handler: httpAction(async (ctx) => {
+  handler: httpAction(async (ctx, request) => {
     try {
       const workos = getWorkOS();
       const clientId = process.env.WORKOS_CLIENT_ID!;
+      const url = new URL(request.url);
+      const fresh = url.searchParams.get("fresh") === "true";
 
       // SEC-002 FIX: Generate and store CSRF state
       const state = crypto.randomUUID();
@@ -38,17 +40,55 @@ http.route({
         expiresAt: Date.now() + 5 * 60 * 1000, // 5-minute TTL
       });
 
-      const authorizationUrl = workos.userManagement.getAuthorizationUrl({
+      const authParams: Parameters<typeof workos.userManagement.getAuthorizationUrl>[0] = {
         provider: "authkit",
         redirectUri: `${process.env.CONVEX_SITE_URL}/auth/callback`,
         clientId,
-        state, // Include state parameter for CSRF protection
-      });
+        state,
+      };
+
+      let authorizationUrl = workos.userManagement.getAuthorizationUrl(authParams);
+
+      // If fresh=true, append prompt=login to force re-authentication
+      if (fresh) {
+        authorizationUrl += "&prompt=login";
+      }
 
       return Response.redirect(authorizationUrl, 302);
     } catch (err) {
       console.error("WorkOS login error:", err);
       return new Response("WorkOS not configured", { status: 500 });
+    }
+  }),
+});
+
+// Logout route - properly signs out of WorkOS session
+http.route({
+  path: "/auth/logout",
+  method: "GET",
+  handler: httpAction(async (_, request) => {
+    const url = new URL(request.url);
+    const sessionId = url.searchParams.get("sessionId");
+    const appUrl = process.env.APP_URL || "http://localhost:5175";
+
+    console.log("Logout request - sessionId:", sessionId ? "present" : "missing");
+
+    if (!sessionId) {
+      console.log("No sessionId, redirecting home");
+      return Response.redirect(appUrl, 302);
+    }
+
+    try {
+      const workos = getWorkOS();
+      const logoutUrl = workos.userManagement.getLogoutUrl({
+        sessionId,
+        returnTo: appUrl,
+      });
+      console.log("WorkOS logout URL generated, redirecting...");
+      return Response.redirect(logoutUrl, 302);
+    } catch (err) {
+      console.error("WorkOS logout error:", err);
+      return Response.redirect(appUrl, 302);
     }
   }),
 });
@@ -103,6 +143,12 @@ http.route({
           clientId,
         });
 
+      // Extract session ID from JWT for proper logout
+      const jwtPayload = JSON.parse(atob(accessToken.split(".")[1]));
+      const sessionId = jwtPayload.sid as string;
+      console.log("JWT claims:", Object.keys(jwtPayload));
+      console.log("Session ID from JWT:", sessionId || "NOT FOUND");
+
       // Check role-based routing - which table does this user belong to?
       const [employer, doctor, adminUser] = await Promise.all([
         ctx.runQuery(internal.employers.getByWorkosId, { workosUserId: user.id }),
@@ -141,6 +187,7 @@ http.route({
         callbackUrl.searchParams.set("refreshToken", refreshToken);
       }
       callbackUrl.searchParams.set("userId", user.id);
+      callbackUrl.searchParams.set("sessionId", sessionId);
       callbackUrl.searchParams.set("redirectPath", redirectPath);
 
       return Response.redirect(callbackUrl.toString(), 302);

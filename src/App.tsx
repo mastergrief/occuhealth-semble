@@ -113,12 +113,19 @@ function MainLayout() {
 
 // Admin layout (WorkOS authenticated)
 function AdminLayout() {
-  const { isAdminAuthenticated, isLoading, adminUser, logoutAdmin } = useAdminAuth();
+  const { isAdminAuthenticated, isLoading, adminUser, logoutAdmin, sessionId } = useAdminAuth();
 
   const handleLogout = () => {
     logoutAdmin();
-    // Redirect to home after clearing local tokens
-    window.location.href = "/";
+    // Clear all storage
+    localStorage.clear();
+    sessionStorage.clear();
+    // Redirect to WorkOS logout endpoint to clear their session
+    if (sessionId) {
+      window.location.href = `${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/logout?sessionId=${sessionId}`;
+    } else {
+      window.location.href = "/";
+    }
   };
 
   if (isLoading) {

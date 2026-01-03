@@ -19,6 +19,7 @@ export interface AuthTokens {
   workosUserId: string;
   accessToken: string;
   refreshToken?: string;
+  sessionId?: string;
 }
 
 interface WorkOSAuthState {
@@ -120,6 +121,7 @@ export function WorkOSAuthProvider({ children }: { children: ReactNode }) {
             workosUserId: parsed.workosUserId || parsed.userId,
             accessToken: parsed.accessToken,
             refreshToken: parsed.refreshToken,
+            sessionId: parsed.sessionId,
           };
 
           setState({
@@ -154,6 +156,7 @@ export function WorkOSAuthProvider({ children }: { children: ReactNode }) {
             workosUserId: parsed.workosUserId || parsed.userId,
             accessToken: parsed.accessToken,
             refreshToken: parsed.refreshToken,
+            sessionId: parsed.sessionId,
           };
           setState({
             isAuthenticated: true,
@@ -187,11 +190,13 @@ export function WorkOSAuthProvider({ children }: { children: ReactNode }) {
             userId: tokens.workosUserId,
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken,
+            sessionId: tokens.sessionId,
           }
         : {
             workosUserId: tokens.workosUserId,
             accessToken: tokens.accessToken,
             refreshToken: tokens.refreshToken,
+            sessionId: tokens.sessionId,
           };
 
     localStorage.setItem(STORAGE_KEYS[role], JSON.stringify(storageData));
@@ -256,10 +261,12 @@ export function useAdminAuth(): {
   adminUser: AdminUser | null;
   isAdminAuthenticated: boolean;
   isLoading: boolean;
+  sessionId: string | null;
   loginAsAdmin: (params: {
     accessToken: string;
     refreshToken?: string;
     userId: string;
+    sessionId?: string;
   }) => void;
   logoutAdmin: () => void;
 } {
@@ -275,11 +282,12 @@ export function useAdminAuth(): {
       : null;
 
   const loginAsAdmin = useCallback(
-    (params: { accessToken: string; refreshToken?: string; userId: string }) => {
+    (params: { accessToken: string; refreshToken?: string; userId: string; sessionId?: string }) => {
       auth.login("admin", {
         workosUserId: params.userId,
         accessToken: params.accessToken,
         refreshToken: params.refreshToken,
+        sessionId: params.sessionId,
       });
     },
     [auth]
@@ -289,6 +297,7 @@ export function useAdminAuth(): {
     adminUser,
     isAdminAuthenticated: auth.role === "admin" && auth.isAuthenticated,
     isLoading: auth.isLoading,
+    sessionId: auth.role === "admin" ? (auth.tokens?.sessionId ?? null) : null,
     loginAsAdmin,
     logoutAdmin: auth.logout,
   };

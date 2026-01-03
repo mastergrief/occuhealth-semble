@@ -24,6 +24,7 @@ export function AdminAuthCallback() {
     const accessToken = searchParams.get("accessToken");
     const refreshToken = searchParams.get("refreshToken");
     const userId = searchParams.get("userId");
+    const sessionId = searchParams.get("sessionId");
     const redirectPath = searchParams.get("redirectPath");
     const errorParam = searchParams.get("error");
 
@@ -40,11 +41,12 @@ export function AdminAuthCallback() {
     // Mark as processed to prevent re-runs
     processedRef.current = true;
 
-    // Store tokens
+    // Store tokens (including sessionId for proper logout)
     loginAsAdmin({
       accessToken,
       refreshToken: refreshToken || undefined,
       userId,
+      sessionId: sessionId || undefined,
     });
 
     // Redirect to appropriate path or admin dashboard
