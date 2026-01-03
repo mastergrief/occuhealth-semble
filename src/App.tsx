@@ -62,9 +62,8 @@ function AdminLayout() {
 
   const handleLogout = () => {
     logoutAdmin();
-    // Redirect to WorkOS logout to clear their session
-    const returnTo = encodeURIComponent(window.location.origin);
-    window.location.href = `https://api.workos.com/user_management/sessions/logout?client_id=${import.meta.env.VITE_WORKOS_CLIENT_ID}&return_to=${returnTo}`;
+    // Redirect to home after clearing local tokens
+    window.location.href = "/";
   };
 
   if (isLoading) {
