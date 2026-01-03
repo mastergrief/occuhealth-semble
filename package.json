@@ -2,7 +2,7 @@
   "name": "convex-medical-starter",
   "private": true,
   "version": "1.0.0",
-  "description": "Convex starter with Semble healthcare API integration",
+  "description": "OccuHealth - GDPR-compliant occupational health platform",
   "type": "module",
   "scripts": {
     "dev": "npm-run-all --parallel dev:frontend dev:backend dev:typecheck",
@@ -19,7 +19,6 @@
     "preview": "vite preview",
     "convex:deploy": "npm run typecheck && convex deploy --typecheck=disable",
     "convex:deploy:prod": "npm run typecheck && convex deploy --typecheck=disable --prod",
-    "semble:sync": "npx convex run semble:syncPatients",
     "cap:sync": "npx cap sync",
     "cap:ios": "npx cap open ios",
     "cap:android": "npx cap open android"
@@ -79,10 +78,11 @@
   },
   "keywords": [
     "convex",
-    "semble",
+    "occuhealth",
     "healthcare",
     "medical",
-    "graphql",
+    "gdpr",
+    "occupational-health",
     "react",
     "typescript",
     "capacitor",

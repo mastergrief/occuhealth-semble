@@ -1,6 +1,6 @@
 "use client";
 
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { Authenticated, Unauthenticated, useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 
@@ -16,13 +16,70 @@ import { SignOutButton, AdminAuthCallback } from "@/components/auth";
 // Admin auth
 import { useAdminAuth } from "@/lib/admin-auth";
 
+// Registration pages
+import { ChooseRole } from "@/pages/register/ChooseRole";
+import { EmployerRegistrationForm } from "@/components/employer/EmployerRegistrationForm";
+
+// Employer Portal
+import { EmployerAuthProvider } from "@/lib/employer-auth";
+import { EmployerLayout } from "@/pages/EmployerLayout";
+import { EmployerDashboard } from "@/pages/employer/Dashboard";
+import { EmployeesPage } from "@/pages/employer/Employees";
+import { BookingsPage } from "@/pages/employer/Bookings";
+import { ReportsPage } from "@/pages/employer/Reports";
+import { EmployerSettings } from "@/pages/employer/Settings";
+
+// Doctor Portal
+import { DoctorAuthProvider } from "@/lib/doctor-auth";
+import { DoctorLayout } from "@/pages/DoctorLayout";
+import { DoctorDashboard } from "@/pages/doctor/Dashboard";
+import { DoctorAppointments } from "@/pages/doctor/Appointments";
+import { DoctorSchedule } from "@/pages/doctor/Schedule";
+import { DoctorReports } from "@/pages/doctor/Reports";
+import { DoctorSettings } from "@/pages/doctor/Settings";
+
+// Admin GDPR pages
+import { EmployerVerification } from "@/pages/admin/EmployerVerification";
+import { GDPRDashboard } from "@/pages/admin/GDPRDashboard";
+import { ErasureRequests } from "@/pages/admin/ErasureRequests";
+import { AuditLogs } from "@/pages/admin/AuditLogs";
+
 import { Button } from "@/components/ui/button";
 
 export default function App() {
   return (
     <Routes>
+      {/* Auth callback */}
       <Route path="/auth/callback" element={<AdminAuthCallback />} />
+
+      {/* Registration routes */}
+      <Route path="/register/choose-role" element={<ChooseRole />} />
+      <Route path="/register/employer" element={<EmployerRegistrationForm />} />
+
+      {/* Employer portal routes */}
+      <Route path="/employer" element={<EmployerAuthProvider><EmployerLayout /></EmployerAuthProvider>}>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<EmployerDashboard />} />
+        <Route path="employees" element={<EmployeesPage />} />
+        <Route path="bookings" element={<BookingsPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="settings" element={<EmployerSettings />} />
+      </Route>
+
+      {/* Doctor portal routes */}
+      <Route path="/doctor" element={<DoctorAuthProvider><DoctorLayout /></DoctorAuthProvider>}>
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<DoctorDashboard />} />
+        <Route path="appointments" element={<DoctorAppointments />} />
+        <Route path="schedule" element={<DoctorSchedule />} />
+        <Route path="reports" element={<DoctorReports />} />
+        <Route path="settings" element={<DoctorSettings />} />
+      </Route>
+
+      {/* Admin routes */}
       <Route path="/admin/*" element={<AdminLayout />} />
+
+      {/* Main app routes */}
       <Route path="/*" element={<MainLayout />} />
     </Routes>
   );
@@ -99,6 +156,11 @@ function AdminLayout() {
             <a href="/" className="font-semibold text-xl">OccuHealth</a>
             <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Admin</span>
           </div>
+          <nav className="flex items-center gap-4">
+            <a href="/admin" className="text-sm hover:text-primary">Dashboard</a>
+            <a href="/admin/employers" className="text-sm hover:text-primary">Employers</a>
+            <a href="/admin/gdpr" className="text-sm hover:text-primary">GDPR</a>
+          </nav>
           <Button variant="outline" size="sm" onClick={handleLogout}>
             Sign Out
           </Button>
@@ -106,29 +168,44 @@ function AdminLayout() {
       </header>
 
       <main className="flex-1 container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-        <p className="text-muted-foreground mb-8">
-          Welcome, {adminUser?.userId}
-        </p>
-
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          <div className="bg-card border rounded-lg p-6">
-            <h2 className="font-semibold mb-2">User Management</h2>
-            <p className="text-sm text-muted-foreground">Manage providers and patients</p>
-          </div>
-          <div className="bg-card border rounded-lg p-6">
-            <h2 className="font-semibold mb-2">System Settings</h2>
-            <p className="text-sm text-muted-foreground">Configure application settings</p>
-          </div>
-          <div className="bg-card border rounded-lg p-6">
-            <h2 className="font-semibold mb-2">Audit Logs</h2>
-            <p className="text-sm text-muted-foreground">View system activity</p>
-          </div>
-        </div>
+        <Routes>
+          <Route index element={<AdminDashboardContent adminUser={adminUser} />} />
+          <Route path="employers" element={<EmployerVerification />} />
+          <Route path="gdpr" element={<GDPRDashboard />} />
+          <Route path="gdpr/erasure" element={<ErasureRequests />} />
+          <Route path="gdpr/audit" element={<AuditLogs />} />
+        </Routes>
       </main>
 
       <Footer />
     </div>
+  );
+}
+
+// Admin Dashboard Content (extracted for routing)
+function AdminDashboardContent({ adminUser }: { adminUser: { userId: string } | null }) {
+  return (
+    <>
+      <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
+      <p className="text-muted-foreground mb-8">
+        Welcome, {adminUser?.userId}
+      </p>
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <a href="/admin/employers" className="bg-card border rounded-lg p-6 hover:border-primary transition-colors">
+          <h2 className="font-semibold mb-2">Employer Verification</h2>
+          <p className="text-sm text-muted-foreground">Review and approve employer registrations</p>
+        </a>
+        <a href="/admin/gdpr" className="bg-card border rounded-lg p-6 hover:border-primary transition-colors">
+          <h2 className="font-semibold mb-2">GDPR Compliance</h2>
+          <p className="text-sm text-muted-foreground">Manage data protection and privacy</p>
+        </a>
+        <a href="/admin/gdpr/audit" className="bg-card border rounded-lg p-6 hover:border-primary transition-colors">
+          <h2 className="font-semibold mb-2">Audit Logs</h2>
+          <p className="text-sm text-muted-foreground">View system activity and compliance logs</p>
+        </a>
+      </div>
+    </>
   );
 }
 

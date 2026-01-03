@@ -1,0 +1,543 @@
+{
+  "id": "occuhealth-gdpr-pivot",
+  "created": "2026-01-03T00:00:00Z",
+  "title": "OccuHealth GDPR Occupational Health Booking System Pivot",
+  "status": "completed",
+  "summary": "Pivot from Semble API integration to fully Convex-native GDPR-compliant occupational health booking system with employer, doctor, and admin portals.",
+
+  "scope": {
+    "ui": {
+      "total_files": 30,
+      "existing_lines": 1886,
+      "new_components": 24,
+      "new_pages": 15,
+      "estimated_new_lines": 2800
+    },
+    "api": {
+      "files_to_delete": 2,
+      "files_to_create": 7,
+      "total_functions": 49,
+      "mutations": 18,
+      "queries": 25,
+      "actions": 1,
+      "helpers": 5,
+      "estimated_new_lines": 1300
+    },
+    "db": {
+      "tables_to_remove": 4,
+      "tables_to_add": 11,
+      "tables_to_keep": 3
+    }
+  },
+
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Schema & Cleanup",
+      "sprint": "02",
+      "priority": 1,
+      "parallel_with": [],
+      "depends_on": [],
+      "description": "Remove Semble integration, establish new GDPR-compliant schema",
+      "tasks": [
+        {
+          "id": "1.1",
+          "action": "DELETE",
+          "file": "convex/semble.ts",
+          "lines": -438,
+          "description": "Remove Semble GraphQL API client"
+        },
+        {
+          "id": "1.2",
+          "action": "DELETE",
+          "file": "convex/sembleWebhooks.ts",
+          "lines": -180,
+          "description": "Remove Semble webhook handlers"
+        },
+        {
+          "id": "1.3",
+          "action": "MODIFY",
+          "file": "convex/http.ts",
+          "lines_remove": "118-248",
+          "lines_change": -130,
+          "description": "Remove Semble webhook endpoint, keep WorkOS routes"
+        },
+        {
+          "id": "1.4",
+          "action": "MODIFY",
+          "file": "convex/schema.ts",
+          "description": "Remove 4 Semble tables, add 11 GDPR tables",
+          "tables_remove": ["semblePatients", "sembleAppointments", "sembleWebhookEvents", "questionnaireSubmissions"],
+          "tables_add": ["employers", "doctorSettings", "patients", "appointmentTypes", "availableSlots", "appointments", "reports", "clinicalNotes", "consents", "auditLogs", "erasureRequests"]
+        },
+        {
+          "id": "1.5",
+          "action": "MODIFY",
+          "file": "package.json",
+          "description": "Remove semble:sync script"
+        }
+      ],
+      "success_criteria": [
+        "npm run typecheck passes",
+        "npx convex dev deploys without error",
+        "Semble files deleted",
+        "Schema has 11 new tables"
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "WorkOS Auth Routing",
+      "sprint": "03",
+      "priority": 2,
+      "parallel_with": ["phase-3"],
+      "depends_on": ["phase-1"],
+      "description": "Role-based authentication and routing for all users",
+      "tasks": [
+        {
+          "id": "2.1",
+          "action": "MODIFY",
+          "file": "convex/http.ts",
+          "lines": "72-110",
+          "description": "Add role detection in callback (employer/doctor/admin routing)"
+        },
+        {
+          "id": "2.2",
+          "action": "CREATE",
+          "file": "convex/employers.ts",
+          "lines": 180,
+          "functions": ["getByWorkosId", "create", "update", "getById", "listPending", "verify", "reject", "listAll"],
+          "description": "Employer CRUD + admin verification functions"
+        },
+        {
+          "id": "2.3",
+          "action": "CREATE",
+          "file": "convex/doctorSettings.ts",
+          "lines": 80,
+          "functions": ["getByWorkosId", "create", "update", "getById"],
+          "description": "Doctor profile management"
+        },
+        {
+          "id": "2.4",
+          "action": "CREATE",
+          "file": "src/lib/employer-auth.tsx",
+          "lines": 90,
+          "description": "Employer auth context (mirrors admin-auth.tsx pattern)"
+        },
+        {
+          "id": "2.5",
+          "action": "CREATE",
+          "file": "src/lib/doctor-auth.tsx",
+          "lines": 90,
+          "description": "Doctor auth context (mirrors admin-auth.tsx pattern)"
+        }
+      ],
+      "success_criteria": [
+        "WorkOS callback routes by role",
+        "New user lands on /register/choose-role",
+        "Existing admin still works"
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "Core Backend Functions",
+      "sprint": "02-04-05",
+      "priority": 2,
+      "parallel_with": ["phase-2"],
+      "depends_on": ["phase-1"],
+      "description": "Implement all Convex mutations/queries for business logic",
+      "tasks": [
+        {
+          "id": "3.1",
+          "action": "CREATE",
+          "file": "convex/patients.ts",
+          "lines": 200,
+          "functions": ["create", "update", "list", "getById", "getByEmail", "softDelete"],
+          "description": "Patient/employee CRUD with consent"
+        },
+        {
+          "id": "3.2",
+          "action": "CREATE",
+          "file": "convex/appointments.ts",
+          "lines": 250,
+          "functions": ["book", "getById", "listByEmployer", "listByDate", "getTodaysAppointments", "markCompleted", "cancel", "updateStatus"],
+          "description": "Booking flow + status management"
+        },
+        {
+          "id": "3.3",
+          "action": "CREATE",
+          "file": "convex/availableSlots.ts",
+          "lines": 150,
+          "functions": ["createSlots", "blockSlot", "getByDateRange", "getAvailable", "getByMonth"],
+          "description": "Doctor schedule management"
+        },
+        {
+          "id": "3.4",
+          "action": "CREATE",
+          "file": "convex/reports.ts",
+          "lines": 200,
+          "functions": ["create", "sendToEmployer", "getByAppointment", "listByEmployer", "markViewed", "getById"],
+          "description": "Medical report creation/delivery"
+        },
+        {
+          "id": "3.5",
+          "action": "CREATE",
+          "file": "convex/gdpr.ts",
+          "lines": 300,
+          "functions": ["logAction", "requestErasure", "processErasure", "listErasureRequests", "getAuditLogs", "getAuditLogsByResource", "createConsent", "withdrawConsent", "getConsentsByPatient", "exportPatientData", "getGDPRStats"],
+          "description": "GDPR compliance: consent, audit, erasure"
+        }
+      ],
+      "success_criteria": [
+        "All 49 backend functions implemented",
+        "Audit logging on sensitive actions",
+        "Consent required before booking"
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "Employer Portal UI",
+      "sprint": "04",
+      "priority": 3,
+      "parallel_with": ["phase-5"],
+      "depends_on": ["phase-2", "phase-3"],
+      "description": "Build employer-facing UI components and pages",
+      "tasks": [
+        {
+          "id": "4.1",
+          "action": "CREATE",
+          "file": "src/pages/EmployerLayout.tsx",
+          "lines": 80,
+          "description": "Shell with sidebar, pending verification banner"
+        },
+        {
+          "id": "4.2",
+          "action": "CREATE",
+          "file": "src/pages/employer/Dashboard.tsx",
+          "lines": 120,
+          "description": "Stats and recent activity"
+        },
+        {
+          "id": "4.3",
+          "action": "CREATE",
+          "file": "src/pages/employer/Employees.tsx",
+          "lines": 80,
+          "description": "Employee list page wrapper"
+        },
+        {
+          "id": "4.4",
+          "action": "CREATE",
+          "file": "src/pages/employer/Bookings.tsx",
+          "lines": 80,
+          "description": "Booking page wrapper"
+        },
+        {
+          "id": "4.5",
+          "action": "CREATE",
+          "file": "src/pages/employer/Reports.tsx",
+          "lines": 80,
+          "description": "Reports page wrapper"
+        },
+        {
+          "id": "4.6",
+          "action": "CREATE",
+          "file": "src/components/employer/EmployerRegistrationForm.tsx",
+          "lines": 150,
+          "description": "Multi-step company registration"
+        },
+        {
+          "id": "4.7",
+          "action": "CREATE",
+          "file": "src/components/employer/EmployeeList.tsx",
+          "lines": 120,
+          "description": "Data table with actions"
+        },
+        {
+          "id": "4.8",
+          "action": "CREATE",
+          "file": "src/components/employer/EmployeeForm.tsx",
+          "lines": 150,
+          "description": "Add/edit employee modal"
+        },
+        {
+          "id": "4.9",
+          "action": "CREATE",
+          "file": "src/components/employer/BookingFlow.tsx",
+          "lines": 200,
+          "description": "Multi-step booking wizard"
+        },
+        {
+          "id": "4.10",
+          "action": "CREATE",
+          "file": "src/components/employer/SlotPicker.tsx",
+          "lines": 150,
+          "description": "Calendar-based slot selection"
+        },
+        {
+          "id": "4.11",
+          "action": "CREATE",
+          "file": "src/components/employer/ReportsList.tsx",
+          "lines": 100,
+          "description": "Reports data table"
+        },
+        {
+          "id": "4.12",
+          "action": "CREATE",
+          "file": "src/components/employer/ReportViewer.tsx",
+          "lines": 100,
+          "description": "Full report display"
+        }
+      ],
+      "success_criteria": [
+        "Employer can register",
+        "Employer can add employees",
+        "Employer can book appointments",
+        "Pending employer cannot book"
+      ]
+    },
+    {
+      "id": "phase-5",
+      "name": "Doctor Portal UI",
+      "sprint": "05",
+      "priority": 3,
+      "parallel_with": ["phase-4"],
+      "depends_on": ["phase-2", "phase-3"],
+      "description": "Build doctor-facing UI components and pages",
+      "tasks": [
+        {
+          "id": "5.1",
+          "action": "CREATE",
+          "file": "src/pages/DoctorLayout.tsx",
+          "lines": 70,
+          "description": "Shell with sidebar"
+        },
+        {
+          "id": "5.2",
+          "action": "CREATE",
+          "file": "src/pages/doctor/Dashboard.tsx",
+          "lines": 80,
+          "description": "Today's appointments view"
+        },
+        {
+          "id": "5.3",
+          "action": "CREATE",
+          "file": "src/pages/doctor/Appointments.tsx",
+          "lines": 80,
+          "description": "Full calendar page"
+        },
+        {
+          "id": "5.4",
+          "action": "CREATE",
+          "file": "src/pages/doctor/Schedule.tsx",
+          "lines": 80,
+          "description": "Schedule management page"
+        },
+        {
+          "id": "5.5",
+          "action": "CREATE",
+          "file": "src/pages/doctor/Reports.tsx",
+          "lines": 60,
+          "description": "Report creation page"
+        },
+        {
+          "id": "5.6",
+          "action": "CREATE",
+          "file": "src/components/doctor/DoctorDashboard.tsx",
+          "lines": 120,
+          "description": "Today's schedule with stats"
+        },
+        {
+          "id": "5.7",
+          "action": "CREATE",
+          "file": "src/components/doctor/AppointmentsList.tsx",
+          "lines": 150,
+          "description": "Calendar/list hybrid view"
+        },
+        {
+          "id": "5.8",
+          "action": "CREATE",
+          "file": "src/components/doctor/AppointmentDetail.tsx",
+          "lines": 150,
+          "description": "Patient info, Zoom button, actions"
+        },
+        {
+          "id": "5.9",
+          "action": "CREATE",
+          "file": "src/components/doctor/ScheduleManager.tsx",
+          "lines": 200,
+          "description": "Weekly grid for slot management"
+        },
+        {
+          "id": "5.10",
+          "action": "CREATE",
+          "file": "src/components/doctor/ReportForm.tsx",
+          "lines": 200,
+          "description": "Fitness-for-work report form"
+        },
+        {
+          "id": "5.11",
+          "action": "CREATE",
+          "file": "src/components/doctor/ClinicalNotesForm.tsx",
+          "lines": 100,
+          "description": "Private clinical notes (not shared)"
+        },
+        {
+          "id": "5.12",
+          "action": "CREATE",
+          "file": "src/components/doctor/DoctorSettings.tsx",
+          "lines": 100,
+          "description": "Profile + Zoom PMI link"
+        }
+      ],
+      "success_criteria": [
+        "Doctor can view today's appointments",
+        "Doctor can manage schedule",
+        "Doctor can create and send reports"
+      ]
+    },
+    {
+      "id": "phase-6",
+      "name": "Admin & GDPR Dashboard",
+      "sprint": "06",
+      "priority": 4,
+      "parallel_with": [],
+      "depends_on": ["phase-4", "phase-5"],
+      "description": "Admin verification queue and GDPR compliance dashboard",
+      "tasks": [
+        {
+          "id": "6.1",
+          "action": "CREATE",
+          "file": "src/pages/admin/EmployerVerification.tsx",
+          "lines": 150,
+          "description": "Verification queue + detail view"
+        },
+        {
+          "id": "6.2",
+          "action": "CREATE",
+          "file": "src/pages/admin/GDPRDashboard.tsx",
+          "lines": 200,
+          "description": "GDPR stats + quick links"
+        },
+        {
+          "id": "6.3",
+          "action": "CREATE",
+          "file": "src/pages/admin/ErasureRequests.tsx",
+          "lines": 150,
+          "description": "Erasure request processing"
+        },
+        {
+          "id": "6.4",
+          "action": "CREATE",
+          "file": "src/pages/admin/AuditLogs.tsx",
+          "lines": 120,
+          "description": "Audit log viewer"
+        },
+        {
+          "id": "6.5",
+          "action": "CREATE",
+          "file": "src/components/admin/EmployerQueue.tsx",
+          "lines": 100,
+          "description": "Pending employers list"
+        },
+        {
+          "id": "6.6",
+          "action": "CREATE",
+          "file": "src/components/admin/EmployerDetail.tsx",
+          "lines": 120,
+          "description": "Verify/reject workflow"
+        },
+        {
+          "id": "6.7",
+          "action": "CREATE",
+          "file": "src/components/admin/GDPRStats.tsx",
+          "lines": 80,
+          "description": "GDPR statistics cards"
+        },
+        {
+          "id": "6.8",
+          "action": "CREATE",
+          "file": "src/components/admin/ErasureProcessor.tsx",
+          "lines": 150,
+          "description": "Erasure workflow component"
+        },
+        {
+          "id": "6.9",
+          "action": "CREATE",
+          "file": "src/components/admin/AuditLogTable.tsx",
+          "lines": 120,
+          "description": "Filterable audit log table"
+        },
+        {
+          "id": "6.10",
+          "action": "MODIFY",
+          "file": "src/App.tsx",
+          "description": "Add all new portal routes (~20 nested routes)"
+        }
+      ],
+      "success_criteria": [
+        "Admin can verify/reject employers",
+        "Erasure requests can be processed",
+        "Audit log captures all actions"
+      ]
+    }
+  ],
+
+  "risks": [
+    {
+      "risk": "Schema migration breaks existing admin auth",
+      "impact": "HIGH",
+      "mitigation": "Keep adminUsers table unchanged"
+    },
+    {
+      "risk": "WorkOS token handling inconsistency",
+      "impact": "MEDIUM",
+      "mitigation": "Unified auth context pattern from admin-auth.tsx"
+    },
+    {
+      "risk": "Missing GDPR consent blocks booking",
+      "impact": "HIGH",
+      "mitigation": "Consent validation in appointments:book mutation"
+    },
+    {
+      "risk": "Doctor schedule conflicts",
+      "impact": "MEDIUM",
+      "mitigation": "Atomic slot status update with conflict check"
+    },
+    {
+      "risk": "Erasure incomplete (orphan data)",
+      "impact": "HIGH",
+      "mitigation": "Transaction-like pattern in gdpr:processErasure"
+    }
+  ],
+
+  "critical_files": [
+    {
+      "path": "convex/schema.ts",
+      "reason": "Core schema - all backend functions depend on new tables"
+    },
+    {
+      "path": "convex/http.ts",
+      "reason": "WorkOS callback modification for role-based routing"
+    },
+    {
+      "path": "convex/adminUsers.ts",
+      "reason": "Pattern to follow for employers.ts and doctorSettings.ts"
+    },
+    {
+      "path": "src/lib/admin-auth.tsx",
+      "reason": "Auth context pattern to replicate for employer/doctor contexts"
+    },
+    {
+      "path": "src/App.tsx",
+      "reason": "Route structure requiring major expansion"
+    }
+  ],
+
+  "estimated_totals": {
+    "files_to_delete": 2,
+    "files_to_create": 47,
+    "files_to_modify": 4,
+    "lines_removed": 748,
+    "lines_added": 4500,
+    "net_lines": 3752
+  }
+}

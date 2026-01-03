@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalMutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, query } from "./_generated/server";
 
 // ---------------------------------------------------------------------------
 // Admin Users (WorkOS AuthKit)
@@ -43,6 +43,17 @@ export const upsertAdminUser = internalMutation({
       lastLoginAt: now,
       createdAt: now,
     });
+  },
+});
+
+// Internal query for auth routing
+export const getByWorkosId = internalQuery({
+  args: { workosUserId: v.string() },
+  handler: async (ctx, { workosUserId }) => {
+    return ctx.db
+      .query("adminUsers")
+      .withIndex("by_workos_user_id", (q) => q.eq("workosUserId", workosUserId))
+      .first();
   },
 });
 

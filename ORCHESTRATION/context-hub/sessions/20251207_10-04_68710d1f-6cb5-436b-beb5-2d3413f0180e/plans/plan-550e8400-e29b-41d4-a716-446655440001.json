@@ -2,123 +2,1056 @@
   "id": "550e8400-e29b-41d4-a716-446655440001",
   "type": "plan",
   "metadata": {
-    "promptId": "15c54eb3-1cbe-46af-95e9-677386772e5a",
-    "sessionId": "20251207_09-00_add9d29d-062a-4fdb-ac3c-54df345672f7",
-    "timestamp": "2025-12-07T09:10:00.000Z",
+    "promptId": "550e8400-e29b-41d4-a716-446655440000",
+    "sessionId": "20260103_10-00_550e8400-e29b-41d4-a716-446655440002",
+    "timestamp": "2026-01-03T10:00:00.000Z",
     "version": "1.0.0"
   },
-  "summary": "Implement dark mode toggle with theme persistence",
+  "summary": "Pivot OccuHealth from Semble API to Convex-native GDPR-compliant occupational health booking system with employer, doctor, and admin portals",
   "phases": [
     {
       "id": "phase-1",
-      "name": "Analysis",
-      "description": "Understand current theme implementation and styling patterns",
+      "name": "Schema & Cleanup",
+      "description": "Delete Semble files, modify schema (remove 4 tables, add 11 new GDPR-compliant tables)",
       "subtasks": [
         {
           "id": "task-1.1",
-          "description": "Analyze current ThemeContext implementation",
-          "agentType": "explore",
+          "description": "Delete Semble integration files: convex/semble.ts and convex/sembleWebhooks.ts",
+          "agentType": "developer",
           "priority": "high",
           "dependencies": [],
-          "estimatedTokens": 8000,
+          "estimatedTokens": 2000,
           "context": {
             "files": [
-              "src/contexts/ThemeContext.tsx"
+              "convex/semble.ts",
+              "convex/sembleWebhooks.ts"
             ],
             "memories": [
-              "2_TECH_STACK"
+              "OCCUHEALTH_GDPR_SPRINT_02_SCHEMA"
             ]
           },
           "acceptanceCriteria": [
-            "Current theme state management documented",
-            "CSS variable usage mapped"
+            "semble.ts deleted",
+            "sembleWebhooks.ts deleted",
+            "No imports referencing deleted files"
           ]
         },
         {
           "id": "task-1.2",
-          "description": "Review Tailwind dark mode configuration",
-          "agentType": "context7",
-          "priority": "medium",
-          "dependencies": [],
-          "estimatedTokens": 5000,
-          "acceptanceCriteria": [
-            "Tailwind dark mode strategy identified",
-            "Required config changes documented"
-          ]
-        }
-      ],
-      "parallelizable": true,
-      "gateCondition": "All analysis tasks complete with documented findings"
-    },
-    {
-      "id": "phase-2",
-      "name": "Implementation",
-      "description": "Implement dark mode toggle functionality",
-      "subtasks": [
-        {
-          "id": "task-2.1",
-          "description": "Update ThemeContext with dark mode state and toggle",
-          "agentType": "codex",
+          "description": "Update schema.ts: Remove 4 Semble tables, add 11 new GDPR-compliant tables (employers, doctorSettings, patients, appointmentTypes, availableSlots, appointments, reports, clinicalNotes, consents, auditLogs, erasureRequests)",
+          "agentType": "developer",
           "priority": "high",
           "dependencies": [
             "task-1.1"
           ],
-          "estimatedTokens": 10000,
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [
+              "convex/schema.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_02_SCHEMA"
+            ]
+          },
           "acceptanceCriteria": [
-            "Dark mode state added to context",
-            "Toggle function implemented",
-            "Typecheck passes"
+            "semblePatients, sembleAppointments, sembleWebhookEvents, questionnaireSubmissions tables removed",
+            "11 new tables added with correct field types",
+            "All indexes defined per sprint spec",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-1.3",
+          "description": "Remove Semble webhook handler from http.ts (lines 119-248) and semble:sync script from package.json",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-1.1"
+          ],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": [
+              "convex/http.ts",
+              "package.json"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_02_SCHEMA"
+            ]
+          },
+          "acceptanceCriteria": [
+            "No Semble webhook routes in http.ts",
+            "semble:sync script removed from package.json",
+            "Existing WorkOS routes preserved"
+          ]
+        },
+        {
+          "id": "task-1.4",
+          "description": "Verify schema deployment and typecheck",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-1.2",
+            "task-1.3"
+          ],
+          "estimatedTokens": 1500,
+          "context": {
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "npm run typecheck passes",
+            "npx convex dev deploys successfully",
+            "No type errors in codebase"
+          ]
+        }
+      ],
+      "parallelizable": false,
+      "gateCondition": "All Phase 1 subtasks complete, typecheck passes, schema deploys successfully"
+    },
+    {
+      "id": "phase-2",
+      "name": "WorkOS Auth Routing & Core Backend",
+      "description": "Implement role-based routing in WorkOS callback, create core backend functions (employers.ts, doctorSettings.ts)",
+      "subtasks": [
+        {
+          "id": "task-2.1",
+          "description": "Create convex/employers.ts with CRUD mutations, internal queries (getByWorkosId), and admin verification functions",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-1.4"
+          ],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [
+              "convex/schema.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_03_AUTH",
+              "OCCUHEALTH_GDPR_SPRINT_06_ADMIN_GDPR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "getByWorkosId internal query implemented",
+            "create mutation with pending status",
+            "listPending, verify, reject admin mutations",
+            "All functions use schema types correctly"
           ]
         },
         {
           "id": "task-2.2",
-          "description": "Add dark mode toggle UI component",
+          "description": "Create convex/doctorSettings.ts with getByWorkosId internal query and create/update mutations",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-1.4"
+          ],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": [
+              "convex/schema.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_03_AUTH"
+            ]
+          },
+          "acceptanceCriteria": [
+            "getByWorkosId internal query implemented",
+            "create mutation with Zoom PMI link field",
+            "update mutation for settings changes"
+          ]
+        },
+        {
+          "id": "task-2.3",
+          "description": "Modify convex/http.ts WorkOS callback to add role-based routing (check employers, doctorSettings, adminUsers tables)",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-2.1",
+            "task-2.2"
+          ],
+          "estimatedTokens": 5000,
+          "context": {
+            "files": [
+              "convex/http.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_03_AUTH"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Callback queries employers, doctorSettings, adminUsers tables",
+            "Routes to /employer, /doctor, /admin, or /register/choose-role",
+            "Existing admin auth preserved"
+          ]
+        },
+        {
+          "id": "task-2.4",
+          "description": "Add POST /auth/employer/register HTTP route for employer registration",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [
+            "task-2.3"
+          ],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": [
+              "convex/http.ts",
+              "convex/employers.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_03_AUTH"
+            ]
+          },
+          "acceptanceCriteria": [
+            "POST /auth/employer/register route added",
+            "Validates WorkOS token",
+            "Creates employer with pending status",
+            "Returns success response"
+          ]
+        }
+      ],
+      "parallelizable": false,
+      "gateCondition": "Auth routing works, employer/doctor backend functions created, typecheck passes"
+    },
+    {
+      "id": "phase-3",
+      "name": "Core Backend Functions",
+      "description": "Create remaining backend files: patients.ts, appointments.ts, availableSlots.ts, reports.ts, gdpr.ts",
+      "subtasks": [
+        {
+          "id": "task-3.1",
+          "description": "Create convex/patients.ts with CRUD mutations including consent creation, employer-scoped queries",
           "agentType": "developer",
           "priority": "high",
           "dependencies": [
             "task-2.1"
           ],
-          "estimatedTokens": 12000,
+          "estimatedTokens": 5000,
+          "context": {
+            "files": [
+              "convex/schema.ts",
+              "convex/employers.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_04_EMPLOYER"
+            ]
+          },
           "acceptanceCriteria": [
-            "Toggle component created",
-            "Integrated into navigation",
-            "Typecheck passes"
+            "create mutation creates consent record first",
+            "list query scoped to employer",
+            "Soft delete support (deletedAt field)"
           ]
-        }
-      ],
-      "parallelizable": false,
-      "gateCondition": "Typecheck passes, toggle functional"
-    },
-    {
-      "id": "phase-3",
-      "name": "Validation",
-      "description": "Test dark mode functionality",
-      "subtasks": [
+        },
         {
-          "id": "task-3.1",
-          "description": "E2E test dark mode toggle",
-          "agentType": "playwright",
+          "id": "task-3.2",
+          "description": "Create convex/availableSlots.ts with createSlots, blockSlot, getByDateRange functions",
+          "agentType": "developer",
           "priority": "high",
           "dependencies": [
-            "task-2.2"
+            "task-1.4"
           ],
-          "estimatedTokens": 8000,
+          "estimatedTokens": 4000,
+          "context": {
+            "files": [
+              "convex/schema.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_05_DOCTOR"
+            ]
+          },
           "acceptanceCriteria": [
-            "Toggle switches theme",
-            "Theme persists on refresh",
-            "All pages render correctly in dark mode"
+            "createSlots batch mutation",
+            "blockSlot mutation",
+            "getByDateRange query with date filtering",
+            "Status transitions (available/booked/blocked)"
+          ]
+        },
+        {
+          "id": "task-3.3",
+          "description": "Create convex/appointments.ts with book mutation (employer), doctor queries, status transitions",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-3.1",
+            "task-3.2"
+          ],
+          "estimatedTokens": 7000,
+          "context": {
+            "files": [
+              "convex/schema.ts",
+              "convex/patients.ts",
+              "convex/availableSlots.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_04_EMPLOYER",
+              "OCCUHEALTH_GDPR_SPRINT_05_DOCTOR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "book mutation validates slot availability and employer ownership",
+            "getTodaysAppointments doctor query with enrichment",
+            "markCompleted mutation",
+            "Slot status updated on booking"
+          ]
+        },
+        {
+          "id": "task-3.4",
+          "description": "Create convex/reports.ts with create, sendToEmployer mutations and doctor/employer queries",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-3.3"
+          ],
+          "estimatedTokens": 5000,
+          "context": {
+            "files": [
+              "convex/schema.ts",
+              "convex/appointments.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_05_DOCTOR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "create mutation links to appointment",
+            "sendToEmployer mutation sets timestamp",
+            "Employer can query their reports",
+            "Doctor can query all reports"
+          ]
+        },
+        {
+          "id": "task-3.5",
+          "description": "Create convex/gdpr.ts with logAction helper, requestErasure, processErasure, exportPatientData functions",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-3.1"
+          ],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [
+              "convex/schema.ts",
+              "convex/patients.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_06_ADMIN_GDPR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "logAction helper logs to auditLogs table",
+            "requestErasure mutation creates pending request",
+            "processErasure redacts patient PII",
+            "exportPatientData action returns GDPR-compliant export"
+          ]
+        },
+        {
+          "id": "task-3.6",
+          "description": "Create convex/appointmentTypes.ts with CRUD for appointment type management",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [
+            "task-1.4"
+          ],
+          "estimatedTokens": 2500,
+          "context": {
+            "files": [
+              "convex/schema.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_02_SCHEMA"
+            ]
+          },
+          "acceptanceCriteria": [
+            "list query for active types",
+            "create/update/deactivate mutations"
           ]
         }
       ],
       "parallelizable": true,
-      "gateCondition": "All tests pass"
+      "gateCondition": "All backend files created, typecheck passes, all functions deploy successfully"
+    },
+    {
+      "id": "phase-4",
+      "name": "Auth Contexts & Registration UI",
+      "description": "Create employer/doctor auth contexts and registration flow UI",
+      "subtasks": [
+        {
+          "id": "task-4.1",
+          "description": "Create src/lib/employer-auth.tsx with useEmployerAuth hook checking WorkOS token and employer record",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-2.4"
+          ],
+          "estimatedTokens": 4000,
+          "context": {
+            "files": [
+              "src/lib/admin-auth.tsx"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_03_AUTH",
+              "OCCUHEALTH_GDPR_SPRINT_04_EMPLOYER"
+            ]
+          },
+          "acceptanceCriteria": [
+            "EmployerAuthProvider context",
+            "useEmployerAuth hook returns employer, isVerified",
+            "Checks localStorage for WorkOS token",
+            "Queries employer record from Convex"
+          ]
+        },
+        {
+          "id": "task-4.2",
+          "description": "Create src/lib/doctor-auth.tsx with useDoctorAuth hook checking WorkOS token and doctorSettings record",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-2.4"
+          ],
+          "estimatedTokens": 3500,
+          "context": {
+            "files": [
+              "src/lib/admin-auth.tsx"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_03_AUTH",
+              "OCCUHEALTH_GDPR_SPRINT_05_DOCTOR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "DoctorAuthProvider context",
+            "useDoctorAuth hook returns doctor",
+            "Checks localStorage for WorkOS token"
+          ]
+        },
+        {
+          "id": "task-4.3",
+          "description": "Create src/pages/register/ChooseRole.tsx for new users to select employer or request doctor access",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-4.1",
+            "task-4.2"
+          ],
+          "estimatedTokens": 3500,
+          "context": {
+            "files": [],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_03_AUTH"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Two cards: Employer/Insurer and Doctor",
+            "Employer redirects to registration form",
+            "Doctor shows contact admin message"
+          ]
+        },
+        {
+          "id": "task-4.4",
+          "description": "Create src/components/employer/EmployerRegistrationForm.tsx multi-step company registration form",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-4.1"
+          ],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_04_EMPLOYER"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Multi-step form with company details",
+            "companyType selector (employer/insurer)",
+            "Address fields, registration number",
+            "Submits to /auth/employer/register",
+            "Shows success and pending verification message"
+          ]
+        }
+      ],
+      "parallelizable": false,
+      "gateCondition": "Auth contexts work, registration flow functional, typecheck passes"
+    },
+    {
+      "id": "phase-5",
+      "name": "Employer Portal UI",
+      "description": "Create employer portal layout and all pages/components",
+      "subtasks": [
+        {
+          "id": "task-5.1",
+          "description": "Create src/pages/EmployerLayout.tsx with sidebar navigation and pending verification banner",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-4.1"
+          ],
+          "estimatedTokens": 4000,
+          "context": {
+            "files": [
+              "src/pages/layout/AdminLayout.tsx"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_04_EMPLOYER"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Sidebar with Dashboard, Employees, Bookings, Reports links",
+            "PendingVerificationBanner when status !== verified",
+            "Outlet for nested routes",
+            "Redirect to login if not authenticated"
+          ]
+        },
+        {
+          "id": "task-5.2",
+          "description": "Create src/components/employer/EmployerDashboard.tsx with stats cards and recent activity",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-5.1"
+          ],
+          "estimatedTokens": 4500,
+          "context": {
+            "files": [],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_04_EMPLOYER"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Stats: employee count, upcoming appointments, pending reports",
+            "Recent appointments list",
+            "Quick action buttons"
+          ]
+        },
+        {
+          "id": "task-5.3",
+          "description": "Create src/components/employer/EmployeeList.tsx and EmployeeForm.tsx for employee management",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-3.1",
+            "task-5.1"
+          ],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [
+              "convex/patients.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_04_EMPLOYER"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Table of employees with name, email, department",
+            "Add employee modal with form fields",
+            "Edit employee action",
+            "Uses patients.ts mutations"
+          ]
+        },
+        {
+          "id": "task-5.4",
+          "description": "Create src/components/employer/BookingFlow.tsx multi-step booking wizard with SlotPicker and PatientDetailsForm",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-3.3",
+            "task-5.3"
+          ],
+          "estimatedTokens": 10000,
+          "context": {
+            "files": [
+              "convex/appointments.ts",
+              "convex/availableSlots.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_04_EMPLOYER"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Step 1: Select employee dropdown or add new",
+            "Step 2: Three consent checkboxes (all required)",
+            "Step 3: Appointment type selection",
+            "Step 4: Calendar slot picker",
+            "Step 5: Confirmation with Zoom link display",
+            "Verified employers only can book"
+          ]
+        },
+        {
+          "id": "task-5.5",
+          "description": "Create src/components/employer/ReportsList.tsx and ReportViewer.tsx for viewing medical reports",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-3.4",
+            "task-5.1"
+          ],
+          "estimatedTokens": 5000,
+          "context": {
+            "files": [
+              "convex/reports.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_04_EMPLOYER"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Table of reports with patient name, date, fitness status",
+            "Report detail modal shows summary, restrictions, follow-up",
+            "Marks viewedByEmployerAt timestamp on open"
+          ]
+        },
+        {
+          "id": "task-5.6",
+          "description": "Update src/App.tsx with employer portal routes",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-5.1",
+            "task-5.2",
+            "task-5.3",
+            "task-5.4",
+            "task-5.5"
+          ],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": [
+              "src/App.tsx"
+            ]
+          },
+          "acceptanceCriteria": [
+            "/employer/* routes added",
+            "/register/choose-role route added",
+            "EmployerLayout wraps employer pages",
+            "EmployerAuthProvider wraps routes"
+          ]
+        }
+      ],
+      "parallelizable": false,
+      "gateCondition": "Employer portal navigable, all components render, typecheck passes"
+    },
+    {
+      "id": "phase-6",
+      "name": "Doctor Portal UI",
+      "description": "Create doctor portal layout and all pages/components",
+      "subtasks": [
+        {
+          "id": "task-6.1",
+          "description": "Create src/pages/DoctorLayout.tsx with sidebar navigation",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-4.2"
+          ],
+          "estimatedTokens": 3500,
+          "context": {
+            "files": [
+              "src/pages/EmployerLayout.tsx"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_05_DOCTOR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Sidebar with Dashboard, Appointments, Schedule, Reports, Settings",
+            "Outlet for nested routes",
+            "Redirect if not authenticated doctor"
+          ]
+        },
+        {
+          "id": "task-6.2",
+          "description": "Create src/components/doctor/DoctorDashboard.tsx with today's schedule and stats",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-6.1",
+            "task-3.3"
+          ],
+          "estimatedTokens": 5000,
+          "context": {
+            "files": [
+              "convex/appointments.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_05_DOCTOR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Today's appointment count by status",
+            "Timeline of today's appointments",
+            "Quick actions: Mark Complete, Create Report"
+          ]
+        },
+        {
+          "id": "task-6.3",
+          "description": "Create src/components/doctor/AppointmentsList.tsx and AppointmentDetail.tsx",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-6.1",
+            "task-3.3"
+          ],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [
+              "convex/appointments.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_05_DOCTOR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Table/calendar of all appointments",
+            "Detail modal shows patient info, reason, notes",
+            "Join Zoom button with doctor's PMI",
+            "Create Report button"
+          ]
+        },
+        {
+          "id": "task-6.4",
+          "description": "Create src/components/doctor/ScheduleManager.tsx weekly grid for availability",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-6.1",
+            "task-3.2"
+          ],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [
+              "convex/availableSlots.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_05_DOCTOR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Weekly grid view",
+            "Click to add available slots",
+            "Click to block slots",
+            "Shows booked slots as disabled"
+          ]
+        },
+        {
+          "id": "task-6.5",
+          "description": "Create src/components/doctor/ReportForm.tsx and ClinicalNotesForm.tsx",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-6.3",
+            "task-3.4"
+          ],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [
+              "convex/reports.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_05_DOCTOR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "ReportForm: fitForWork selector, summary, restrictions, follow-up",
+            "Send to employer button",
+            "ClinicalNotesForm: findings, diagnosis (private)",
+            "Notes saved separately, not sent to employer"
+          ]
+        },
+        {
+          "id": "task-6.6",
+          "description": "Create src/components/doctor/DoctorSettings.tsx for profile and Zoom PMI link",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [
+            "task-6.1",
+            "task-2.2"
+          ],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": [
+              "convex/doctorSettings.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_05_DOCTOR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Display/edit name, email",
+            "Zoom PMI link field",
+            "Save changes button"
+          ]
+        },
+        {
+          "id": "task-6.7",
+          "description": "Update src/App.tsx with doctor portal routes",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-6.1",
+            "task-6.2",
+            "task-6.3",
+            "task-6.4",
+            "task-6.5",
+            "task-6.6"
+          ],
+          "estimatedTokens": 2500,
+          "context": {
+            "files": [
+              "src/App.tsx"
+            ]
+          },
+          "acceptanceCriteria": [
+            "/doctor/* routes added",
+            "DoctorLayout wraps doctor pages",
+            "DoctorAuthProvider wraps routes"
+          ]
+        }
+      ],
+      "parallelizable": true,
+      "gateCondition": "Doctor portal navigable, all components render, typecheck passes"
+    },
+    {
+      "id": "phase-7",
+      "name": "Admin & GDPR Dashboard",
+      "description": "Create admin verification queue and GDPR compliance dashboard",
+      "subtasks": [
+        {
+          "id": "task-7.1",
+          "description": "Create src/pages/admin/EmployerVerification.tsx with pending queue and verify/reject actions",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-2.1"
+          ],
+          "estimatedTokens": 5000,
+          "context": {
+            "files": [
+              "convex/employers.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_06_ADMIN_GDPR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "List all pending employers",
+            "Show company details, registration number",
+            "Verify button approves employer",
+            "Reject button with reason modal"
+          ]
+        },
+        {
+          "id": "task-7.2",
+          "description": "Create src/pages/admin/GDPRDashboard.tsx with stats and compliance overview",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-3.5"
+          ],
+          "estimatedTokens": 4500,
+          "context": {
+            "files": [
+              "convex/gdpr.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_06_ADMIN_GDPR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Stats: total patients, active consents, pending erasures",
+            "Quick links to erasure processing and audit log",
+            "Export compliance report button"
+          ]
+        },
+        {
+          "id": "task-7.3",
+          "description": "Create src/pages/admin/ErasureRequests.tsx for processing GDPR erasure requests",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-3.5"
+          ],
+          "estimatedTokens": 5000,
+          "context": {
+            "files": [
+              "convex/gdpr.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_06_ADMIN_GDPR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "List pending erasure requests",
+            "Show patient details (before redaction)",
+            "Process button triggers PII redaction",
+            "Reject button with reason"
+          ]
+        },
+        {
+          "id": "task-7.4",
+          "description": "Create src/pages/admin/AuditLog.tsx for viewing all audit events",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [
+            "task-3.5"
+          ],
+          "estimatedTokens": 4000,
+          "context": {
+            "files": [
+              "convex/gdpr.ts"
+            ],
+            "memories": [
+              "OCCUHEALTH_GDPR_SPRINT_06_ADMIN_GDPR"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Paginated audit log table",
+            "Filter by action, actor type, date range",
+            "Export to CSV functionality"
+          ]
+        },
+        {
+          "id": "task-7.5",
+          "description": "Update admin routes in src/App.tsx for new admin pages",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-7.1",
+            "task-7.2",
+            "task-7.3",
+            "task-7.4"
+          ],
+          "estimatedTokens": 2000,
+          "context": {
+            "files": [
+              "src/App.tsx"
+            ]
+          },
+          "acceptanceCriteria": [
+            "/admin/employers route added",
+            "/admin/gdpr route added",
+            "/admin/gdpr/erasure route added",
+            "/admin/gdpr/audit route added"
+          ]
+        }
+      ],
+      "parallelizable": false,
+      "gateCondition": "Admin features complete, GDPR dashboard functional, typecheck passes"
+    },
+    {
+      "id": "phase-8",
+      "name": "E2E Validation",
+      "description": "End-to-end testing of all portals and flows",
+      "subtasks": [
+        {
+          "id": "task-8.1",
+          "description": "E2E test: Employer registration flow (WorkOS login -> role selection -> registration form -> pending state)",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": [
+            "task-5.6"
+          ],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "New user redirected to choose-role",
+            "Registration form submits successfully",
+            "Employer sees pending verification banner",
+            "No console errors"
+          ]
+        },
+        {
+          "id": "task-8.2",
+          "description": "E2E test: Employer booking flow (select employee -> consent -> slot -> confirmation)",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": [
+            "task-5.6"
+          ],
+          "estimatedTokens": 10000,
+          "context": {
+            "files": [],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Employee selection works",
+            "All three consent checkboxes required",
+            "Slot picker shows available slots",
+            "Booking creates appointment record",
+            "Slot marked as booked"
+          ]
+        },
+        {
+          "id": "task-8.3",
+          "description": "E2E test: Doctor dashboard and report creation",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": [
+            "task-6.7"
+          ],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Doctor sees today's appointments",
+            "Can open appointment detail",
+            "Can create and submit report",
+            "Report appears in employer portal"
+          ]
+        },
+        {
+          "id": "task-8.4",
+          "description": "E2E test: Admin employer verification and GDPR dashboard",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": [
+            "task-7.5"
+          ],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Admin sees pending employers",
+            "Verify action changes status",
+            "GDPR dashboard shows stats",
+            "Audit log records actions"
+          ]
+        }
+      ],
+      "parallelizable": true,
+      "gateCondition": "All E2E tests pass with evidence collected"
     }
   ],
-  "totalEstimatedTokens": 43000,
+  "totalEstimatedTokens": 195000,
   "risks": [
     {
-      "description": "Some components may have hardcoded colors",
-      "mitigation": "Audit components during analysis phase",
+      "description": "WorkOS callback modification may break existing admin auth",
+      "mitigation": "Test admin login after Phase 2 changes, preserve existing routes",
+      "severity": "high"
+    },
+    {
+      "description": "Schema migration may cause data loss for existing tables",
+      "mitigation": "No existing production data - fresh deployment acceptable",
+      "severity": "low"
+    },
+    {
+      "description": "Complex booking flow with consent may have UX issues",
+      "mitigation": "Follow multi-step wizard pattern, test each step",
+      "severity": "medium"
+    },
+    {
+      "description": "Doctor authentication without admin setup requires manual doctorSettings creation",
+      "mitigation": "Create seed script or manual Convex dashboard entry for test doctor",
+      "severity": "medium"
+    },
+    {
+      "description": "GDPR erasure may conflict with 8-year medical record retention",
+      "mitigation": "Redact PII but preserve anonymized reports per specification",
       "severity": "medium"
     }
   ]
