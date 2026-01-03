@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { defaultPaginationOpts } from "../../../convex/helpers/pagination";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export function DoctorAppointments() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
-  const appointments = useQuery(api.appointments.listByDate, { date });
+  const appointmentsResult = useQuery(api.appointments.listByDate, { date, ...defaultPaginationOpts() });
+  const appointments = appointmentsResult?.items;
   const markCompleted = useMutation(api.appointments.markCompleted);
 
   return (

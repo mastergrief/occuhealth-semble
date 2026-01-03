@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { defaultPaginationOpts } from "../../../convex/helpers/pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +27,8 @@ export function BookingFlow({ employerId, onClose }: BookingFlowProps) {
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const patients = useQuery(api.patients.list, { employerId });
+  const patientsResult = useQuery(api.patients.list, { employerId, ...defaultPaginationOpts() });
+  const patients = patientsResult?.items;
   const appointmentTypes = useQuery(api.appointmentTypes.listActive);
   const availableSlots = useQuery(api.availableSlots.getAvailable, { date: selectedDate });
   const bookAppointment = useMutation(api.appointments.book);

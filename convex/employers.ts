@@ -9,6 +9,8 @@ import { Doc } from "./_generated/dataModel";
 // ---------------------------------------------------------------------------
 
 // Internal query for auth routing
+import { requireAdmin, requireEmployerOwnership } from "./authModules";
+
 export const getByWorkosId = internalQuery({
   args: { workosUserId: v.string() },
   handler: async (ctx, { workosUserId }) => {
@@ -78,6 +80,9 @@ export const update = mutation({
     postcode: v.optional(v.string()),
   },
   handler: async (ctx, { employerId, ...updates }) => {
+    // Verify caller owns this employer record
+    await requireEmployerOwnership(ctx, employerId);
+
     const filteredUpdates = Object.fromEntries(
       Object.entries(updates).filter(([_, v]) => v !== undefined)
     );
@@ -92,6 +97,9 @@ export const update = mutation({
 export const listPending = query({
   args: {},
   handler: async (ctx): Promise<Doc<"employers">[]> => {
+    // Admin-only: verify caller has admin privileges
+    await requireAdmin(ctx);
+
     return ctx.db
       .query("employers")
       .withIndex("by_status", (q) => q.eq("status", "pending"))
@@ -103,6 +111,9 @@ export const listPending = query({
 export const listAll = query({
   args: {},
   handler: async (ctx): Promise<Doc<"employers">[]> => {
+    // Admin-only: verify caller has admin privileges
+    await requireAdmin(ctx);
+
     return ctx.db.query("employers").collect();
   },
 });
@@ -111,13 +122,15 @@ export const listAll = query({
 export const verify = mutation({
   args: {
     employerId: v.id("employers"),
-    adminUserId: v.id("adminUsers"),
   },
-  handler: async (ctx, { employerId, adminUserId }) => {
+  handler: async (ctx, { employerId }) => {
+    // Admin-only: verify caller has admin privileges and get admin record
+    const admin = await requireAdmin(ctx);
+
     await ctx.db.patch(employerId, {
       status: "verified",
       verifiedAt: Date.now(),
-      verifiedBy: adminUserId,
+      verifiedBy: admin._id,
       updatedAt: Date.now(),
     });
   },
@@ -130,6 +143,9 @@ export const reject = mutation({
     reason: v.string(),
   },
   handler: async (ctx, { employerId, reason }) => {
+    // Admin-only: verify caller has admin privileges
+    await requireAdmin(ctx);
+
     await ctx.db.patch(employerId, {
       status: "rejected",
       rejectionReason: reason,

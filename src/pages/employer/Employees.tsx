@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { defaultPaginationOpts } from "../../../convex/helpers/pagination";
 import { EmployeeList } from "@/components/employer/EmployeeList";
 import { EmployeeForm } from "@/components/employer/EmployeeForm";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,8 @@ export function EmployeesPage() {
   const { employer } = useOutletContext<LayoutContext>();
   const [showForm, setShowForm] = useState(false);
 
-  const patients = useQuery(api.patients.list, employer?._id ? { employerId: employer._id } : "skip");
+  const patientsResult = useQuery(api.patients.list, employer?._id ? { employerId: employer._id, ...defaultPaginationOpts() } : "skip");
+  const patients = patientsResult?.items;
 
   return (
     <div className="space-y-6">

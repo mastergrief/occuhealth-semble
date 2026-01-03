@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { Doc } from "./_generated/dataModel";
 
 // ---------------------------------------------------------------------------
@@ -9,15 +9,22 @@ import { Doc } from "./_generated/dataModel";
 // ---------------------------------------------------------------------------
 
 // Type for GDPR stats return value
+import { paginatedQueryArgs, toPaginatedResult } from "./helpers/pagination";
+
 type GDPRStats = {
   pendingErasureCount: number;
   totalPatients: number;
   activeConsents: number;
   recentAuditLogs: Doc<"auditLogs">[];
+  // Enhanced metrics
+  patientsWithAllConsents: number;
+  auditLogsByAction: { action: string; count: number }[];
+  erasureApproachingDeadline: number;
+  erasureOverdue: number;
 };
 
-// Audit log helper - to be called from other mutations
-export const logAction = mutation({
+// Audit log helper - internal mutation to be called from other mutations
+export const logAction = internalMutation({
   args: {
     action: v.string(),
     actorType: v.union(
@@ -109,22 +116,27 @@ export const requestErasure = mutation({
 
 // List erasure requests (admin)
 export const listErasureRequests = query({
-  args: { status: v.optional(v.string()) },
-  handler: async (ctx, { status }) => {
-    if (status) {
-      return ctx.db
+  args: { status: v.optional(v.string()), ...paginatedQueryArgs },
+  handler: async (ctx, args) => {
+    if (args.status) {
+      const result = await ctx.db
         .query("erasureRequests")
         .withIndex("by_status", (q) =>
           q.eq(
             "status",
-            status as "pending" | "in_progress" | "completed" | "rejected"
+            args.status as "pending" | "in_progress" | "completed" | "rejected"
           )
         )
-        .collect();
+        .paginate(args.paginationOpts);
+      return toPaginatedResult(result);
     }
-    return ctx.db.query("erasureRequests").collect();
+
+    const result = await ctx.db
+      .query("erasureRequests")
+      .paginate(args.paginationOpts);
+    return toPaginatedResult(result);
   },
-});
+});;;
 
 // Process erasure (admin)
 export const processErasure = mutation({
@@ -140,14 +152,70 @@ export const processErasure = mutation({
     await ctx.db.patch(requestId, { status: "in_progress" });
 
     if (request.patientId) {
-      // Soft delete patient (redact PII)
-      await ctx.db.patch(request.patientId, {
+      const patientId = request.patientId;
+      const now = Date.now();
+
+      // 1. Redact appointments for this patient
+      const appointments = await ctx.db
+        .query("appointments")
+        .withIndex("by_patient", (q) => q.eq("patientId", patientId))
+        .collect();
+      
+      for (const appointment of appointments) {
+        await ctx.db.patch(appointment._id, {
+          reasonForAppointment: "[REDACTED]",
+          preAppointmentNotes: "[REDACTED]",
+        });
+      }
+
+      // 2. Redact reports for this patient
+      const reports = await ctx.db
+        .query("reports")
+        .withIndex("by_patient", (q) => q.eq("patientId", patientId))
+        .collect();
+      
+      for (const report of reports) {
+        await ctx.db.patch(report._id, {
+          summary: "[REDACTED]",
+          restrictions: ["[REDACTED]"],
+          followUpNotes: "[REDACTED]",
+        });
+      }
+
+      // 3. Redact clinical notes for this patient
+      const clinicalNotes = await ctx.db
+        .query("clinicalNotes")
+        .withIndex("by_patient", (q) => q.eq("patientId", patientId))
+        .collect();
+      
+      for (const note of clinicalNotes) {
+        await ctx.db.patch(note._id, {
+          findings: "[REDACTED]",
+          diagnosis: "[REDACTED]",
+        });
+      }
+
+      // 4. Withdraw all consents for this patient
+      const consents = await ctx.db
+        .query("consents")
+        .withIndex("by_patient", (q) => q.eq("patientId", patientId))
+        .collect();
+      
+      for (const consent of consents) {
+        await ctx.db.patch(consent._id, {
+          granted: false,
+          withdrawnAt: now,
+        });
+      }
+
+      // 5. Soft delete patient (redact PII)
+      await ctx.db.patch(patientId, {
         firstName: "[REDACTED]",
         lastName: "[REDACTED]",
         email: "[REDACTED]",
         phone: "[REDACTED]",
         dateOfBirth: "[REDACTED]",
-        deletedAt: Date.now(),
+        deletedAt: now,
       });
     }
 
@@ -158,7 +226,7 @@ export const processErasure = mutation({
       processedBy,
     });
   },
-});
+});;
 
 // Get audit logs (admin)
 export const getAuditLogs = query({
@@ -219,11 +287,66 @@ export const getGDPRStats = query({
       .order("desc")
       .take(10);
 
+    // Calculate patients with all 3 required consent types
+    const consentsByPatient = new Map<string, Set<string>>();
+    for (const consent of activeConsents) {
+      if (consent.patientEmail) {
+        if (!consentsByPatient.has(consent.patientEmail)) {
+          consentsByPatient.set(consent.patientEmail, new Set());
+        }
+        consentsByPatient.get(consent.patientEmail)!.add(consent.consentType);
+      }
+    }
+    const requiredConsents = ["data_processing", "health_data", "employer_sharing"];
+    let patientsWithAllConsents = 0;
+    for (const consents of consentsByPatient.values()) {
+      if (requiredConsents.every((type) => consents.has(type))) {
+        patientsWithAllConsents++;
+      }
+    }
+
+    // Audit logs by action (last 7 days)
+    const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const recentLogs = await ctx.db
+      .query("auditLogs")
+      .withIndex("by_timestamp")
+      .filter((q) => q.gte(q.field("timestamp"), sevenDaysAgo))
+      .collect();
+    
+    const actionCounts = new Map<string, number>();
+    for (const log of recentLogs) {
+      actionCounts.set(log.action, (actionCounts.get(log.action) || 0) + 1);
+    }
+    const auditLogsByAction = Array.from(actionCounts.entries())
+      .map(([action, count]) => ({ action, count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Erasure SLA tracking (GDPR requires 30 days)
+    const now = Date.now();
+    const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    
+    let erasureApproachingDeadline = 0;
+    let erasureOverdue = 0;
+    
+    for (const request of pendingErasures) {
+      const daysSinceRequest = now - request.requestedAt;
+      if (daysSinceRequest > thirtyDays) {
+        erasureOverdue++;
+      } else if (daysSinceRequest > thirtyDays - sevenDays) {
+        erasureApproachingDeadline++;
+      }
+    }
+
     return {
       pendingErasureCount: pendingErasures.length,
       totalPatients: totalPatients.length,
       activeConsents: activeConsents.length,
       recentAuditLogs,
+      patientsWithAllConsents,
+      auditLogsByAction,
+      erasureApproachingDeadline,
+      erasureOverdue,
     };
   },
 });

@@ -13,6 +13,7 @@ export function EmployerRegistrationForm() {
   const navigate = useNavigate();
   const { loginAsEmployer } = useEmployerAuth();
   const createEmployer = useMutation(api.employers.create);
+  const createConsent = useMutation(api.gdpr.createConsent);
 
   const workosUserId = searchParams.get("userId") || "";
   const accessToken = searchParams.get("accessToken") || "";
@@ -35,17 +36,33 @@ export function EmployerRegistrationForm() {
     postcode: "",
   });
 
+  const [consents, setConsents] = useState({
+    dataProcessing: false,
+    healthData: false,
+    employerSharing: false,
+  });
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleConsentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setConsents({ ...consents, [e.target.name]: e.target.checked });
+  };
+
+  const allConsentsGranted = consents.dataProcessing && consents.healthData && consents.employerSharing;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!allConsentsGranted) {
+      setError("All GDPR consents are required to proceed");
+      return;
+    }
     setIsSubmitting(true);
     setError("");
 
     try {
-      await createEmployer({
+      const employerId = await createEmployer({
         workosUserId,
         email: formData.email,
         companyType: formData.companyType,
@@ -58,6 +75,32 @@ export function EmployerRegistrationForm() {
         city: formData.city,
         postcode: formData.postcode,
       });
+
+      // Store GDPR consents
+      const consentVersion = "1.0";
+      await Promise.all([
+        createConsent({
+          patientEmail: formData.email,
+          consentType: "data_processing",
+          consentText: "I consent to the processing of employee health data for occupational health assessments",
+          consentVersion,
+          collectedByEmployerId: employerId,
+        }),
+        createConsent({
+          patientEmail: formData.email,
+          consentType: "health_data",
+          consentText: "I understand that sensitive health data will be collected and processed in accordance with GDPR Article 9",
+          consentVersion,
+          collectedByEmployerId: employerId,
+        }),
+        createConsent({
+          patientEmail: formData.email,
+          consentType: "employer_sharing",
+          consentText: "I consent to receiving anonymized fitness-for-work reports for my employees",
+          consentVersion,
+          collectedByEmployerId: employerId,
+        }),
+      ]);
 
       // Store auth tokens
       loginAsEmployer(workosUserId, accessToken, refreshToken);
@@ -77,7 +120,7 @@ export function EmployerRegistrationForm() {
         <CardHeader>
           <CardTitle>Employer Registration</CardTitle>
           <CardDescription>
-            Step {step} of 2 - {step === 1 ? "Company Details" : "Address"}
+            Step {step} of 3 - {step === 1 ? "Company Details" : step === 2 ? "Address" : "GDPR Consent"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -197,15 +240,84 @@ export function EmployerRegistrationForm() {
                   </div>
                 </div>
 
+                <div className="flex gap-4">
+                  <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1">
+                    Back
+                  </Button>
+                  <Button type="button" onClick={() => setStep(3)} className="flex-1">
+                    Next
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {step === 3 && (
+              <>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Please review and accept the following GDPR consent requirements to complete your registration.
+                  </p>
+
+                  <div className="space-y-3">
+                    <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <input
+                        type="checkbox"
+                        name="dataProcessing"
+                        checked={consents.dataProcessing}
+                        onChange={handleConsentChange}
+                        className="mt-1 h-4 w-4 rounded border-gray-300"
+                      />
+                      <div>
+                        <p className="font-medium text-sm">Data Processing Consent *</p>
+                        <p className="text-sm text-muted-foreground">
+                          I consent to the processing of employee health data for occupational health assessments
+                        </p>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <input
+                        type="checkbox"
+                        name="healthData"
+                        checked={consents.healthData}
+                        onChange={handleConsentChange}
+                        className="mt-1 h-4 w-4 rounded border-gray-300"
+                      />
+                      <div>
+                        <p className="font-medium text-sm">Health Data Consent *</p>
+                        <p className="text-sm text-muted-foreground">
+                          I understand that sensitive health data will be collected and processed in accordance with GDPR Article 9
+                        </p>
+                      </div>
+                    </label>
+
+                    <label className="flex items-start gap-3 p-3 border rounded-lg cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800">
+                      <input
+                        type="checkbox"
+                        name="employerSharing"
+                        checked={consents.employerSharing}
+                        onChange={handleConsentChange}
+                        className="mt-1 h-4 w-4 rounded border-gray-300"
+                      />
+                      <div>
+                        <p className="font-medium text-sm">Employer Sharing Consent *</p>
+                        <p className="text-sm text-muted-foreground">
+                          I consent to receiving anonymized fitness-for-work reports for my employees
+                        </p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
                 {error && (
                   <p className="text-sm text-red-500">{error}</p>
                 )}
 
                 <div className="flex gap-4">
-                  <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1">
+                  <Button type="button" variant="outline" onClick={() => setStep(2)} className="flex-1">
                     Back
                   </Button>
-                  <Button type="submit" disabled={isSubmitting} className="flex-1">
+                  <Button type="submit" disabled={isSubmitting || !allConsentsGranted} className="flex-1">
                     {isSubmitting ? "Registering..." : "Complete Registration"}
                   </Button>
                 </div>

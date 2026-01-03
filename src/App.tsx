@@ -1,11 +1,15 @@
 "use client";
 
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Suspense, lazy } from "react";
+import { Routes, Route } from "react-router-dom";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 
 // Layout components
 import { NavigationBar, Footer } from "@/components/layout";
+
+// Error handling
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Landing page sections
 import { HeroSection, FeaturesSection, TestimonialsSection, CTASection } from "@/components/landing";
@@ -14,35 +18,46 @@ import { HeroSection, FeaturesSection, TestimonialsSection, CTASection } from "@
 import { SignOutButton, AdminAuthCallback } from "@/components/auth";
 
 // Auth - unified WorkOS provider
-import { useAdminAuth, useWorkOSAuth, EmployerAuthProvider, DoctorAuthProvider } from "@/lib/workos-auth";
-
-// Registration pages
-import { ChooseRole } from "@/pages/register/ChooseRole";
-import { EmployerRegistrationForm } from "@/components/employer/EmployerRegistrationForm";
-
-// Employer Portal
-import { EmployerLayout } from "@/pages/EmployerLayout";
-import { EmployerDashboard } from "@/pages/employer/Dashboard";
-import { EmployeesPage } from "@/pages/employer/Employees";
-import { BookingsPage } from "@/pages/employer/Bookings";
-import { ReportsPage } from "@/pages/employer/Reports";
-import { EmployerSettings } from "@/pages/employer/Settings";
-
-// Doctor Portal
-import { DoctorLayout } from "@/pages/DoctorLayout";
-import { DoctorDashboard } from "@/pages/doctor/Dashboard";
-import { DoctorAppointments } from "@/pages/doctor/Appointments";
-import { DoctorSchedule } from "@/pages/doctor/Schedule";
-import { DoctorReports } from "@/pages/doctor/Reports";
-import { DoctorSettings } from "@/pages/doctor/Settings";
-
-// Admin GDPR pages
-import { EmployerVerification } from "@/pages/admin/EmployerVerification";
-import { GDPRDashboard } from "@/pages/admin/GDPRDashboard";
-import { ErasureRequests } from "@/pages/admin/ErasureRequests";
-import { AuditLogs } from "@/pages/admin/AuditLogs";
+import { useWorkOSAuth, EmployerAuthProvider, DoctorAuthProvider } from "@/lib/workos-auth";
 
 import { Button } from "@/components/ui/button";
+
+// =============================================================================
+// Lazy-loaded route components for code splitting
+// =============================================================================
+
+// Lazy load layouts
+const EmployerLayout = lazy(() =>
+  import("./pages/EmployerLayout").then(m => ({ default: m.EmployerLayout }))
+);
+const DoctorLayout = lazy(() =>
+  import("./pages/DoctorLayout").then(m => ({ default: m.DoctorLayout }))
+);
+const AdminLayout = lazy(() =>
+  import("./pages/AdminLayout").then(m => ({ default: m.AdminLayout }))
+);
+
+// Lazy load registration pages
+const ChooseRole = lazy(() =>
+  import("./pages/register/ChooseRole").then(m => ({ default: m.ChooseRole }))
+);
+const EmployerRegistrationForm = lazy(() =>
+  import("./components/employer/EmployerRegistrationForm").then(m => ({ default: m.EmployerRegistrationForm }))
+);
+
+// =============================================================================
+// Loading fallback component
+// =============================================================================
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center h-screen">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
+
+// =============================================================================
+// Main App Component
+// =============================================================================
 
 export default function App() {
   return (
@@ -51,31 +66,47 @@ export default function App() {
       <Route path="/auth/callback" element={<AdminAuthCallback />} />
 
       {/* Registration routes */}
-      <Route path="/register/choose-role" element={<ChooseRole />} />
-      <Route path="/register/employer" element={<EmployerRegistrationForm />} />
+      <Route path="/register/choose-role" element={
+        <Suspense fallback={<PageLoader />}>
+          <ChooseRole />
+        </Suspense>
+      } />
+      <Route path="/register/employer" element={
+        <Suspense fallback={<PageLoader />}>
+          <EmployerRegistrationForm />
+        </Suspense>
+      } />
 
-      {/* Employer portal routes */}
-      <Route path="/employer" element={<EmployerAuthProvider><EmployerLayout /></EmployerAuthProvider>}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<EmployerDashboard />} />
-        <Route path="employees" element={<EmployeesPage />} />
-        <Route path="bookings" element={<BookingsPage />} />
-        <Route path="reports" element={<ReportsPage />} />
-        <Route path="settings" element={<EmployerSettings />} />
-      </Route>
+      {/* Employer portal routes - auth provider outside Suspense */}
+      <Route path="/employer/*" element={
+        <EmployerAuthProvider>
+          <ErrorBoundary>
+            <Suspense fallback={<PageLoader />}>
+              <EmployerLayout />
+            </Suspense>
+          </ErrorBoundary>
+        </EmployerAuthProvider>
+      } />
 
-      {/* Doctor portal routes */}
-      <Route path="/doctor" element={<DoctorAuthProvider><DoctorLayout /></DoctorAuthProvider>}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<DoctorDashboard />} />
-        <Route path="appointments" element={<DoctorAppointments />} />
-        <Route path="schedule" element={<DoctorSchedule />} />
-        <Route path="reports" element={<DoctorReports />} />
-        <Route path="settings" element={<DoctorSettings />} />
-      </Route>
+      {/* Doctor portal routes - auth provider outside Suspense */}
+      <Route path="/doctor/*" element={
+        <DoctorAuthProvider>
+          <ErrorBoundary>
+            <Suspense fallback={<PageLoader />}>
+              <DoctorLayout />
+            </Suspense>
+          </ErrorBoundary>
+        </DoctorAuthProvider>
+      } />
 
       {/* Admin routes */}
-      <Route path="/admin/*" element={<AdminLayout />} />
+      <Route path="/admin/*" element={
+        <ErrorBoundary>
+          <Suspense fallback={<PageLoader />}>
+            <AdminLayout />
+          </Suspense>
+        </ErrorBoundary>
+      } />
 
       {/* Main app routes */}
       <Route path="/*" element={<MainLayout />} />
@@ -83,7 +114,10 @@ export default function App() {
   );
 }
 
-// Main app layout (providers/patients)
+// =============================================================================
+// Main app layout (providers/patients) - NOT lazy loaded (landing page)
+// =============================================================================
+
 function MainLayout() {
   const { isAuthenticated, isLoading } = useWorkOSAuth();
 
@@ -111,110 +145,10 @@ function MainLayout() {
   );
 }
 
-// Admin layout (WorkOS authenticated)
-function AdminLayout() {
-  const { isAdminAuthenticated, isLoading, adminUser, logoutAdmin, sessionId } = useAdminAuth();
-
-  const handleLogout = () => {
-    logoutAdmin();
-    // Clear all storage
-    localStorage.clear();
-    sessionStorage.clear();
-    // Redirect to WorkOS logout endpoint to clear their session
-    if (sessionId) {
-      window.location.href = `${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/logout?sessionId=${sessionId}`;
-    } else {
-      window.location.href = "/";
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
-  }
-
-  if (!isAdminAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Admin Access Required</h1>
-          <p className="text-muted-foreground mb-6">Please sign in with your admin credentials.</p>
-          <a
-            href={`${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/login`}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Sign in as Admin
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
-        <div className="container mx-auto px-4 flex h-16 items-center justify-between">
-          <div className="flex items-center gap-4">
-            <a href="/" className="font-semibold text-xl">OccuHealth</a>
-            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Admin</span>
-          </div>
-          <nav className="flex items-center gap-4">
-            <a href="/admin" className="text-sm hover:text-primary">Dashboard</a>
-            <a href="/admin/employers" className="text-sm hover:text-primary">Employers</a>
-            <a href="/admin/gdpr" className="text-sm hover:text-primary">GDPR</a>
-          </nav>
-          <Button variant="outline" size="sm" onClick={handleLogout}>
-            Sign Out
-          </Button>
-        </div>
-      </header>
-
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <Routes>
-          <Route index element={<AdminDashboardContent adminUser={adminUser} />} />
-          <Route path="employers" element={<EmployerVerification />} />
-          <Route path="gdpr" element={<GDPRDashboard />} />
-          <Route path="gdpr/erasure" element={<ErasureRequests />} />
-          <Route path="gdpr/audit" element={<AuditLogs />} />
-        </Routes>
-      </main>
-
-      <Footer />
-    </div>
-  );
-}
-
-// Admin Dashboard Content (extracted for routing)
-function AdminDashboardContent({ adminUser }: { adminUser: { userId: string } | null }) {
-  return (
-    <>
-      <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-      <p className="text-muted-foreground mb-8">
-        Welcome, {adminUser?.userId}
-      </p>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <a href="/admin/employers" className="bg-card border rounded-lg p-6 hover:border-primary transition-colors">
-          <h2 className="font-semibold mb-2">Employer Verification</h2>
-          <p className="text-sm text-muted-foreground">Review and approve employer registrations</p>
-        </a>
-        <a href="/admin/gdpr" className="bg-card border rounded-lg p-6 hover:border-primary transition-colors">
-          <h2 className="font-semibold mb-2">GDPR Compliance</h2>
-          <p className="text-sm text-muted-foreground">Manage data protection and privacy</p>
-        </a>
-        <a href="/admin/gdpr/audit" className="bg-card border rounded-lg p-6 hover:border-primary transition-colors">
-          <h2 className="font-semibold mb-2">Audit Logs</h2>
-          <p className="text-sm text-muted-foreground">View system activity and compliance logs</p>
-        </a>
-      </div>
-    </>
-  );
-}
-
+// =============================================================================
 // Authenticated Navigation
+// =============================================================================
+
 function AuthenticatedNav() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -226,7 +160,10 @@ function AuthenticatedNav() {
   );
 }
 
-// Landing Page (Unauthenticated)
+// =============================================================================
+// Landing Page (Unauthenticated) - NOT lazy loaded
+// =============================================================================
+
 function LandingPage() {
   return (
     <>
@@ -252,7 +189,10 @@ function LandingPage() {
   );
 }
 
+// =============================================================================
 // Dashboard (Authenticated)
+// =============================================================================
+
 function Dashboard() {
   const { viewer, numbers } =
     useQuery(api.myFunctions.listNumbers, { count: 10 }) ?? {};

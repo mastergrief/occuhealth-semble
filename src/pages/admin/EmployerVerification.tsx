@@ -3,25 +3,18 @@ import { api } from "../../../convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle } from "lucide-react";
-import { useAdminAuth } from "@/lib/workos-auth";
 
 export function EmployerVerification() {
-  const { adminUser } = useAdminAuth();
-  const adminData = useQuery(
-    api.adminUsers.getByWorkosUserId,
-    adminUser?.userId ? { workosUserId: adminUser.userId } : "skip"
-  );
+  // Admin authorization is enforced server-side via requireAdmin
   const pendingEmployers = useQuery(api.employers.listPending);
   const verifyEmployer = useMutation(api.employers.verify);
   const rejectEmployer = useMutation(api.employers.reject);
 
   const handleVerify = async (employerId: string) => {
-    if (adminData?._id) {
-      await verifyEmployer({
-        employerId: employerId as Parameters<typeof verifyEmployer>[0]["employerId"],
-        adminUserId: adminData._id,
-      });
-    }
+    // Admin verification is now done server-side via requireAdmin
+    await verifyEmployer({
+      employerId: employerId as Parameters<typeof verifyEmployer>[0]["employerId"],
+    });
   };
 
   const handleReject = async (employerId: string) => {

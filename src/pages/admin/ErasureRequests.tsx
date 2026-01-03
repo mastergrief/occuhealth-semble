@@ -1,12 +1,16 @@
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { defaultPaginationOpts } from "../../../convex/helpers/pagination";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAdminAuth } from "@/lib/workos-auth";
 
 export function ErasureRequests() {
   const { adminUser } = useAdminAuth();
-  const requests = useQuery(api.gdpr.listErasureRequests, { status: "pending" });
+  const requests = useQuery(api.gdpr.listErasureRequests, {
+    status: "pending",
+    ...defaultPaginationOpts(),
+  });
   const processErasure = useMutation(api.gdpr.processErasure);
 
   const handleProcess = async (requestId: string) => {
@@ -27,9 +31,9 @@ export function ErasureRequests() {
           <CardTitle>Pending Requests</CardTitle>
         </CardHeader>
         <CardContent>
-          {requests && requests.length > 0 ? (
+          {requests?.items && requests.items.length > 0 ? (
             <div className="space-y-4">
-              {requests.map((request) => (
+              {requests.items.map((request) => (
                 <div key={request._id} className="p-4 border rounded-lg flex justify-between items-center">
                   <div>
                     <p className="font-medium">{request.requesterEmail}</p>

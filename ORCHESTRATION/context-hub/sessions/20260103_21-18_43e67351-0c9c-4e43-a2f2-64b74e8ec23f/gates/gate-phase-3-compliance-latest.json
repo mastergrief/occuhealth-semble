@@ -1,0 +1,13 @@
+{
+  "phaseId": "phase-3-compliance",
+  "passed": true,
+  "checkedAt": "2026-01-03T21:38:22.003Z",
+  "results": [
+    {
+      "check": "default",
+      "passed": true,
+      "message": "No gate conditions defined"
+    }
+  ],
+  "blockers": []
+}

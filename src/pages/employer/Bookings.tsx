@@ -1,6 +1,7 @@
 import { useOutletContext } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { defaultPaginationOpts } from "../../../convex/helpers/pagination";
 import { BookingFlow } from "@/components/employer/BookingFlow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,10 +18,11 @@ export function BookingsPage() {
   const { employer, isVerified } = useOutletContext<LayoutContext>();
   const [showBooking, setShowBooking] = useState(false);
 
-  const appointments = useQuery(
+  const appointmentsResult = useQuery(
     api.appointments.listByEmployer,
-    employer?._id ? { employerId: employer._id } : "skip"
+    employer?._id ? { employerId: employer._id, ...defaultPaginationOpts() } : "skip"
   );
+  const appointments = appointmentsResult?.items;
 
   return (
     <div className="space-y-6">

@@ -1,0 +1,610 @@
+{
+  "planId": "occuhealth-remediation-v1",
+  "title": "OccuHealth Phase 1-3 Remediation Plan",
+  "createdAt": "2026-01-03T00:00:00.000Z",
+  "totalEstimatedHours": 124,
+  "phases": [
+    {
+      "phaseId": "phase-1-security",
+      "title": "Phase 1: Security Foundation",
+      "estimatedHours": 38,
+      "dependencies": [],
+      "subtasks": [
+        {
+          "subtaskId": "p1-auth-helper",
+          "title": "Create authorization helper module",
+          "description": "Create convex/authModules/authorization.ts with getAuthenticatedUser, requireEmployerOwnership, requireDoctorAccess, requireAdmin functions. All functions should extract WorkOS identity from ctx.auth.getUserIdentity() and validate against relevant tables (employers.workosUserId, doctorSettings.workosUserId, adminUsers.workosUserId).",
+          "files": ["convex/authModules/authorization.ts"],
+          "estimatedHours": 4,
+          "dependencies": [],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p1-patients-list-auth",
+          "title": "Add authorization to patients.list",
+          "description": "Modify convex/patients.ts:list (lines 10-19) to validate caller owns the employerId via requireEmployerOwnership helper. Must check ctx.auth.getUserIdentity().subject matches employers.workosUserId before returning patient data.",
+          "files": ["convex/patients.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p1-auth-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p1-patients-getByEmail-auth",
+          "title": "Add authorization to patients.getByEmail",
+          "description": "Modify convex/patients.ts:getByEmail (lines 30-38) to require authentication and validate caller has access to the patient's employer. Add rate limiting consideration for email enumeration prevention.",
+          "files": ["convex/patients.ts"],
+          "estimatedHours": 3,
+          "dependencies": ["p1-auth-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p1-appointments-listByEmployer-auth",
+          "title": "Add authorization to appointments.listByEmployer",
+          "description": "Modify convex/appointments.ts:listByEmployer (lines 26-42) to validate caller owns the employerId. Must add requireEmployerOwnership check before returning appointment data.",
+          "files": ["convex/appointments.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p1-auth-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p1-appointments-listByDate-auth",
+          "title": "Add authorization to appointments.listByDate",
+          "description": "Modify convex/appointments.ts:listByDate (lines 45-62) to require doctor role or filter by caller's access. Currently any user can query any date's appointments globally. Must add requireDoctorAccess check.",
+          "files": ["convex/appointments.ts"],
+          "estimatedHours": 3,
+          "dependencies": ["p1-auth-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p1-appointments-getTodaysAppointments-auth",
+          "title": "Add authorization to appointments.getTodaysAppointments",
+          "description": "Modify convex/appointments.ts:getTodaysAppointments (lines 65-74) to filter by authenticated doctor's schedule. Currently returns all appointments for today across all doctors.",
+          "files": ["convex/appointments.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p1-auth-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p1-reports-listByEmployer-auth",
+          "title": "Add authorization to reports.listByEmployer",
+          "description": "Modify convex/reports.ts:listByEmployer (lines 29-44) to validate caller owns the employerId. Must add requireEmployerOwnership check before returning report data.",
+          "files": ["convex/reports.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p1-auth-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p1-employers-verify-admin",
+          "title": "Add admin authorization to employers.verify",
+          "description": "Modify convex/employers.ts:verify (lines 110-123) to validate caller is admin. Currently any authenticated user can verify employers. Must add requireAdmin check and remove adminUserId from args (derive from auth).",
+          "files": ["convex/employers.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p1-auth-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p1-employers-reject-admin",
+          "title": "Add admin authorization to employers.reject",
+          "description": "Modify convex/employers.ts:reject (lines 126-138) to validate caller is admin. Same privilege escalation issue as verify(). Must add requireAdmin check.",
+          "files": ["convex/employers.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p1-auth-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p1-ui-auth-guards",
+          "title": "Add frontend auth guards to layouts",
+          "description": "Update src/pages/EmployerLayout.tsx and src/pages/DoctorLayout.tsx to redirect to login if not authenticated. Add role-based route protection using useWorkOSAuth() hook.",
+          "files": ["src/pages/EmployerLayout.tsx", "src/pages/DoctorLayout.tsx"],
+          "estimatedHours": 4,
+          "dependencies": [],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p1-e2e-auth-tests",
+          "title": "Create E2E tests for authorization",
+          "description": "Create browser-cli based E2E tests that verify: cross-employer access denied, admin-only operations require admin role, doctor operations require doctor role. Use restoreState for different user types.",
+          "files": ["BROWSER-CLI/tests/security/authorization.test.ts"],
+          "estimatedHours": 8,
+          "dependencies": ["p1-patients-list-auth", "p1-employers-verify-admin", "p1-ui-auth-guards"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p1-typecheck-verify",
+          "title": "Verify TypeScript compilation and fix errors",
+          "description": "Run npm run typecheck to ensure all Phase 1 changes compile correctly. Fix any type errors introduced by authorization changes.",
+          "files": [],
+          "estimatedHours": 2,
+          "dependencies": ["p1-e2e-auth-tests"],
+          "agentType": "developer"
+        }
+      ]
+    },
+    {
+      "phaseId": "phase-2-scalability",
+      "title": "Phase 2: Scalability (Pagination & N+1 Fixes)",
+      "estimatedHours": 46,
+      "dependencies": ["phase-1-security"],
+      "subtasks": [
+        {
+          "subtaskId": "p2-pagination-helper",
+          "title": "Create pagination helper module",
+          "description": "Create convex/helpers/pagination.ts with PaginatedResult<T> type and paginatedQuery helper. Include limit (default 50), cursor, and hasMore pattern. Use Convex's .take(limit+1) pattern to detect hasMore.",
+          "files": ["convex/helpers/pagination.ts"],
+          "estimatedHours": 3,
+          "dependencies": [],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p2-batch-fetch-helper",
+          "title": "Create batch fetch helper for N+1 elimination",
+          "description": "Create convex/helpers/batchFetch.ts with batchGet function that collects IDs and fetches in bulk. Pattern: const patientIds = appointments.map(a => a.patientId); const patients = await ctx.db.getMany(patientIds); Use Map for O(1) lookup when enriching.",
+          "files": ["convex/helpers/batchFetch.ts"],
+          "estimatedHours": 3,
+          "dependencies": [],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p2-patients-list-pagination",
+          "title": "Add pagination to patients.list",
+          "description": "Modify convex/patients.ts:list (lines 10-19) to accept limit/cursor args and return PaginatedResult. Currently uses .collect() which returns unbounded results.",
+          "files": ["convex/patients.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p2-pagination-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p2-appointments-listByEmployer-n1-pagination",
+          "title": "Fix N+1 and add pagination to appointments.listByEmployer",
+          "description": "Modify convex/appointments.ts:listByEmployer (lines 26-42) to: 1) Add pagination args, 2) Use batch fetch for patient enrichment instead of Promise.all loop (currently N+1 pattern).",
+          "files": ["convex/appointments.ts"],
+          "estimatedHours": 4,
+          "dependencies": ["p2-pagination-helper", "p2-batch-fetch-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p2-appointments-listByDate-n1-pagination",
+          "title": "Fix 3N+1 and add pagination to appointments.listByDate",
+          "description": "Modify convex/appointments.ts:listByDate (lines 45-62) to: 1) Add pagination args, 2) Use batch fetch for patient, employer, and appointmentType enrichment (currently 3N+1 pattern - 61 queries for 20 appointments).",
+          "files": ["convex/appointments.ts"],
+          "estimatedHours": 4,
+          "dependencies": ["p2-pagination-helper", "p2-batch-fetch-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p2-reports-listByEmployer-n1-pagination",
+          "title": "Fix N+1 and add pagination to reports.listByEmployer",
+          "description": "Modify convex/reports.ts:listByEmployer (lines 29-44) to: 1) Add pagination args, 2) Use batch fetch for patient enrichment instead of Promise.all loop.",
+          "files": ["convex/reports.ts"],
+          "estimatedHours": 4,
+          "dependencies": ["p2-pagination-helper", "p2-batch-fetch-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p2-gdpr-listErasureRequests-pagination",
+          "title": "Add pagination to gdpr.listErasureRequests",
+          "description": "Modify convex/gdpr.ts:listErasureRequests (lines 110-126) to accept limit/cursor args. Currently uses .collect() returning unbounded results.",
+          "files": ["convex/gdpr.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p2-pagination-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p2-appointmentTypes-listAll-pagination",
+          "title": "Add pagination to appointmentTypes.listAll",
+          "description": "Modify convex/appointmentTypes.ts:listAll (lines 22-27) to accept optional limit/cursor args. Lower priority as catalog likely small, but needed for consistency.",
+          "files": ["convex/appointmentTypes.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p2-pagination-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p2-ui-employeeList-pagination",
+          "title": "Add pagination UI to EmployeeList component",
+          "description": "Update src/components/employer/EmployeeList.tsx (55 LOC) to handle paginated results. Add 'Load More' button or infinite scroll. Pass cursor to useQuery for patients.list.",
+          "files": ["src/components/employer/EmployeeList.tsx"],
+          "estimatedHours": 3,
+          "dependencies": ["p2-patients-list-pagination"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p2-ui-reportsList-pagination",
+          "title": "Add pagination UI to ReportsList component",
+          "description": "Update src/components/employer/ReportsList.tsx (65 LOC) to handle paginated results. Add 'Load More' button. Pass cursor to useQuery for reports.listByEmployer.",
+          "files": ["src/components/employer/ReportsList.tsx"],
+          "estimatedHours": 3,
+          "dependencies": ["p2-reports-listByEmployer-n1-pagination"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p2-ui-auditLogs-pagination",
+          "title": "Add pagination UI to AuditLogs page",
+          "description": "Update src/pages/admin/AuditLogs.tsx (41 LOC) to support pagination. Currently fetches limit=100 hardcoded. Add 'Load More' or date range filters.",
+          "files": ["src/pages/admin/AuditLogs.tsx"],
+          "estimatedHours": 3,
+          "dependencies": [],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p2-ui-erasureRequests-pagination",
+          "title": "Add pagination UI to ErasureRequests page",
+          "description": "Update src/pages/admin/ErasureRequests.tsx (54 LOC) to support pagination. Currently displays all pending requests without limit.",
+          "files": ["src/pages/admin/ErasureRequests.tsx"],
+          "estimatedHours": 3,
+          "dependencies": ["p2-gdpr-listErasureRequests-pagination"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p2-app-lazy-loading",
+          "title": "Add React.lazy code splitting to App.tsx",
+          "description": "Update src/App.tsx (312 LOC) to use React.lazy for route-based code splitting. Lazy load: EmployerLayout, DoctorLayout, AdminLayout, register/* pages. Add Suspense with loading fallback.",
+          "files": ["src/App.tsx"],
+          "estimatedHours": 4,
+          "dependencies": [],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p2-error-boundaries",
+          "title": "Add Error Boundaries to main layouts",
+          "description": "Create src/components/ErrorBoundary.tsx component. Wrap route layouts in App.tsx with error boundaries. Provide user-friendly error messages and recovery options.",
+          "files": ["src/components/ErrorBoundary.tsx", "src/App.tsx"],
+          "estimatedHours": 4,
+          "dependencies": [],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p2-performance-verify",
+          "title": "Verify N+1 fixes with performance testing",
+          "description": "Create test cases that verify query count for list operations. Use browser console to count [CONVEX Q(...)] log entries before/after. Target: 1-4 queries instead of N+1 pattern.",
+          "files": [],
+          "estimatedHours": 2,
+          "dependencies": ["p2-appointments-listByDate-n1-pagination", "p2-reports-listByEmployer-n1-pagination"],
+          "agentType": "developer"
+        }
+      ]
+    },
+    {
+      "phaseId": "phase-3-compliance",
+      "title": "Phase 3: GDPR Compliance (Audit Logging & Cascading Deletes)",
+      "estimatedHours": 40,
+      "dependencies": ["phase-2-scalability"],
+      "subtasks": [
+        {
+          "subtaskId": "p3-audit-helper",
+          "title": "Create audit logging helper module",
+          "description": "Create convex/helpers/auditLogger.ts with logPatientAction, logReportAction, logAppointmentAction wrappers that call internal.gdpr.logAction. Derive actorType/actorId from ctx.auth context.",
+          "files": ["convex/helpers/auditLogger.ts"],
+          "estimatedHours": 3,
+          "dependencies": [],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-patients-create-audit",
+          "title": "Add audit logging to patients.create",
+          "description": "Modify convex/patients.ts:create (lines 41-60) to call logPatientAction with action='patient_created' after successful insert. Include patientId, email in details.",
+          "files": ["convex/patients.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p3-audit-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-patients-update-audit",
+          "title": "Add audit logging to patients.update",
+          "description": "Modify convex/patients.ts:update (lines 63-79) to call logPatientAction with action='patient_updated'. Include patientId and changed fields in details.",
+          "files": ["convex/patients.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p3-audit-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-patients-softDelete-audit",
+          "title": "Add audit logging to patients.softDelete",
+          "description": "Modify convex/patients.ts:softDelete (lines 82-94) to call logPatientAction with action='patient_deleted'. Critical for GDPR deletion trail.",
+          "files": ["convex/patients.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p3-audit-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-reports-create-audit",
+          "title": "Add audit logging to reports.create",
+          "description": "Modify convex/reports.ts:create (lines 47-82) to call logReportAction with action='report_created'. Include reportId, patientId, fitForWork status in details.",
+          "files": ["convex/reports.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p3-audit-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-reports-sendToEmployer-audit",
+          "title": "Add audit logging to reports.sendToEmployer",
+          "description": "Modify convex/reports.ts:sendToEmployer (lines 85-92) to call logReportAction with action='report_sent_to_employer'. Critical for GDPR Article 32 accountability.",
+          "files": ["convex/reports.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p3-audit-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-reports-markViewed-audit",
+          "title": "Add audit logging to reports.markViewed",
+          "description": "Modify convex/reports.ts:markViewed (lines 95-102) to call logReportAction with action='report_viewed'. Critical for breach response tracking.",
+          "files": ["convex/reports.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p3-audit-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-appointments-book-audit",
+          "title": "Add audit logging to appointments.book",
+          "description": "Modify convex/appointments.ts:book (lines 77-121) to call logAppointmentAction with action='appointment_booked'. Include appointmentId, patientId, date in details.",
+          "files": ["convex/appointments.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p3-audit-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-appointments-markCompleted-audit",
+          "title": "Add audit logging to appointments.markCompleted",
+          "description": "Modify convex/appointments.ts:markCompleted (lines 124-132) to call logAppointmentAction with action='appointment_completed'. Affects GDPR retention clock.",
+          "files": ["convex/appointments.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p3-audit-helper"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-processErasure-cascading",
+          "title": "Implement cascading delete in processErasure",
+          "description": "Modify convex/gdpr.ts:processErasure (lines 129-160) to cascade redaction to: 1) appointments (redact reasonForAppointment, preAppointmentNotes), 2) reports (redact summary, restrictions, followUpNotes), 3) clinicalNotes (redact findings, diagnosis), 4) consents (set granted=false, withdrawnAt). Use by_patient index on each table.",
+          "files": ["convex/gdpr.ts"],
+          "estimatedHours": 4,
+          "dependencies": [],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-appointments-gdpr-filter",
+          "title": "Add GDPR soft-delete filter to appointments.listByEmployer",
+          "description": "Modify convex/appointments.ts:listByEmployer to exclude appointments where patient.deletedAt is set. After batch fetch of patients, filter out deleted patients from results.",
+          "files": ["convex/appointments.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p2-appointments-listByEmployer-n1-pagination"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-reports-gdpr-filter",
+          "title": "Add GDPR soft-delete filter to reports.listByEmployer",
+          "description": "Modify convex/reports.ts:listByEmployer to exclude reports where patient.deletedAt is set. After batch fetch of patients, filter out deleted patients from results.",
+          "files": ["convex/reports.ts"],
+          "estimatedHours": 2,
+          "dependencies": ["p2-reports-listByEmployer-n1-pagination"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-ui-consent-checkboxes",
+          "title": "Add GDPR consent checkboxes to EmployerRegistrationForm",
+          "description": "Update src/components/employer/EmployerRegistrationForm.tsx (219 LOC) to add consent checkboxes for data_processing, health_data, employer_sharing. Store consent via gdpr.createConsent mutation before employer creation.",
+          "files": ["src/components/employer/EmployerRegistrationForm.tsx"],
+          "estimatedHours": 4,
+          "dependencies": [],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-ui-gdprDashboard-enhancements",
+          "title": "Enhance GDPR Dashboard with compliance status",
+          "description": "Update src/pages/admin/GDPRDashboard.tsx (93 LOC) to show: consent coverage percentage, audit log completeness metrics, erasure request SLA tracking (30-day GDPR deadline).",
+          "files": ["src/pages/admin/GDPRDashboard.tsx"],
+          "estimatedHours": 3,
+          "dependencies": [],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-e2e-gdpr-tests",
+          "title": "Create E2E tests for GDPR compliance",
+          "description": "Create browser-cli based E2E tests that verify: 1) erasure cascades to all related tables, 2) soft-deleted patients excluded from list results, 3) audit logs created for all mutations.",
+          "files": ["BROWSER-CLI/tests/compliance/gdpr.test.ts"],
+          "estimatedHours": 4,
+          "dependencies": ["p3-processErasure-cascading", "p3-appointments-gdpr-filter"],
+          "agentType": "developer"
+        },
+        {
+          "subtaskId": "p3-compliance-verify",
+          "title": "Final compliance verification and documentation",
+          "description": "Verify all GDPR requirements met: audit logging for all mutations, cascading delete complete, soft-delete filters in place. Update GDPR compliance documentation.",
+          "files": [],
+          "estimatedHours": 2,
+          "dependencies": ["p3-e2e-gdpr-tests"],
+          "agentType": "developer"
+        }
+      ]
+    }
+  ],
+  "risks": [
+    {
+      "risk": "Authorization breaks existing flows",
+      "mitigation": "Add auth checks incrementally, run E2E after each change. Provide clear error messages for unauthorized access.",
+      "probability": "medium",
+      "impact": "high"
+    },
+    {
+      "risk": "Pagination breaks frontend components",
+      "mitigation": "Update frontend in same PR as backend pagination. Use optional cursor arg with default to empty for backward compatibility.",
+      "probability": "medium",
+      "impact": "medium"
+    },
+    {
+      "risk": "Cascading delete performance for large patient datasets",
+      "mitigation": "Use indexed queries (by_patient) for all related table lookups. Consider batching if >1000 related records.",
+      "probability": "low",
+      "impact": "medium"
+    },
+    {
+      "risk": "Audit logging adds latency to mutations",
+      "mitigation": "Use ctx.runMutation(internal.gdpr.logAction) which is async. Monitor mutation latency in Convex dashboard.",
+      "probability": "low",
+      "impact": "low"
+    },
+    {
+      "risk": "N+1 fix changes API response shape",
+      "mitigation": "Maintain exact same response shape (enriched objects). Only change is internal query pattern.",
+      "probability": "low",
+      "impact": "medium"
+    },
+    {
+      "risk": "React.lazy breaks SSR if added later",
+      "mitigation": "Current app is client-side only. Document lazy loading pattern for future SSR consideration.",
+      "probability": "low",
+      "impact": "low"
+    }
+  ],
+  "criticalPath": [
+    "p1-auth-helper",
+    "p1-patients-list-auth",
+    "p1-appointments-listByEmployer-auth",
+    "p1-reports-listByEmployer-auth",
+    "p1-employers-verify-admin",
+    "p1-e2e-auth-tests",
+    "p2-pagination-helper",
+    "p2-batch-fetch-helper",
+    "p2-appointments-listByEmployer-n1-pagination",
+    "p2-reports-listByEmployer-n1-pagination",
+    "p2-ui-employeeList-pagination",
+    "p3-audit-helper",
+    "p3-processErasure-cascading",
+    "p3-appointments-gdpr-filter",
+    "p3-e2e-gdpr-tests"
+  ],
+  "fileMatrix": {
+    "backendFiles": [
+      {
+        "path": "convex/patients.ts",
+        "currentLOC": 95,
+        "estimatedFinalLOC": 130,
+        "changes": ["Authorization checks on list/getByEmail", "Pagination on list", "Audit logging on create/update/softDelete"],
+        "totalHours": 11
+      },
+      {
+        "path": "convex/appointments.ts",
+        "currentLOC": 170,
+        "estimatedFinalLOC": 230,
+        "changes": ["Authorization checks on all queries", "N+1 fix with batch fetch", "Pagination on list queries", "GDPR soft-delete filter", "Audit logging on book/markCompleted"],
+        "totalHours": 15
+      },
+      {
+        "path": "convex/reports.ts",
+        "currentLOC": 103,
+        "estimatedFinalLOC": 150,
+        "changes": ["Authorization on listByEmployer", "N+1 fix with batch fetch", "Pagination", "GDPR filter", "Audit logging on create/sendToEmployer/markViewed"],
+        "totalHours": 12
+      },
+      {
+        "path": "convex/employers.ts",
+        "currentLOC": 139,
+        "estimatedFinalLOC": 160,
+        "changes": ["Admin authorization on verify/reject"],
+        "totalHours": 4
+      },
+      {
+        "path": "convex/gdpr.ts",
+        "currentLOC": 229,
+        "estimatedFinalLOC": 300,
+        "changes": ["Pagination on listErasureRequests", "Cascading delete in processErasure"],
+        "totalHours": 6
+      },
+      {
+        "path": "convex/appointmentTypes.ts",
+        "currentLOC": 70,
+        "estimatedFinalLOC": 80,
+        "changes": ["Pagination on listAll"],
+        "totalHours": 2
+      }
+    ],
+    "newBackendModules": [
+      {
+        "path": "convex/authModules/authorization.ts",
+        "purpose": "Reusable authorization helpers",
+        "estimatedLOC": 80,
+        "hours": 4
+      },
+      {
+        "path": "convex/helpers/pagination.ts",
+        "purpose": "Pagination pattern with cursor support",
+        "estimatedLOC": 50,
+        "hours": 3
+      },
+      {
+        "path": "convex/helpers/batchFetch.ts",
+        "purpose": "N+1 elimination via bulk fetching",
+        "estimatedLOC": 40,
+        "hours": 3
+      },
+      {
+        "path": "convex/helpers/auditLogger.ts",
+        "purpose": "Audit logging wrappers",
+        "estimatedLOC": 60,
+        "hours": 3
+      }
+    ],
+    "frontendFiles": [
+      {
+        "path": "src/App.tsx",
+        "currentLOC": 312,
+        "changes": ["React.lazy code splitting", "Error Boundary wrappers"],
+        "hours": 8
+      },
+      {
+        "path": "src/pages/EmployerLayout.tsx",
+        "currentLOC": 50,
+        "changes": ["Auth guard with redirect"],
+        "hours": 2
+      },
+      {
+        "path": "src/pages/DoctorLayout.tsx",
+        "currentLOC": 50,
+        "changes": ["Auth guard with redirect"],
+        "hours": 2
+      },
+      {
+        "path": "src/components/employer/EmployeeList.tsx",
+        "currentLOC": 55,
+        "changes": ["Pagination UI"],
+        "hours": 3
+      },
+      {
+        "path": "src/components/employer/ReportsList.tsx",
+        "currentLOC": 65,
+        "changes": ["Pagination UI"],
+        "hours": 3
+      },
+      {
+        "path": "src/components/employer/EmployerRegistrationForm.tsx",
+        "currentLOC": 219,
+        "changes": ["GDPR consent checkboxes"],
+        "hours": 4
+      },
+      {
+        "path": "src/pages/admin/GDPRDashboard.tsx",
+        "currentLOC": 93,
+        "changes": ["Compliance status metrics"],
+        "hours": 3
+      },
+      {
+        "path": "src/pages/admin/AuditLogs.tsx",
+        "currentLOC": 41,
+        "changes": ["Pagination UI"],
+        "hours": 3
+      },
+      {
+        "path": "src/pages/admin/ErasureRequests.tsx",
+        "currentLOC": 54,
+        "changes": ["Pagination UI"],
+        "hours": 3
+      }
+    ],
+    "newFrontendModules": [
+      {
+        "path": "src/components/ErrorBoundary.tsx",
+        "purpose": "React Error Boundary for graceful error handling",
+        "estimatedLOC": 60,
+        "hours": 4
+      }
+    ]
+  }
+}

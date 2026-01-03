@@ -1,0 +1,27 @@
+{
+  "memoryName": "OCCUHEALTH_REMEDIATION_SESSION_PROGRESS",
+  "linkedAt": "2026-01-03T20:27:55.733Z",
+  "serenaPath": ".serena/memories/OCCUHEALTH_REMEDIATION_SESSION_PROGRESS.md",
+  "summary": "Memory OCCUHEALTH_REMEDIATION_SESSION_PROGRESS linked to session",
+  "forAgents": [
+    "developer",
+    "browser"
+  ],
+  "traceabilityData": {
+    "analyzed_symbols": [],
+    "entry_points": [
+      "q.eq",
+      "appointments.map",
+      "Promise.all",
+      "patientIds.map",
+      "db.get",
+      "patients.map",
+      "patientMap.get",
+      "projects/convex",
+      "ORCHESTRATION/context",
+      "hub/pending",
+      "plans/occuhealth"
+    ],
+    "data_flow_map": {}
+  }
+}
