@@ -1,7 +1,7 @@
 "use client";
 
 import { Routes, Route, Navigate } from "react-router-dom";
-import { Authenticated, Unauthenticated, useMutation, useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 
 // Layout components
@@ -13,15 +13,14 @@ import { HeroSection, FeaturesSection, TestimonialsSection, CTASection } from "@
 // Auth components
 import { SignOutButton, AdminAuthCallback } from "@/components/auth";
 
-// Admin auth
-import { useAdminAuth } from "@/lib/admin-auth";
+// Auth - unified WorkOS provider
+import { useAdminAuth, useWorkOSAuth, EmployerAuthProvider, DoctorAuthProvider } from "@/lib/workos-auth";
 
 // Registration pages
 import { ChooseRole } from "@/pages/register/ChooseRole";
 import { EmployerRegistrationForm } from "@/components/employer/EmployerRegistrationForm";
 
 // Employer Portal
-import { EmployerAuthProvider } from "@/lib/employer-auth";
 import { EmployerLayout } from "@/pages/EmployerLayout";
 import { EmployerDashboard } from "@/pages/employer/Dashboard";
 import { EmployeesPage } from "@/pages/employer/Employees";
@@ -30,7 +29,6 @@ import { ReportsPage } from "@/pages/employer/Reports";
 import { EmployerSettings } from "@/pages/employer/Settings";
 
 // Doctor Portal
-import { DoctorAuthProvider } from "@/lib/doctor-auth";
 import { DoctorLayout } from "@/pages/DoctorLayout";
 import { DoctorDashboard } from "@/pages/doctor/Dashboard";
 import { DoctorAppointments } from "@/pages/doctor/Appointments";
@@ -87,24 +85,24 @@ export default function App() {
 
 // Main app layout (providers/patients)
 function MainLayout() {
+  const { isAuthenticated, isLoading } = useWorkOSAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navigation - conditional based on auth state */}
-      <Unauthenticated>
-        <NavigationBar />
-      </Unauthenticated>
-      <Authenticated>
-        <AuthenticatedNav />
-      </Authenticated>
+      {isAuthenticated ? <AuthenticatedNav /> : <NavigationBar />}
 
       {/* Main Content */}
       <main className="flex-1">
-        <Unauthenticated>
-          <LandingPage />
-        </Unauthenticated>
-        <Authenticated>
-          <Dashboard />
-        </Authenticated>
+        {isAuthenticated ? <Dashboard /> : <LandingPage />}
       </main>
 
       {/* Footer - always visible */}

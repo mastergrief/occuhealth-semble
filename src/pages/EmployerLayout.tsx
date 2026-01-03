@@ -1,7 +1,7 @@
 import { Outlet, NavLink, Navigate } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useEmployerAuth } from "@/lib/employer-auth";
+import { useEmployerAuth } from "@/lib/workos-auth";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,

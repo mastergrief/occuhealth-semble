@@ -34,6 +34,14 @@ export default defineSchema({
     .index("by_email", ["email"]),
 
   // ---------------------------------------------------------------------------
+  // OAuth States (CSRF Protection for WorkOS Auth)
+  // ---------------------------------------------------------------------------
+  oauthStates: defineTable({
+    state: v.string(),
+    expiresAt: v.number(),
+  }).index("by_state", ["state"]),
+
+  // ---------------------------------------------------------------------------
   // Employers (Companies/Insurers)
   // ---------------------------------------------------------------------------
   employers: defineTable({

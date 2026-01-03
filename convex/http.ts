@@ -1,7 +1,6 @@
 import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { auth } from "./auth";
 import { WorkOS } from "@workos-inc/node";
 
 const http = httpRouter();
@@ -27,15 +26,23 @@ function getWorkOS() {
 http.route({
   path: "/auth/login",
   method: "GET",
-  handler: httpAction(async () => {
+  handler: httpAction(async (ctx) => {
     try {
       const workos = getWorkOS();
       const clientId = process.env.WORKOS_CLIENT_ID!;
+
+      // SEC-002 FIX: Generate and store CSRF state
+      const state = crypto.randomUUID();
+      await ctx.runMutation(internal.oauthState.create, {
+        state,
+        expiresAt: Date.now() + 5 * 60 * 1000, // 5-minute TTL
+      });
 
       const authorizationUrl = workos.userManagement.getAuthorizationUrl({
         provider: "authkit",
         redirectUri: `${process.env.CONVEX_SITE_URL}/auth/callback`,
         clientId,
+        state, // Include state parameter for CSRF protection
       });
 
       return Response.redirect(authorizationUrl, 302);
@@ -52,18 +59,34 @@ http.route({
   handler: httpAction(async (ctx, request) => {
     const url = new URL(request.url);
     const code = url.searchParams.get("code");
+    const state = url.searchParams.get("state");
     const error = url.searchParams.get("error");
     const errorDescription = url.searchParams.get("error_description");
+    const appUrl = process.env.APP_URL || "http://localhost:5175";
 
-    // Handle OAuth errors
+    // Handle OAuth errors from WorkOS
     if (error) {
       console.error("WorkOS OAuth error:", error, errorDescription);
-      const appUrl = process.env.APP_URL || "http://localhost:5175";
       return Response.redirect(
         `${appUrl}/login?error=${encodeURIComponent(errorDescription || error)}`,
         302
       );
     }
+
+    // SEC-002 FIX: Validate state parameter (CSRF protection)
+    if (!state) {
+      console.error("Missing OAuth state parameter");
+      return Response.redirect(`${appUrl}/login?error=missing_state`, 302);
+    }
+
+    const storedState = await ctx.runQuery(internal.oauthState.validate, { state });
+    if (!storedState) {
+      console.error("Invalid or expired OAuth state");
+      return Response.redirect(`${appUrl}/login?error=invalid_state`, 302);
+    }
+
+    // Delete used state to prevent replay attacks
+    await ctx.runMutation(internal.oauthState.deleteState, { state });
 
     if (!code) {
       return new Response("Missing authorization code", { status: 400 });
@@ -108,20 +131,21 @@ http.route({
         });
       }
 
-      // Redirect to app with tokens (frontend will store them)
-      const appUrl = process.env.APP_URL || "http://localhost:5175";
-      const redirectUrl = new URL(`${appUrl}/auth/callback`);
-      redirectUrl.searchParams.set("accessToken", accessToken);
+      // SEC-001: Cross-origin auth requires URL params (sessionStorage is origin-specific)
+      // The frontend reads tokens from URL params and immediately processes them
+      // Note: Tokens in URLs appear in browser history - this is acceptable for OAuth flows
+      // as the tokens are short-lived and the callback page processes them immediately
+      const callbackUrl = new URL(`${appUrl}/auth/callback`);
+      callbackUrl.searchParams.set("accessToken", accessToken);
       if (refreshToken) {
-        redirectUrl.searchParams.set("refreshToken", refreshToken);
+        callbackUrl.searchParams.set("refreshToken", refreshToken);
       }
-      redirectUrl.searchParams.set("userId", user.id);
-      redirectUrl.searchParams.set("redirectPath", redirectPath);
+      callbackUrl.searchParams.set("userId", user.id);
+      callbackUrl.searchParams.set("redirectPath", redirectPath);
 
-      return Response.redirect(redirectUrl.toString(), 302);
+      return Response.redirect(callbackUrl.toString(), 302);
     } catch (err) {
       console.error("WorkOS callback error:", err);
-      const appUrl = process.env.APP_URL || "http://localhost:5175";
       return Response.redirect(
         `${appUrl}/login?error=${encodeURIComponent("Authentication failed")}`,
         302
@@ -129,11 +153,6 @@ http.route({
     }
   }),
 });
-
-// ---------------------------------------------------------------------------
-// Auth Routes (Convex Auth)
-// ---------------------------------------------------------------------------
-auth.addHttpRoutes(http);
 
 // ---------------------------------------------------------------------------
 // Health Check Endpoint

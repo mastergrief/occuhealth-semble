@@ -1,7 +1,7 @@
 import { Outlet, NavLink, Navigate } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { useDoctorAuth } from "@/lib/doctor-auth";
+import { useDoctorAuth } from "@/lib/workos-auth";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, Calendar, Clock, FileText, Settings, LogOut } from "lucide-react";
 

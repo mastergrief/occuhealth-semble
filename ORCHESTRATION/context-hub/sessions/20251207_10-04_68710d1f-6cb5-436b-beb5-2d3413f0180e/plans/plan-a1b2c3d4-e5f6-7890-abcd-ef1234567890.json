@@ -2,176 +2,784 @@
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "type": "plan",
   "metadata": {
-    "promptId": "534382a5-a10b-43b6-b57e-980e37b8786c",
-    "sessionId": "20251230_17-51_a9a61e86-ef49-4168-80e1-471e8175e0e0",
-    "timestamp": "2025-12-30T17:55:00.000Z",
+    "promptId": "00000000-0000-0000-0000-000000000001",
+    "sessionId": "20260103_16-24_62970f3d-79a2-49c5-afa2-b9c65b32ae15",
+    "timestamp": "2026-01-03T16:24:00.000Z",
     "version": "1.0.0"
   },
-  "summary": "Fix 4 critical/high security vulnerabilities in workout logging API: add authentication and authorization to getWorkoutById, add coach-athlete relationship checks to getAthleteHistory and getWorkoutLogForDate, and add input validation for 6 category-specific fields in logSet mutation",
+  "summary": "WorkOS Auth Migration - Replace Convex Auth with WorkOS AuthKit across 6 sprints: Security hardening (CSRF, token handling), landing page migration, context unification, Playwright E2E testing, and cleanup of deprecated code. Total ~473 LOC removed.",
   "phases": [
     {
-      "id": "phase-1",
-      "name": "Authorization Fixes",
-      "description": "Add authentication and authorization checks to 3 query functions that currently lack proper access control",
-      "subtasks": [
-        {
-          "id": "task-1.1",
-          "description": "C1: Add authentication and ownership/relationship check to getWorkoutById - currently returns workout data to ANY caller without auth. Must: (1) require authentication via getAuthUserId, (2) verify caller owns workout OR is coach with active relationship to workout owner",
-          "agentType": "developer",
-          "priority": "critical",
-          "dependencies": [],
-          "estimatedTokens": 4000,
-          "context": {
-            "files": [
-              "convex/workoutLogsModules/queries.ts"
-            ]
-          },
-          "acceptanceCriteria": [
-            "getAuthUserId() called and throws if null",
-            "Workout fetched and existence verified",
-            "Ownership check: workout.athleteId === userId allows access",
-            "Coach check: user.role === 'coach' AND active coachAthleteRelationships entry exists",
-            "Throws 'Not authorized' if neither condition met"
-          ]
-        },
-        {
-          "id": "task-1.2",
-          "description": "C2: Add coach-athlete relationship verification to getAthleteHistory - currently only checks user.role === 'coach' but allows ANY coach to view ANY athlete's history. Must verify active relationship exists between requesting coach and target athlete",
-          "agentType": "developer",
-          "priority": "critical",
-          "dependencies": [],
-          "estimatedTokens": 3000,
-          "context": {
-            "files": [
-              "convex/workoutLogsModules/queries.ts"
-            ]
-          },
-          "acceptanceCriteria": [
-            "After role check, query coachAthleteRelationships table",
-            "Use by_coach index with coachId = user._id",
-            "Filter for athleteId = args.athleteId",
-            "Verify relationship.status === 'active'",
-            "Throw 'No active relationship with this athlete' if not found/inactive"
-          ]
-        },
-        {
-          "id": "task-1.3",
-          "description": "C2b: Add coach-athlete relationship verification to getWorkoutLogForDate - currently checks role === 'coach' OR userId === athleteId, but allows ANY coach to view ANY athlete's logs. Must verify active relationship for coach access",
-          "agentType": "developer",
-          "priority": "critical",
-          "dependencies": [],
-          "estimatedTokens": 3000,
-          "context": {
-            "files": [
-              "convex/workoutLogsModules/queries.ts"
-            ]
-          },
-          "acceptanceCriteria": [
-            "Keep existing athlete self-access check (userId === args.athleteId)",
-            "For coaches: add relationship query before allowing access",
-            "Use coachAthleteRelationships with by_coach index",
-            "Verify status === 'active'",
-            "Throw if coach lacks relationship"
-          ]
-        }
-      ],
-      "parallelizable": true,
-      "gateCondition": "All 3 authorization subtasks complete, no new errors introduced"
-    },
-    {
-      "id": "phase-2",
-      "name": "Input Validation",
-      "description": "Add bounds validation for 6 category-specific fields in logSet mutation that currently accept any number",
+      "id": "phase-1-parallel",
+      "name": "Foundation (Parallel: Sprint 02 + Sprint 03)",
+      "description": "Security hardening and landing page migration can execute in parallel as they have no dependencies on each other",
       "subtasks": [
         {
           "id": "task-2.1",
-          "description": "C3: Add validation for 6 unvalidated fields in logSet mutation: actualTime (0-86400 seconds), actualDistance (0-100000 meters), actualVelocity (0-50 m/s), actualJumpHeight (0-300 cm), actualPowerOutput (0-10000 watts), actualAverageHeartRate (30-250 BPM)",
+          "description": "Add oauthStates table to convex/schema.ts with state string field, expiresAt number field, and by_state index",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": [],
+          "estimatedTokens": 2000,
+          "context": {
+            "files": [
+              "convex/schema.ts"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY",
+              "DB_SCHEMA_CONTEXT_FOR_WORKOS_MIGRATION"
+            ],
+            "prompt": "Add oauthStates table to schema: defineTable({ state: v.string(), expiresAt: v.number() }).index('by_state', ['state'])"
+          },
+          "acceptanceCriteria": [
+            "oauthStates table defined in schema.ts",
+            "by_state index created for state field",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-2.2",
+          "description": "Create convex/oauthState.ts with internal mutations: create (state, expiresAt), validate (query by state, check expiry), delete (remove used state)",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": [
+            "task-2.1"
+          ],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": [
+              "convex/oauthState.ts"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
+            ],
+            "prompt": "Create oauthState.ts with: internalMutation create(state, expiresAt), internalQuery validate(state) returns null if expired, internalMutation delete_(state)"
+          },
+          "acceptanceCriteria": [
+            "convex/oauthState.ts created with 3 internal functions",
+            "Proper Convex types and validators used",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-2.3",
+          "description": "Fix /auth/login route in convex/http.ts - add state parameter generation using crypto.randomUUID(), store in oauthStates table with 5-minute TTL",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": [
+            "task-2.2"
+          ],
+          "estimatedTokens": 3500,
+          "context": {
+            "files": [
+              "convex/http.ts"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
+            ],
+            "prompt": "Update /auth/login handler: generate state = crypto.randomUUID(), call ctx.runMutation(internal.oauthState.create, { state, expiresAt: Date.now() + 5*60*1000 }), add state to getAuthorizationUrl params"
+          },
+          "acceptanceCriteria": [
+            "State parameter generated in /auth/login",
+            "State stored in oauthStates table",
+            "State passed to WorkOS authorization URL",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-2.4",
+          "description": "Fix /auth/callback route - validate state parameter, delete used state, replace URL redirect with POST form auto-submit for tokens (SEC-001 + SEC-002)",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": [
+            "task-2.3"
+          ],
+          "estimatedTokens": 4500,
+          "context": {
+            "files": [
+              "convex/http.ts"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
+            ],
+            "prompt": "In /auth/callback: 1) Extract state from URL params, 2) Validate via ctx.runQuery(internal.oauthState.validate), 3) Return error if invalid, 4) Delete used state, 5) Replace Response.redirect with HTML form POST auto-submit"
+          },
+          "acceptanceCriteria": [
+            "State parameter validated before token exchange",
+            "Invalid/expired state returns error redirect",
+            "Used state deleted from database",
+            "Tokens sent via POST form instead of URL params",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-2.5",
+          "description": "Add token expiration validation to auth contexts (admin-auth.tsx, employer-auth.tsx, doctor-auth.tsx) - check JWT exp claim on load, clear if expired",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": [
+              "src/lib/admin-auth.tsx",
+              "src/lib/employer-auth.tsx",
+              "src/lib/doctor-auth.tsx"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
+            ],
+            "prompt": "Add isTokenExpired(token) function that decodes JWT, checks exp * 1000 < Date.now(). In useEffect that loads localStorage, check expiration and clear if expired."
+          },
+          "acceptanceCriteria": [
+            "isTokenExpired helper function added",
+            "All 3 auth contexts check token expiration on load",
+            "Expired tokens cleared from localStorage",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-2.6",
+          "description": "Update AdminAuthCallback.tsx to handle POST form submission instead of URL params - extract tokens from form data or dedicated endpoint",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-2.4"
+          ],
+          "estimatedTokens": 2500,
+          "context": {
+            "files": [
+              "src/components/auth/AdminAuthCallback.tsx"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
+            ],
+            "prompt": "Update callback component to receive tokens via POST. Consider using a React Router action or parsing form submission data."
+          },
+          "acceptanceCriteria": [
+            "Callback handles POST form submission",
+            "Tokens extracted correctly",
+            "Auth state set after successful callback",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-3.1",
+          "description": "Replace AuthModal in NavigationBar.tsx with WorkOS direct links - desktop login button (lines 43-50) and mobile login button (lines 73-80)",
           "agentType": "developer",
           "priority": "high",
           "dependencies": [],
           "estimatedTokens": 2500,
           "context": {
             "files": [
-              "convex/workoutLogsModules/mutations.ts"
-            ]
+              "src/components/layout/NavigationBar.tsx"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"
+            ],
+            "prompt": "Replace AuthModal with Button asChild wrapping <a href> to /auth/login. Use import.meta.env.VITE_CONVEX_URL.replace('.cloud', '.site')/auth/login pattern. Remove AuthModal import."
           },
           "acceptanceCriteria": [
-            "actualTime: 0-86400 (seconds in a day)",
-            "actualDistance: 0-100000 (100km max)",
-            "actualVelocity: 0-50 (m/s, sprint max)",
-            "actualJumpHeight: 0-300 (cm, world record ~250)",
-            "actualPowerOutput: 0-10000 (watts, elite cyclist peak)",
-            "actualAverageHeartRate: 30-250 (physiological range)",
-            "All use same pattern as existing validation",
-            "Clear error messages with valid range"
-          ]
-        }
-      ],
-      "parallelizable": true,
-      "gateCondition": "All 6 validation checks added with appropriate bounds"
-    },
-    {
-      "id": "phase-3",
-      "name": "Verification",
-      "description": "Run typecheck and verify all security patterns are correctly implemented",
-      "subtasks": [
-        {
-          "id": "task-3.1",
-          "description": "Run TypeScript typecheck to verify no type errors introduced",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [
-            "task-1.1",
-            "task-1.2",
-            "task-1.3",
-            "task-2.1"
-          ],
-          "estimatedTokens": 1000,
-          "context": {},
-          "acceptanceCriteria": [
-            "TypeScript compiles without errors",
-            "No new type warnings in modified files"
+            "Desktop login button links to /auth/login",
+            "Mobile login button links to /auth/login",
+            "AuthModal import removed",
+            "No dialog/modal on login click",
+            "npm run typecheck passes"
           ]
         },
         {
           "id": "task-3.2",
-          "description": "Verify security patterns match established codebase conventions",
+          "description": "Update HeroSection.tsx CTA button - replace onDemoClick handler with direct WorkOS login link",
           "agentType": "developer",
-          "priority": "high",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 1500,
+          "context": {
+            "files": [
+              "src/components/landing/HeroSection.tsx"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"
+            ],
+            "prompt": "Change Get Started button to use asChild with <a href> to /auth/login. Remove onDemoClick prop if unused."
+          },
+          "acceptanceCriteria": [
+            "CTA button links directly to WorkOS login",
+            "Unused props removed",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-3.3",
+          "description": "Remove floating Provider Login button from App.tsx (lines 234-245) - login now in nav bar",
+          "agentType": "developer",
+          "priority": "low",
+          "dependencies": [],
+          "estimatedTokens": 1000,
+          "context": {
+            "files": [
+              "src/App.tsx"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"
+            ],
+            "prompt": "Delete the fixed bottom-6 right-6 Provider Login button block. Login is now available in NavigationBar."
+          },
+          "acceptanceCriteria": [
+            "Floating button removed from App.tsx",
+            "No duplicate login entry points",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-3.4",
+          "description": "Update src/components/auth/index.ts exports - prepare for future removal of SignInForm and AuthModal",
+          "agentType": "developer",
+          "priority": "low",
           "dependencies": [
             "task-3.1"
           ],
-          "estimatedTokens": 1500,
-          "context": {},
+          "estimatedTokens": 500,
+          "context": {
+            "files": [
+              "src/components/auth/index.ts"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"
+            ],
+            "prompt": "Comment out or mark deprecated: SignInForm, AuthModal exports. Keep SignOutButton and AdminAuthCallback."
+          },
           "acceptanceCriteria": [
-            "getWorkoutById has auth + ownership/relationship check",
-            "getAthleteHistory has relationship verification",
-            "getWorkoutLogForDate has relationship verification for coaches",
-            "logSet has 6 additional validation blocks",
-            "All error messages are descriptive"
+            "Exports updated to reflect deprecation",
+            "No import errors in codebase",
+            "npm run typecheck passes"
+          ]
+        }
+      ],
+      "parallelizable": true,
+      "gateCondition": "All tasks complete, npm run typecheck passes, security fixes verifiable via manual test"
+    },
+    {
+      "id": "phase-2-context",
+      "name": "Context Unification (Sprint 04)",
+      "description": "Create unified WorkOSAuthProvider to replace 3 separate auth contexts. Optional but recommended for maintainability.",
+      "subtasks": [
+        {
+          "id": "task-4.1",
+          "description": "Create src/lib/workos-auth.tsx with unified WorkOSAuthProvider - single context handling all 3 roles (admin, employer, doctor)",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 5000,
+          "context": {
+            "files": [
+              "src/lib/workos-auth.tsx"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"
+            ],
+            "prompt": "Create WorkOSAuthProvider with: UserRole type, AuthTokens interface, storage keys map, isTokenExpired check, multi-tab sync, memoized context value. Export useWorkOSAuth hook and backward-compatible useAdminAuth, useEmployerAuth, useDoctorAuth hooks."
+          },
+          "acceptanceCriteria": [
+            "WorkOSAuthProvider created with generic role handling",
+            "Token expiration validation included",
+            "Multi-tab logout sync implemented",
+            "Backward-compatible hooks exported",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-4.2",
+          "description": "Update main.tsx provider hierarchy - replace AdminAuthProvider with WorkOSAuthProvider",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [
+            "task-4.1"
+          ],
+          "estimatedTokens": 1500,
+          "context": {
+            "files": [
+              "src/main.tsx"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"
+            ],
+            "prompt": "Replace AdminAuthProvider import with WorkOSAuthProvider. Update JSX to use single WorkOSAuthProvider wrapping App."
+          },
+          "acceptanceCriteria": [
+            "WorkOSAuthProvider wraps entire app",
+            "Old provider imports removed",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-4.3",
+          "description": "Update App.tsx routes - remove EmployerAuthProvider and DoctorAuthProvider wrappers from route elements",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [
+            "task-4.1"
+          ],
+          "estimatedTokens": 2000,
+          "context": {
+            "files": [
+              "src/App.tsx"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"
+            ],
+            "prompt": "Remove EmployerAuthProvider and DoctorAuthProvider from route element wrappers. Routes now use unified provider from main.tsx."
+          },
+          "acceptanceCriteria": [
+            "No route-level auth provider wrappers",
+            "Provider imports removed",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-4.4",
+          "description": "Update all hook imports across components - change from individual auth files to workos-auth.tsx",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [
+            "task-4.1"
+          ],
+          "estimatedTokens": 3000,
+          "context": {
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"
+            ],
+            "prompt": "Find all imports of useAdminAuth, useEmployerAuth, useDoctorAuth and update source from @/lib/admin-auth, employer-auth, doctor-auth to @/lib/workos-auth."
+          },
+          "acceptanceCriteria": [
+            "All auth hook imports updated",
+            "No remaining imports from old auth files",
+            "npm run typecheck passes"
           ]
         }
       ],
       "parallelizable": false,
-      "gateCondition": "Typecheck passes, all security patterns verified"
+      "gateCondition": "All context tasks complete, npm run typecheck passes, login/logout works for all 3 roles"
+    },
+    {
+      "id": "phase-3-e2e",
+      "name": "Playwright E2E Testing (Sprint 05)",
+      "description": "Create comprehensive E2E tests for WorkOS authentication flows before cleanup phase",
+      "subtasks": [
+        {
+          "id": "task-5.1",
+          "description": "Setup Playwright configuration - create playwright.config.ts with projects for chromium, firefox, webkit and webServer config",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 2000,
+          "context": {
+            "files": [
+              "playwright.config.ts"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
+            ],
+            "prompt": "Create playwright.config.ts with baseURL localhost:5175, 30s timeout, html reporter, 3 browser projects, webServer running npm run dev."
+          },
+          "acceptanceCriteria": [
+            "playwright.config.ts created",
+            "All 3 browser projects configured",
+            "webServer config points to dev server"
+          ]
+        },
+        {
+          "id": "task-5.2",
+          "description": "Create tests/e2e/auth/login.spec.ts - test login button redirects, hero CTA, mobile nav, no modal appears",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-5.1"
+          ],
+          "estimatedTokens": 4000,
+          "context": {
+            "files": [
+              "tests/e2e/auth/login.spec.ts"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
+            ],
+            "prompt": "Create login.spec.ts with tests: desktop login redirects to WorkOS, hero CTA redirects, mobile nav login works, no AuthModal appears on click."
+          },
+          "acceptanceCriteria": [
+            "Login flow tests created",
+            "Tests verify redirect to WorkOS",
+            "Tests verify no modal opens"
+          ]
+        },
+        {
+          "id": "task-5.3",
+          "description": "Create tests/e2e/auth/role-routing.spec.ts - test role-based routing for admin, employer, doctor, and unauthenticated users",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-5.1"
+          ],
+          "estimatedTokens": 4000,
+          "context": {
+            "files": [
+              "tests/e2e/auth/role-routing.spec.ts"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
+            ],
+            "prompt": "Create role-routing.spec.ts with tests: admin token routes to /admin, employer token routes to /employer, doctor token routes to /doctor, unauthenticated redirected from protected routes, expired token cleared."
+          },
+          "acceptanceCriteria": [
+            "Role routing tests for all 3 roles",
+            "Unauthenticated access test",
+            "Token expiration test"
+          ]
+        },
+        {
+          "id": "task-5.4",
+          "description": "Create tests/e2e/auth/logout.spec.ts - test logout clears storage, redirects, and multi-tab sync",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [
+            "task-5.1"
+          ],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": [
+              "tests/e2e/auth/logout.spec.ts"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
+            ],
+            "prompt": "Create logout.spec.ts with tests: admin logout clears storage and redirects, multi-tab logout sync (logout in tab1 reflects in tab2)."
+          },
+          "acceptanceCriteria": [
+            "Logout tests created",
+            "Storage clearing verified",
+            "Multi-tab sync test included"
+          ]
+        },
+        {
+          "id": "task-5.5",
+          "description": "Create tests/e2e/fixtures/auth.fixture.ts - reusable fixtures for authenticated pages (admin, employer, doctor)",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [
+            "task-5.1"
+          ],
+          "estimatedTokens": 2500,
+          "context": {
+            "files": [
+              "tests/e2e/fixtures/auth.fixture.ts"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
+            ],
+            "prompt": "Create auth.fixture.ts with Playwright test.extend: authenticatedAdminPage, authenticatedEmployerPage, authenticatedDoctorPage fixtures that inject localStorage tokens."
+          },
+          "acceptanceCriteria": [
+            "Auth fixtures created",
+            "All 3 role fixtures working",
+            "Fixtures usable in other tests"
+          ]
+        },
+        {
+          "id": "task-5.6",
+          "description": "Add E2E test scripts to package.json and verify all tests pass",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-5.2",
+            "task-5.3",
+            "task-5.4",
+            "task-5.5"
+          ],
+          "estimatedTokens": 1500,
+          "context": {
+            "files": [
+              "package.json"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
+            ],
+            "prompt": "Add scripts: test:e2e, test:e2e:ui, test:e2e:auth, test:e2e:headed. Add @playwright/test devDependency if missing."
+          },
+          "acceptanceCriteria": [
+            "E2E scripts added to package.json",
+            "Playwright dependency present",
+            "npm run test:e2e:auth passes"
+          ]
+        },
+        {
+          "id": "task-5.7",
+          "description": "Run E2E test suite with browser-cli and verify all auth flows work",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": [
+            "task-5.6"
+          ],
+          "estimatedTokens": 5000,
+          "context": {
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
+            ],
+            "prompt": "Use browser-cli to manually verify: 1) Landing page login button redirects, 2) No modal appears, 3) Each role can access their portal with injected localStorage tokens, 4) Logout clears state."
+          },
+          "acceptanceCriteria": [
+            "All E2E tests pass",
+            "Manual browser verification complete",
+            "Screenshots captured as evidence"
+          ]
+        }
+      ],
+      "parallelizable": true,
+      "gateCondition": "All E2E tests pass (npm run test:e2e:auth), browser verification complete"
+    },
+    {
+      "id": "phase-4-cleanup",
+      "name": "Cleanup & Documentation (Sprint 06)",
+      "description": "Delete deprecated Convex Auth code after E2E tests confirm migration success. DESTRUCTIVE - requires E2E gate pass.",
+      "subtasks": [
+        {
+          "id": "task-6.1",
+          "description": "Delete src/components/auth/AuthModal.tsx (42 LOC)",
+          "agentType": "developer",
+          "priority": "low",
+          "dependencies": [],
+          "estimatedTokens": 500,
+          "context": {
+            "files": [
+              "src/components/auth/AuthModal.tsx"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
+            ],
+            "prompt": "Delete AuthModal.tsx file. Verify no remaining imports."
+          },
+          "acceptanceCriteria": [
+            "AuthModal.tsx deleted",
+            "No broken imports",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-6.2",
+          "description": "Delete src/components/auth/SignInForm.tsx (115 LOC)",
+          "agentType": "developer",
+          "priority": "low",
+          "dependencies": [],
+          "estimatedTokens": 500,
+          "context": {
+            "files": [
+              "src/components/auth/SignInForm.tsx"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
+            ],
+            "prompt": "Delete SignInForm.tsx file. Verify no remaining imports."
+          },
+          "acceptanceCriteria": [
+            "SignInForm.tsx deleted",
+            "No broken imports",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-6.3",
+          "description": "Delete convex/auth.ts (6 LOC) and convex/auth.config.ts (8 LOC)",
+          "agentType": "developer",
+          "priority": "low",
+          "dependencies": [],
+          "estimatedTokens": 500,
+          "context": {
+            "files": [
+              "convex/auth.ts",
+              "convex/auth.config.ts"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
+            ],
+            "prompt": "Delete both auth backend files. Remove auth.addHttpRoutes(http) from http.ts if present."
+          },
+          "acceptanceCriteria": [
+            "auth.ts and auth.config.ts deleted",
+            "auth.addHttpRoutes removed from http.ts",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-6.4",
+          "description": "Delete legacy auth contexts: src/lib/admin-auth.tsx (83 LOC), employer-auth.tsx (112 LOC), doctor-auth.tsx (107 LOC) - only if Sprint 04 completed",
+          "agentType": "developer",
+          "priority": "low",
+          "dependencies": [],
+          "estimatedTokens": 500,
+          "context": {
+            "files": [
+              "src/lib/admin-auth.tsx",
+              "src/lib/employer-auth.tsx",
+              "src/lib/doctor-auth.tsx"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
+            ],
+            "prompt": "Delete all 3 legacy auth context files. Only execute if Sprint 04 (context unification) was completed. Verify no remaining imports."
+          },
+          "acceptanceCriteria": [
+            "Legacy auth files deleted (if Sprint 04 done)",
+            "All imports updated to workos-auth.tsx",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-6.5",
+          "description": "Update src/components/auth/index.ts - remove deleted exports (SignInForm, AuthModal)",
+          "agentType": "developer",
+          "priority": "low",
+          "dependencies": [
+            "task-6.1",
+            "task-6.2"
+          ],
+          "estimatedTokens": 500,
+          "context": {
+            "files": [
+              "src/components/auth/index.ts"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
+            ],
+            "prompt": "Remove SignInForm and AuthModal exports. Keep SignOutButton and AdminAuthCallback."
+          },
+          "acceptanceCriteria": [
+            "Exports cleaned up",
+            "Only active components exported",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-6.6",
+          "description": "Update SignOutButton.tsx to use WorkOS auth instead of Convex Auth",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 1500,
+          "context": {
+            "files": [
+              "src/components/auth/SignOutButton.tsx"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
+            ],
+            "prompt": "Replace useConvexAuth and useAuthActions with useWorkOSAuth. Update onClick to call logout from WorkOS context."
+          },
+          "acceptanceCriteria": [
+            "SignOutButton uses WorkOS auth",
+            "No Convex Auth imports remain",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-6.7",
+          "description": "Update README.md - replace Convex Auth documentation with WorkOS AuthKit info",
+          "agentType": "developer",
+          "priority": "low",
+          "dependencies": [],
+          "estimatedTokens": 1500,
+          "context": {
+            "files": [
+              "README.md"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
+            ],
+            "prompt": "Update README authentication section to document WorkOS AuthKit, 3 user roles, OAuth flow, environment variables."
+          },
+          "acceptanceCriteria": [
+            "README reflects WorkOS auth",
+            "Environment variables documented",
+            "OAuth flow explained"
+          ]
+        },
+        {
+          "id": "task-6.8",
+          "description": "Create DOCUMENTS/AUTH.md with comprehensive authentication architecture documentation",
+          "agentType": "developer",
+          "priority": "low",
+          "dependencies": [],
+          "estimatedTokens": 2000,
+          "context": {
+            "files": [
+              "DOCUMENTS/AUTH.md"
+            ],
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
+            ],
+            "prompt": "Create AUTH.md documenting: role table, OAuth flow diagram, token management, security considerations, troubleshooting guide."
+          },
+          "acceptanceCriteria": [
+            "AUTH.md created",
+            "Flow diagram included",
+            "Troubleshooting section complete"
+          ]
+        },
+        {
+          "id": "task-6.9",
+          "description": "Final verification - run typecheck, verify no @convex-dev/auth references, run E2E tests",
+          "agentType": "analyst",
+          "priority": "high",
+          "dependencies": [
+            "task-6.1",
+            "task-6.2",
+            "task-6.3",
+            "task-6.4",
+            "task-6.5",
+            "task-6.6"
+          ],
+          "estimatedTokens": 2000,
+          "context": {
+            "memories": [
+              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
+            ],
+            "prompt": "Run: npm run typecheck, grep -r '@convex-dev/auth' src/ convex/, grep -r 'AuthModal' src/, npm run test:e2e:auth. Verify all pass/return empty."
+          },
+          "acceptanceCriteria": [
+            "Typecheck passes",
+            "No Convex Auth references remain",
+            "E2E tests still pass",
+            "~473 LOC removed verified"
+          ]
+        }
+      ],
+      "parallelizable": false,
+      "gateCondition": "All cleanup tasks complete, final verification passes, no broken imports, E2E tests pass"
     }
   ],
-  "totalEstimatedTokens": 15000,
+  "totalEstimatedTokens": 59000,
   "risks": [
     {
-      "description": "Breaking existing functionality - coaches may currently rely on unrestricted access",
-      "mitigation": "The relationship check uses established pattern from trainingBlockMarkers; existing coach-athlete relationships will continue to work",
-      "severity": "low"
+      "description": "SEC-001/SEC-002 fixes may break existing OAuth flow if not tested incrementally",
+      "mitigation": "Test each security fix independently before proceeding. Keep Convex Auth routes active until Sprint 06.",
+      "severity": "critical"
     },
     {
-      "description": "Validation bounds too restrictive for edge cases",
-      "mitigation": "Bounds based on physiological limits with generous margins (e.g., 300cm jump height vs 250cm world record)",
-      "severity": "low"
+      "description": "POST form token submission requires frontend callback component changes",
+      "mitigation": "Task 2.6 explicitly handles AdminAuthCallback update. Consider adding loading state during form auto-submit.",
+      "severity": "high"
     },
     {
-      "description": "Import of coachAthleteRelationships types may be needed",
-      "mitigation": "Queries already use this table elsewhere in codebase; pattern is established",
-      "severity": "low"
+      "description": "Context unification (Sprint 04) may introduce subtle auth state bugs",
+      "mitigation": "Sprint 04 is marked optional. Legacy contexts remain functional until E2E tests pass.",
+      "severity": "medium"
+    },
+    {
+      "description": "E2E tests may be flaky due to WorkOS external redirect",
+      "mitigation": "Tests inject localStorage tokens directly rather than going through full OAuth flow. Real OAuth tested manually.",
+      "severity": "medium"
+    },
+    {
+      "description": "Cleanup phase (Sprint 06) is destructive and irreversible without git",
+      "mitigation": "E2E gate must pass before cleanup. Rollback procedure documented in sprint memory.",
+      "severity": "high"
     }
   ]
 }

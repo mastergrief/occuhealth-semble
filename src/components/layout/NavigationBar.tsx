@@ -3,7 +3,11 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Stethoscope } from "lucide-react"
 import { Container } from "./Container"
-import { AuthModal } from "@/components/auth"
+
+const getLoginUrl = () => {
+  const baseUrl = import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site');
+  return `${baseUrl}/auth/login`;
+};
 
 export function NavigationBar() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -40,14 +44,12 @@ export function NavigationBar() {
 
           {/* Desktop CTAs */}
           <div className="hidden md:flex items-center gap-3">
-            <AuthModal
-              trigger={<Button variant="ghost">Login</Button>}
-              initialFlow="signIn"
-            />
-            <AuthModal
-              trigger={<Button variant="medical">Request Demo</Button>}
-              initialFlow="signUp"
-            />
+            <Button variant="ghost" asChild>
+              <a href={getLoginUrl()}>Login</a>
+            </Button>
+            <Button variant="medical" asChild>
+              <a href={getLoginUrl()}>Request Demo</a>
+            </Button>
           </div>
 
           {/* Mobile Menu */}
@@ -70,14 +72,12 @@ export function NavigationBar() {
                   </a>
                 ))}
                 <div className="flex flex-col gap-2 mt-4">
-                  <AuthModal
-                    trigger={<Button variant="outline" className="w-full">Login</Button>}
-                    initialFlow="signIn"
-                  />
-                  <AuthModal
-                    trigger={<Button variant="medical" className="w-full">Request Demo</Button>}
-                    initialFlow="signUp"
-                  />
+                  <Button variant="outline" className="w-full" asChild>
+                    <a href={getLoginUrl()}>Login</a>
+                  </Button>
+                  <Button variant="medical" className="w-full" asChild>
+                    <a href={getLoginUrl()}>Request Demo</a>
+                  </Button>
                 </div>
               </div>
             </SheetContent>

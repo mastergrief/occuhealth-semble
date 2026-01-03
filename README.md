@@ -7,7 +7,7 @@ A full-stack starter template with **Convex** backend and **Semble** healthcare 
 - 🏥 **Semble Integration** - GraphQL API client with token caching
 - 🔄 **Real-time Sync** - Webhook handlers for patient/appointment updates
 - 💾 **Local Caching** - Convex tables for offline access and fast queries
-- 🔐 **Convex Auth** - Built-in authentication (Password provider)
+- 🔐 **WorkOS AuthKit** - OAuth 2.0 authentication with role-based routing
 - ⚡ **React 19 + Vite** - Modern frontend stack
 - 🎨 **Tailwind CSS v4** - Utility-first styling
 - 📝 **TypeScript** - Full type safety with tsgo
@@ -40,12 +40,42 @@ CONVEX_DEPLOYMENT=dev:your-deployment
 VITE_CONVEX_URL=https://your-deployment.convex.cloud
 ```
 
+## Authentication
+
+This application uses **WorkOS AuthKit** for OAuth 2.0 authentication.
+
+### User Roles
+
+| Role | Portal | Features |
+|------|--------|----------|
+| Admin | `/admin` | Employer verification, erasure requests |
+| Employer | `/employer` | Patient management, appointment scheduling |
+| Doctor | `/doctor` | Appointments, clinical notes, reports |
+
+### Environment Variables
+
+| Variable | Purpose | Required |
+|----------|---------|----------|
+| `WORKOS_API_KEY` | WorkOS API secret (backend only) | Yes |
+| `WORKOS_CLIENT_ID` | WorkOS OAuth client ID | Yes |
+| `CONVEX_SITE_URL` | OAuth redirect URI base | Yes |
+| `APP_URL` | Frontend redirect after auth | Optional |
+
+### Auth Flow
+
+1. User clicks "Login" -> Redirected to WorkOS AuthKit
+2. User authenticates with WorkOS
+3. WorkOS redirects to `/auth/callback` with tokens
+4. Backend detects user role and routes to appropriate portal
+
+For detailed auth architecture, see [DOCUMENTS/AUTH.md](DOCUMENTS/AUTH.md).
+
 ## Project Structure
 
 ```
 convex/
-├── auth.ts              # Convex Auth setup
 ├── http.ts              # HTTP routes (auth + webhooks)
+├── oauthState.ts        # CSRF state management
 ├── schema.ts            # Database schema
 ├── semble.ts            # Semble API integration
 ├── sembleWebhooks.ts    # Webhook event handlers
@@ -136,6 +166,8 @@ await ctx.runAction(api.semble.syncPatients, {});
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
+| `/auth/login` | GET | Initiate OAuth flow with WorkOS |
+| `/auth/callback` | GET | OAuth callback handler |
 | `/webhooks/semble` | POST | Semble webhook receiver |
 | `/health` | GET | Health check |
 
@@ -143,7 +175,7 @@ await ctx.runAction(api.semble.syncPatients, {});
 
 - [Semble API Docs](https://docs.semble.io/)
 - [Convex Docs](https://docs.convex.dev/)
-- [Convex Auth](https://labs.convex.dev/auth)
+- [WorkOS AuthKit](https://workos.com/docs/user-management)
 
 ## License
 

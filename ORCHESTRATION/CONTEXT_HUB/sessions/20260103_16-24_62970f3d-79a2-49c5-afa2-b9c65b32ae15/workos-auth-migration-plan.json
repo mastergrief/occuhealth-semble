@@ -13,6 +13,7 @@
       "id": "phase-1-parallel",
       "name": "Foundation (Parallel: Sprint 02 + Sprint 03)",
       "description": "Security hardening and landing page migration can execute in parallel as they have no dependencies on each other",
+      "parallelizable": true,
       "subtasks": [
         {
           "id": "task-2.1",
@@ -22,13 +23,8 @@
           "dependencies": [],
           "estimatedTokens": 2000,
           "context": {
-            "files": [
-              "convex/schema.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY",
-              "DB_SCHEMA_CONTEXT_FOR_WORKOS_MIGRATION"
-            ],
+            "files": ["convex/schema.ts"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY", "DB_SCHEMA_CONTEXT_FOR_WORKOS_MIGRATION"],
             "prompt": "Add oauthStates table to schema: defineTable({ state: v.string(), expiresAt: v.number() }).index('by_state', ['state'])"
           },
           "acceptanceCriteria": [
@@ -42,17 +38,11 @@
           "description": "Create convex/oauthState.ts with internal mutations: create (state, expiresAt), validate (query by state, check expiry), delete (remove used state)",
           "agentType": "developer",
           "priority": "critical",
-          "dependencies": [
-            "task-2.1"
-          ],
+          "dependencies": ["task-2.1"],
           "estimatedTokens": 3000,
           "context": {
-            "files": [
-              "convex/oauthState.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
-            ],
+            "files": ["convex/oauthState.ts"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"],
             "prompt": "Create oauthState.ts with: internalMutation create(state, expiresAt), internalQuery validate(state) returns null if expired, internalMutation delete_(state)"
           },
           "acceptanceCriteria": [
@@ -66,17 +56,11 @@
           "description": "Fix /auth/login route in convex/http.ts - add state parameter generation using crypto.randomUUID(), store in oauthStates table with 5-minute TTL",
           "agentType": "developer",
           "priority": "critical",
-          "dependencies": [
-            "task-2.2"
-          ],
+          "dependencies": ["task-2.2"],
           "estimatedTokens": 3500,
           "context": {
-            "files": [
-              "convex/http.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
-            ],
+            "files": ["convex/http.ts"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"],
             "prompt": "Update /auth/login handler: generate state = crypto.randomUUID(), call ctx.runMutation(internal.oauthState.create, { state, expiresAt: Date.now() + 5*60*1000 }), add state to getAuthorizationUrl params"
           },
           "acceptanceCriteria": [
@@ -91,17 +75,11 @@
           "description": "Fix /auth/callback route - validate state parameter, delete used state, replace URL redirect with POST form auto-submit for tokens (SEC-001 + SEC-002)",
           "agentType": "developer",
           "priority": "critical",
-          "dependencies": [
-            "task-2.3"
-          ],
+          "dependencies": ["task-2.3"],
           "estimatedTokens": 4500,
           "context": {
-            "files": [
-              "convex/http.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
-            ],
+            "files": ["convex/http.ts"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"],
             "prompt": "In /auth/callback: 1) Extract state from URL params, 2) Validate via ctx.runQuery(internal.oauthState.validate), 3) Return error if invalid, 4) Delete used state, 5) Replace Response.redirect with HTML form POST auto-submit"
           },
           "acceptanceCriteria": [
@@ -120,14 +98,8 @@
           "dependencies": [],
           "estimatedTokens": 3000,
           "context": {
-            "files": [
-              "src/lib/admin-auth.tsx",
-              "src/lib/employer-auth.tsx",
-              "src/lib/doctor-auth.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
-            ],
+            "files": ["src/lib/admin-auth.tsx", "src/lib/employer-auth.tsx", "src/lib/doctor-auth.tsx"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"],
             "prompt": "Add isTokenExpired(token) function that decodes JWT, checks exp * 1000 < Date.now(). In useEffect that loads localStorage, check expiration and clear if expired."
           },
           "acceptanceCriteria": [
@@ -142,17 +114,11 @@
           "description": "Update AdminAuthCallback.tsx to handle POST form submission instead of URL params - extract tokens from form data or dedicated endpoint",
           "agentType": "developer",
           "priority": "high",
-          "dependencies": [
-            "task-2.4"
-          ],
+          "dependencies": ["task-2.4"],
           "estimatedTokens": 2500,
           "context": {
-            "files": [
-              "src/components/auth/AdminAuthCallback.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
-            ],
+            "files": ["src/components/auth/AdminAuthCallback.tsx"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"],
             "prompt": "Update callback component to receive tokens via POST. Consider using a React Router action or parsing form submission data."
           },
           "acceptanceCriteria": [
@@ -170,12 +136,8 @@
           "dependencies": [],
           "estimatedTokens": 2500,
           "context": {
-            "files": [
-              "src/components/layout/NavigationBar.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"
-            ],
+            "files": ["src/components/layout/NavigationBar.tsx"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"],
             "prompt": "Replace AuthModal with Button asChild wrapping <a href> to /auth/login. Use import.meta.env.VITE_CONVEX_URL.replace('.cloud', '.site')/auth/login pattern. Remove AuthModal import."
           },
           "acceptanceCriteria": [
@@ -194,12 +156,8 @@
           "dependencies": [],
           "estimatedTokens": 1500,
           "context": {
-            "files": [
-              "src/components/landing/HeroSection.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"
-            ],
+            "files": ["src/components/landing/HeroSection.tsx"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"],
             "prompt": "Change Get Started button to use asChild with <a href> to /auth/login. Remove onDemoClick prop if unused."
           },
           "acceptanceCriteria": [
@@ -216,12 +174,8 @@
           "dependencies": [],
           "estimatedTokens": 1000,
           "context": {
-            "files": [
-              "src/App.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"
-            ],
+            "files": ["src/App.tsx"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"],
             "prompt": "Delete the fixed bottom-6 right-6 Provider Login button block. Login is now available in NavigationBar."
           },
           "acceptanceCriteria": [
@@ -235,17 +189,11 @@
           "description": "Update src/components/auth/index.ts exports - prepare for future removal of SignInForm and AuthModal",
           "agentType": "developer",
           "priority": "low",
-          "dependencies": [
-            "task-3.1"
-          ],
+          "dependencies": ["task-3.1"],
           "estimatedTokens": 500,
           "context": {
-            "files": [
-              "src/components/auth/index.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"
-            ],
+            "files": ["src/components/auth/index.ts"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"],
             "prompt": "Comment out or mark deprecated: SignInForm, AuthModal exports. Keep SignOutButton and AdminAuthCallback."
           },
           "acceptanceCriteria": [
@@ -255,13 +203,13 @@
           ]
         }
       ],
-      "parallelizable": true,
       "gateCondition": "All tasks complete, npm run typecheck passes, security fixes verifiable via manual test"
     },
     {
       "id": "phase-2-context",
       "name": "Context Unification (Sprint 04)",
       "description": "Create unified WorkOSAuthProvider to replace 3 separate auth contexts. Optional but recommended for maintainability.",
+      "parallelizable": false,
       "subtasks": [
         {
           "id": "task-4.1",
@@ -271,12 +219,8 @@
           "dependencies": [],
           "estimatedTokens": 5000,
           "context": {
-            "files": [
-              "src/lib/workos-auth.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"
-            ],
+            "files": ["src/lib/workos-auth.tsx"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"],
             "prompt": "Create WorkOSAuthProvider with: UserRole type, AuthTokens interface, storage keys map, isTokenExpired check, multi-tab sync, memoized context value. Export useWorkOSAuth hook and backward-compatible useAdminAuth, useEmployerAuth, useDoctorAuth hooks."
           },
           "acceptanceCriteria": [
@@ -292,17 +236,11 @@
           "description": "Update main.tsx provider hierarchy - replace AdminAuthProvider with WorkOSAuthProvider",
           "agentType": "developer",
           "priority": "medium",
-          "dependencies": [
-            "task-4.1"
-          ],
+          "dependencies": ["task-4.1"],
           "estimatedTokens": 1500,
           "context": {
-            "files": [
-              "src/main.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"
-            ],
+            "files": ["src/main.tsx"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"],
             "prompt": "Replace AdminAuthProvider import with WorkOSAuthProvider. Update JSX to use single WorkOSAuthProvider wrapping App."
           },
           "acceptanceCriteria": [
@@ -316,17 +254,11 @@
           "description": "Update App.tsx routes - remove EmployerAuthProvider and DoctorAuthProvider wrappers from route elements",
           "agentType": "developer",
           "priority": "medium",
-          "dependencies": [
-            "task-4.1"
-          ],
+          "dependencies": ["task-4.1"],
           "estimatedTokens": 2000,
           "context": {
-            "files": [
-              "src/App.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"
-            ],
+            "files": ["src/App.tsx"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"],
             "prompt": "Remove EmployerAuthProvider and DoctorAuthProvider from route element wrappers. Routes now use unified provider from main.tsx."
           },
           "acceptanceCriteria": [
@@ -340,14 +272,10 @@
           "description": "Update all hook imports across components - change from individual auth files to workos-auth.tsx",
           "agentType": "developer",
           "priority": "medium",
-          "dependencies": [
-            "task-4.1"
-          ],
+          "dependencies": ["task-4.1"],
           "estimatedTokens": 3000,
           "context": {
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"
-            ],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"],
             "prompt": "Find all imports of useAdminAuth, useEmployerAuth, useDoctorAuth and update source from @/lib/admin-auth, employer-auth, doctor-auth to @/lib/workos-auth."
           },
           "acceptanceCriteria": [
@@ -357,13 +285,13 @@
           ]
         }
       ],
-      "parallelizable": false,
       "gateCondition": "All context tasks complete, npm run typecheck passes, login/logout works for all 3 roles"
     },
     {
       "id": "phase-3-e2e",
       "name": "Playwright E2E Testing (Sprint 05)",
       "description": "Create comprehensive E2E tests for WorkOS authentication flows before cleanup phase",
+      "parallelizable": true,
       "subtasks": [
         {
           "id": "task-5.1",
@@ -373,12 +301,8 @@
           "dependencies": [],
           "estimatedTokens": 2000,
           "context": {
-            "files": [
-              "playwright.config.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
-            ],
+            "files": ["playwright.config.ts"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"],
             "prompt": "Create playwright.config.ts with baseURL localhost:5175, 30s timeout, html reporter, 3 browser projects, webServer running npm run dev."
           },
           "acceptanceCriteria": [
@@ -392,17 +316,11 @@
           "description": "Create tests/e2e/auth/login.spec.ts - test login button redirects, hero CTA, mobile nav, no modal appears",
           "agentType": "developer",
           "priority": "high",
-          "dependencies": [
-            "task-5.1"
-          ],
+          "dependencies": ["task-5.1"],
           "estimatedTokens": 4000,
           "context": {
-            "files": [
-              "tests/e2e/auth/login.spec.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
-            ],
+            "files": ["tests/e2e/auth/login.spec.ts"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"],
             "prompt": "Create login.spec.ts with tests: desktop login redirects to WorkOS, hero CTA redirects, mobile nav login works, no AuthModal appears on click."
           },
           "acceptanceCriteria": [
@@ -416,17 +334,11 @@
           "description": "Create tests/e2e/auth/role-routing.spec.ts - test role-based routing for admin, employer, doctor, and unauthenticated users",
           "agentType": "developer",
           "priority": "high",
-          "dependencies": [
-            "task-5.1"
-          ],
+          "dependencies": ["task-5.1"],
           "estimatedTokens": 4000,
           "context": {
-            "files": [
-              "tests/e2e/auth/role-routing.spec.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
-            ],
+            "files": ["tests/e2e/auth/role-routing.spec.ts"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"],
             "prompt": "Create role-routing.spec.ts with tests: admin token routes to /admin, employer token routes to /employer, doctor token routes to /doctor, unauthenticated redirected from protected routes, expired token cleared."
           },
           "acceptanceCriteria": [
@@ -440,17 +352,11 @@
           "description": "Create tests/e2e/auth/logout.spec.ts - test logout clears storage, redirects, and multi-tab sync",
           "agentType": "developer",
           "priority": "medium",
-          "dependencies": [
-            "task-5.1"
-          ],
+          "dependencies": ["task-5.1"],
           "estimatedTokens": 3000,
           "context": {
-            "files": [
-              "tests/e2e/auth/logout.spec.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
-            ],
+            "files": ["tests/e2e/auth/logout.spec.ts"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"],
             "prompt": "Create logout.spec.ts with tests: admin logout clears storage and redirects, multi-tab logout sync (logout in tab1 reflects in tab2)."
           },
           "acceptanceCriteria": [
@@ -464,17 +370,11 @@
           "description": "Create tests/e2e/fixtures/auth.fixture.ts - reusable fixtures for authenticated pages (admin, employer, doctor)",
           "agentType": "developer",
           "priority": "medium",
-          "dependencies": [
-            "task-5.1"
-          ],
+          "dependencies": ["task-5.1"],
           "estimatedTokens": 2500,
           "context": {
-            "files": [
-              "tests/e2e/fixtures/auth.fixture.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
-            ],
+            "files": ["tests/e2e/fixtures/auth.fixture.ts"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"],
             "prompt": "Create auth.fixture.ts with Playwright test.extend: authenticatedAdminPage, authenticatedEmployerPage, authenticatedDoctorPage fixtures that inject localStorage tokens."
           },
           "acceptanceCriteria": [
@@ -488,20 +388,11 @@
           "description": "Add E2E test scripts to package.json and verify all tests pass",
           "agentType": "developer",
           "priority": "high",
-          "dependencies": [
-            "task-5.2",
-            "task-5.3",
-            "task-5.4",
-            "task-5.5"
-          ],
+          "dependencies": ["task-5.2", "task-5.3", "task-5.4", "task-5.5"],
           "estimatedTokens": 1500,
           "context": {
-            "files": [
-              "package.json"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
-            ],
+            "files": ["package.json"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"],
             "prompt": "Add scripts: test:e2e, test:e2e:ui, test:e2e:auth, test:e2e:headed. Add @playwright/test devDependency if missing."
           },
           "acceptanceCriteria": [
@@ -515,14 +406,10 @@
           "description": "Run E2E test suite with browser-cli and verify all auth flows work",
           "agentType": "browser",
           "priority": "high",
-          "dependencies": [
-            "task-5.6"
-          ],
+          "dependencies": ["task-5.6"],
           "estimatedTokens": 5000,
           "context": {
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
-            ],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"],
             "prompt": "Use browser-cli to manually verify: 1) Landing page login button redirects, 2) No modal appears, 3) Each role can access their portal with injected localStorage tokens, 4) Logout clears state."
           },
           "acceptanceCriteria": [
@@ -532,13 +419,13 @@
           ]
         }
       ],
-      "parallelizable": true,
       "gateCondition": "All E2E tests pass (npm run test:e2e:auth), browser verification complete"
     },
     {
       "id": "phase-4-cleanup",
       "name": "Cleanup & Documentation (Sprint 06)",
       "description": "Delete deprecated Convex Auth code after E2E tests confirm migration success. DESTRUCTIVE - requires E2E gate pass.",
+      "parallelizable": false,
       "subtasks": [
         {
           "id": "task-6.1",
@@ -548,12 +435,8 @@
           "dependencies": [],
           "estimatedTokens": 500,
           "context": {
-            "files": [
-              "src/components/auth/AuthModal.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
+            "files": ["src/components/auth/AuthModal.tsx"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"],
             "prompt": "Delete AuthModal.tsx file. Verify no remaining imports."
           },
           "acceptanceCriteria": [
@@ -570,12 +453,8 @@
           "dependencies": [],
           "estimatedTokens": 500,
           "context": {
-            "files": [
-              "src/components/auth/SignInForm.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
+            "files": ["src/components/auth/SignInForm.tsx"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"],
             "prompt": "Delete SignInForm.tsx file. Verify no remaining imports."
           },
           "acceptanceCriteria": [
@@ -592,13 +471,8 @@
           "dependencies": [],
           "estimatedTokens": 500,
           "context": {
-            "files": [
-              "convex/auth.ts",
-              "convex/auth.config.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
+            "files": ["convex/auth.ts", "convex/auth.config.ts"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"],
             "prompt": "Delete both auth backend files. Remove auth.addHttpRoutes(http) from http.ts if present."
           },
           "acceptanceCriteria": [
@@ -615,14 +489,8 @@
           "dependencies": [],
           "estimatedTokens": 500,
           "context": {
-            "files": [
-              "src/lib/admin-auth.tsx",
-              "src/lib/employer-auth.tsx",
-              "src/lib/doctor-auth.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
+            "files": ["src/lib/admin-auth.tsx", "src/lib/employer-auth.tsx", "src/lib/doctor-auth.tsx"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"],
             "prompt": "Delete all 3 legacy auth context files. Only execute if Sprint 04 (context unification) was completed. Verify no remaining imports."
           },
           "acceptanceCriteria": [
@@ -636,18 +504,11 @@
           "description": "Update src/components/auth/index.ts - remove deleted exports (SignInForm, AuthModal)",
           "agentType": "developer",
           "priority": "low",
-          "dependencies": [
-            "task-6.1",
-            "task-6.2"
-          ],
+          "dependencies": ["task-6.1", "task-6.2"],
           "estimatedTokens": 500,
           "context": {
-            "files": [
-              "src/components/auth/index.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
+            "files": ["src/components/auth/index.ts"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"],
             "prompt": "Remove SignInForm and AuthModal exports. Keep SignOutButton and AdminAuthCallback."
           },
           "acceptanceCriteria": [
@@ -664,12 +525,8 @@
           "dependencies": [],
           "estimatedTokens": 1500,
           "context": {
-            "files": [
-              "src/components/auth/SignOutButton.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
+            "files": ["src/components/auth/SignOutButton.tsx"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"],
             "prompt": "Replace useConvexAuth and useAuthActions with useWorkOSAuth. Update onClick to call logout from WorkOS context."
           },
           "acceptanceCriteria": [
@@ -686,12 +543,8 @@
           "dependencies": [],
           "estimatedTokens": 1500,
           "context": {
-            "files": [
-              "README.md"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
+            "files": ["README.md"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"],
             "prompt": "Update README authentication section to document WorkOS AuthKit, 3 user roles, OAuth flow, environment variables."
           },
           "acceptanceCriteria": [
@@ -708,12 +561,8 @@
           "dependencies": [],
           "estimatedTokens": 2000,
           "context": {
-            "files": [
-              "DOCUMENTS/AUTH.md"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
+            "files": ["DOCUMENTS/AUTH.md"],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"],
             "prompt": "Create AUTH.md documenting: role table, OAuth flow diagram, token management, security considerations, troubleshooting guide."
           },
           "acceptanceCriteria": [
@@ -727,19 +576,10 @@
           "description": "Final verification - run typecheck, verify no @convex-dev/auth references, run E2E tests",
           "agentType": "analyst",
           "priority": "high",
-          "dependencies": [
-            "task-6.1",
-            "task-6.2",
-            "task-6.3",
-            "task-6.4",
-            "task-6.5",
-            "task-6.6"
-          ],
+          "dependencies": ["task-6.1", "task-6.2", "task-6.3", "task-6.4", "task-6.5", "task-6.6"],
           "estimatedTokens": 2000,
           "context": {
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
+            "memories": ["WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"],
             "prompt": "Run: npm run typecheck, grep -r '@convex-dev/auth' src/ convex/, grep -r 'AuthModal' src/, npm run test:e2e:auth. Verify all pass/return empty."
           },
           "acceptanceCriteria": [
@@ -750,7 +590,6 @@
           ]
         }
       ],
-      "parallelizable": false,
       "gateCondition": "All cleanup tasks complete, final verification passes, no broken imports, E2E tests pass"
     }
   ],

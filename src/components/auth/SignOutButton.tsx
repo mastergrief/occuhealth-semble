@@ -1,5 +1,4 @@
-import { useConvexAuth } from "convex/react"
-import { useAuthActions } from "@convex-dev/auth/react"
+import { useWorkOSAuth } from "@/lib/workos-auth"
 import { Button } from "@/components/ui/button"
 import { LogOut } from "lucide-react"
 
@@ -14,15 +13,14 @@ export function SignOutButton({
   variant = "ghost",
   className,
 }: SignOutButtonProps) {
-  const { isAuthenticated } = useConvexAuth()
-  const { signOut } = useAuthActions()
+  const { isAuthenticated, logout } = useWorkOSAuth()
 
   if (!isAuthenticated) return null
 
   return (
     <Button
       variant={variant}
-      onClick={() => void signOut()}
+      onClick={logout}
       className={className}
     >
       {showIcon && <LogOut className="h-4 w-4" />}

@@ -1,0 +1,333 @@
+{
+  "planId": "workos-auth-migration-2026-01-03",
+  "title": "WorkOS Auth Migration - Replace Convex Auth with WorkOS AuthKit",
+  "createdAt": "2026-01-03T00:00:00Z",
+  "status": "pending",
+  "estimatedTokens": 59000,
+  "totalLinesAffected": 1567,
+  "linesRemoved": 473,
+
+  "phases": [
+    {
+      "id": "sprint-02",
+      "name": "Security Hardening",
+      "priority": "P1-CRITICAL",
+      "estimatedTokens": 15000,
+      "dependencies": [],
+      "riskLevel": "HIGH",
+      "tasks": [
+        {
+          "id": "2.1",
+          "description": "Add oauthStates table to schema.ts",
+          "file": "convex/schema.ts",
+          "lineNumber": 34,
+          "changeType": "INSERT",
+          "linesAdded": 5
+        },
+        {
+          "id": "2.2",
+          "description": "Create convex/oauthState.ts for CSRF state management",
+          "file": "convex/oauthState.ts",
+          "changeType": "CREATE",
+          "linesAdded": 40
+        },
+        {
+          "id": "2.3",
+          "description": "Fix /auth/login - add state parameter generation",
+          "file": "convex/http.ts",
+          "lineNumber": "27-47",
+          "changeType": "MODIFY",
+          "securityFix": "SEC-002"
+        },
+        {
+          "id": "2.4",
+          "description": "Fix /auth/callback - validate state, use POST form for tokens",
+          "file": "convex/http.ts",
+          "lineNumber": "49-131",
+          "changeType": "MODIFY",
+          "securityFixes": ["SEC-001", "SEC-002"]
+        },
+        {
+          "id": "2.5",
+          "description": "Add token expiration validation to auth contexts",
+          "files": [
+            "src/lib/admin-auth.tsx",
+            "src/lib/employer-auth.tsx",
+            "src/lib/doctor-auth.tsx"
+          ],
+          "changeType": "MODIFY",
+          "securityFix": "SEC-004"
+        },
+        {
+          "id": "2.6",
+          "description": "Update AdminAuthCallback for POST handling",
+          "file": "src/components/auth/AdminAuthCallback.tsx",
+          "changeType": "MODIFY"
+        }
+      ],
+      "acceptanceCriteria": [
+        "oauthStates table added to schema",
+        "State parameter validated on callback",
+        "Tokens passed via POST form, not URL",
+        "Token expiration checked on load",
+        "CSRF attack returns invalid_state error"
+      ]
+    },
+    {
+      "id": "sprint-03",
+      "name": "Landing Page Migration",
+      "priority": "P1",
+      "estimatedTokens": 8000,
+      "dependencies": [],
+      "riskLevel": "LOW",
+      "tasks": [
+        {
+          "id": "3.1",
+          "description": "Replace AuthModal in NavigationBar with WorkOS links",
+          "file": "src/components/layout/NavigationBar.tsx",
+          "lineNumbers": ["43-50", "73-80"],
+          "changeType": "MODIFY",
+          "linesChanged": 20
+        },
+        {
+          "id": "3.2",
+          "description": "Update auth/index.ts exports (remove AuthModal, SignInForm)",
+          "file": "src/components/auth/index.ts",
+          "changeType": "MODIFY",
+          "linesRemoved": 2
+        }
+      ],
+      "acceptanceCriteria": [
+        "No AuthModal on landing page",
+        "All login buttons redirect to WorkOS",
+        "Desktop and mobile navigation work",
+        "Login flow works for all 3 roles"
+      ]
+    },
+    {
+      "id": "sprint-04",
+      "name": "Context Unification (Optional)",
+      "priority": "P2",
+      "estimatedTokens": 12000,
+      "dependencies": ["sprint-03"],
+      "riskLevel": "MEDIUM",
+      "tasks": [
+        {
+          "id": "4.1",
+          "description": "Create unified WorkOSAuthProvider",
+          "file": "src/lib/workos-auth.tsx",
+          "changeType": "CREATE",
+          "linesAdded": 250
+        },
+        {
+          "id": "4.2",
+          "description": "Update main.tsx provider hierarchy",
+          "file": "src/main.tsx",
+          "changeType": "MODIFY"
+        },
+        {
+          "id": "4.3",
+          "description": "Update all hook imports (admin, employer, doctor)",
+          "changeType": "MODIFY",
+          "filesAffected": "multiple"
+        }
+      ],
+      "acceptanceCriteria": [
+        "Single WorkOSAuthProvider wraps app",
+        "All role-specific hooks work identically",
+        "Multi-tab logout sync works",
+        "Context value properly memoized"
+      ]
+    },
+    {
+      "id": "sprint-05",
+      "name": "Playwright E2E Testing",
+      "priority": "P1",
+      "estimatedTokens": 18000,
+      "dependencies": ["sprint-03", "sprint-04"],
+      "riskLevel": "LOW",
+      "tasks": [
+        {
+          "id": "5.1",
+          "description": "Setup Playwright config",
+          "file": "playwright.config.ts",
+          "changeType": "CREATE"
+        },
+        {
+          "id": "5.2",
+          "description": "Create login flow tests",
+          "file": "tests/e2e/auth/login.spec.ts",
+          "changeType": "CREATE"
+        },
+        {
+          "id": "5.3",
+          "description": "Create role-routing tests",
+          "file": "tests/e2e/auth/role-routing.spec.ts",
+          "changeType": "CREATE"
+        },
+        {
+          "id": "5.4",
+          "description": "Create logout tests",
+          "file": "tests/e2e/auth/logout.spec.ts",
+          "changeType": "CREATE"
+        },
+        {
+          "id": "5.5",
+          "description": "Create auth fixtures",
+          "file": "tests/e2e/fixtures/auth.fixture.ts",
+          "changeType": "CREATE"
+        }
+      ],
+      "acceptanceCriteria": [
+        "All login flow tests pass",
+        "Role-based routing tests pass",
+        "Logout tests pass",
+        "CI integration configured"
+      ]
+    },
+    {
+      "id": "sprint-06",
+      "name": "Cleanup & Documentation",
+      "priority": "P2",
+      "estimatedTokens": 6000,
+      "dependencies": ["sprint-05"],
+      "riskLevel": "MEDIUM",
+      "tasks": [
+        {
+          "id": "6.1",
+          "description": "Delete AuthModal.tsx",
+          "file": "src/components/auth/AuthModal.tsx",
+          "changeType": "DELETE",
+          "linesRemoved": 42
+        },
+        {
+          "id": "6.2",
+          "description": "Delete SignInForm.tsx",
+          "file": "src/components/auth/SignInForm.tsx",
+          "changeType": "DELETE",
+          "linesRemoved": 115
+        },
+        {
+          "id": "6.3",
+          "description": "Delete convex/auth.ts",
+          "file": "convex/auth.ts",
+          "changeType": "DELETE",
+          "linesRemoved": 6
+        },
+        {
+          "id": "6.4",
+          "description": "Delete convex/auth.config.ts",
+          "file": "convex/auth.config.ts",
+          "changeType": "DELETE",
+          "linesRemoved": 8
+        },
+        {
+          "id": "6.5",
+          "description": "Remove auth.addHttpRoutes() from http.ts",
+          "file": "convex/http.ts",
+          "lineNumber": 136,
+          "changeType": "DELETE"
+        },
+        {
+          "id": "6.6",
+          "description": "Delete legacy auth contexts (if unified)",
+          "files": [
+            "src/lib/admin-auth.tsx",
+            "src/lib/employer-auth.tsx",
+            "src/lib/doctor-auth.tsx"
+          ],
+          "changeType": "DELETE",
+          "linesRemoved": 302
+        },
+        {
+          "id": "6.7",
+          "description": "Update README.md with WorkOS info",
+          "file": "README.md",
+          "changeType": "MODIFY"
+        },
+        {
+          "id": "6.8",
+          "description": "Create AUTH.md documentation",
+          "file": "DOCUMENTS/AUTH.md",
+          "changeType": "CREATE"
+        }
+      ],
+      "acceptanceCriteria": [
+        "All deprecated files deleted",
+        "Build succeeds with no broken imports",
+        "E2E tests still pass",
+        "Documentation updated"
+      ]
+    }
+  ],
+
+  "securityVulnerabilities": [
+    {
+      "id": "SEC-001",
+      "name": "Tokens in URL Parameters",
+      "cvss": 9.1,
+      "location": "convex/http.ts:113-121",
+      "fix": "Use POST form auto-submit instead of URL redirect",
+      "sprint": "sprint-02"
+    },
+    {
+      "id": "SEC-002",
+      "name": "Missing OAuth State Parameter",
+      "cvss": 8.8,
+      "location": "convex/http.ts:27-131",
+      "fix": "Generate state on login, validate on callback",
+      "sprint": "sprint-02"
+    },
+    {
+      "id": "SEC-003",
+      "name": "Tokens in localStorage",
+      "cvss": 8.9,
+      "location": "src/lib/*-auth.tsx",
+      "fix": "Add CSP headers, short token TTL (deferred)",
+      "sprint": "sprint-02"
+    },
+    {
+      "id": "SEC-004",
+      "name": "No Token Expiration Check",
+      "cvss": 6.5,
+      "location": "src/lib/*-auth.tsx",
+      "fix": "Add isTokenExpired() validation on load",
+      "sprint": "sprint-02"
+    }
+  ],
+
+  "criticalFiles": [
+    {
+      "path": "convex/http.ts",
+      "lines": 159,
+      "priority": "CRITICAL",
+      "changes": "Security fixes SEC-001, SEC-002"
+    },
+    {
+      "path": "convex/schema.ts",
+      "lines": 257,
+      "priority": "HIGH",
+      "changes": "Add oauthStates table"
+    },
+    {
+      "path": "src/components/layout/NavigationBar.tsx",
+      "lines": 89,
+      "priority": "HIGH",
+      "changes": "Replace AuthModal with WorkOS links"
+    },
+    {
+      "path": "src/components/auth/AdminAuthCallback.tsx",
+      "lines": 70,
+      "priority": "HIGH",
+      "changes": "Handle POST form tokens"
+    }
+  ],
+
+  "executionRecommendation": {
+    "parallelPhase1": ["sprint-02", "sprint-03"],
+    "sequentialPhase2": ["sprint-04"],
+    "sequentialPhase3": ["sprint-05"],
+    "sequentialPhase4": ["sprint-06"],
+    "notes": "Sprint 02 is BLOCKING for security. Sprint 04 is optional but recommended. Sprint 06 only after E2E passes."
+  }
+}

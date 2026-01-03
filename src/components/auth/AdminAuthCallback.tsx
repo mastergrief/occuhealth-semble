@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAdminAuth } from "@/lib/admin-auth";
+import { useAdminAuth } from "@/lib/workos-auth";
 
 // ---------------------------------------------------------------------------
 // Admin Auth Callback
@@ -14,11 +14,17 @@ export function AdminAuthCallback() {
   const navigate = useNavigate();
   const { loginAsAdmin } = useAdminAuth();
   const [error, setError] = useState<string | null>(null);
+  const processedRef = useRef(false);
 
   useEffect(() => {
+    // Prevent double-processing (React StrictMode + dependency changes)
+    if (processedRef.current) return;
+
+    // Read tokens from URL params
     const accessToken = searchParams.get("accessToken");
     const refreshToken = searchParams.get("refreshToken");
     const userId = searchParams.get("userId");
+    const redirectPath = searchParams.get("redirectPath");
     const errorParam = searchParams.get("error");
 
     if (errorParam) {
@@ -31,15 +37,18 @@ export function AdminAuthCallback() {
       return;
     }
 
-    // Store tokens and redirect
+    // Mark as processed to prevent re-runs
+    processedRef.current = true;
+
+    // Store tokens
     loginAsAdmin({
       accessToken,
       refreshToken: refreshToken || undefined,
       userId,
     });
 
-    // Redirect to admin dashboard
-    navigate("/admin", { replace: true });
+    // Redirect to appropriate path or admin dashboard
+    navigate(redirectPath || "/admin", { replace: true });
   }, [searchParams, loginAsAdmin, navigate]);
 
   if (error) {
