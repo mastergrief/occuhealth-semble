@@ -94,6 +94,21 @@ export default defineSchema({
     .index("by_synced", ["syncedToSemble"]),
 
   // ---------------------------------------------------------------------------
+  // Admin Users (WorkOS AuthKit)
+  // ---------------------------------------------------------------------------
+  adminUsers: defineTable({
+    workosUserId: v.string(),
+    email: v.string(),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    profilePictureUrl: v.optional(v.string()),
+    lastLoginAt: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_workos_user_id", ["workosUserId"])
+    .index("by_email", ["email"]),
+
+  // ---------------------------------------------------------------------------
   // Example Table (from starter)
   // ---------------------------------------------------------------------------
   numbers: defineTable({

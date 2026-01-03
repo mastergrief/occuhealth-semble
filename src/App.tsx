@@ -1,5 +1,6 @@
 "use client";
 
+import { Routes, Route } from "react-router-dom";
 import { Authenticated, Unauthenticated, useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 
@@ -10,11 +11,25 @@ import { NavigationBar, Footer } from "@/components/layout";
 import { HeroSection, FeaturesSection, TestimonialsSection, CTASection } from "@/components/landing";
 
 // Auth components
-import { AuthModal, SignOutButton } from "@/components/auth";
+import { SignOutButton, AdminAuthCallback } from "@/components/auth";
+
+// Admin auth
+import { useAdminAuth } from "@/lib/admin-auth";
 
 import { Button } from "@/components/ui/button";
 
 export default function App() {
+  return (
+    <Routes>
+      <Route path="/auth/callback" element={<AdminAuthCallback />} />
+      <Route path="/admin/*" element={<AdminLayout />} />
+      <Route path="/*" element={<MainLayout />} />
+    </Routes>
+  );
+}
+
+// Main app layout (providers/patients)
+function MainLayout() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* Navigation - conditional based on auth state */}
@@ -36,6 +51,83 @@ export default function App() {
       </main>
 
       {/* Footer - always visible */}
+      <Footer />
+    </div>
+  );
+}
+
+// Admin layout (WorkOS authenticated)
+function AdminLayout() {
+  const { isAdminAuthenticated, isLoading, adminUser, logoutAdmin } = useAdminAuth();
+
+  const handleLogout = () => {
+    logoutAdmin();
+    // Redirect to WorkOS logout to clear their session
+    const returnTo = encodeURIComponent(window.location.origin);
+    window.location.href = `https://api.workos.com/user_management/sessions/logout?client_id=${import.meta.env.VITE_WORKOS_CLIENT_ID}&return_to=${returnTo}`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (!isAdminAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Admin Access Required</h1>
+          <p className="text-muted-foreground mb-6">Please sign in with your admin credentials.</p>
+          <a
+            href={`${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/login`}
+            className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Sign in as Admin
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
+        <div className="container mx-auto px-4 flex h-16 items-center justify-between">
+          <div className="flex items-center gap-4">
+            <a href="/" className="font-semibold text-xl">OccuHealth</a>
+            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Admin</span>
+          </div>
+          <Button variant="outline" size="sm" onClick={handleLogout}>
+            Sign Out
+          </Button>
+        </div>
+      </header>
+
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
+        <p className="text-muted-foreground mb-8">
+          Welcome, {adminUser?.userId}
+        </p>
+
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="bg-card border rounded-lg p-6">
+            <h2 className="font-semibold mb-2">User Management</h2>
+            <p className="text-sm text-muted-foreground">Manage providers and patients</p>
+          </div>
+          <div className="bg-card border rounded-lg p-6">
+            <h2 className="font-semibold mb-2">System Settings</h2>
+            <p className="text-sm text-muted-foreground">Configure application settings</p>
+          </div>
+          <div className="bg-card border rounded-lg p-6">
+            <h2 className="font-semibold mb-2">Audit Logs</h2>
+            <p className="text-sm text-muted-foreground">View system activity</p>
+          </div>
+        </div>
+      </main>
+
       <Footer />
     </div>
   );
@@ -64,14 +156,16 @@ function LandingPage() {
 
       {/* Floating Provider Login button */}
       <div className="fixed bottom-6 right-6 z-50">
-        <AuthModal
-          trigger={
-            <Button variant="medical" size="lg" className="shadow-lg">
-              Provider Login
-            </Button>
-          }
-          title="Provider Login"
-        />
+        <Button
+          variant="medical"
+          size="lg"
+          className="shadow-lg"
+          onClick={() => {
+            window.location.href = `${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/login`;
+          }}
+        >
+          Provider Login
+        </Button>
       </div>
     </>
   );

@@ -1,0 +1,67 @@
+import { v } from "convex/values";
+import { internalMutation, query } from "./_generated/server";
+
+// ---------------------------------------------------------------------------
+// Admin Users (WorkOS AuthKit)
+// ---------------------------------------------------------------------------
+// Internal mutations for managing admin users authenticated via WorkOS
+// ---------------------------------------------------------------------------
+
+export const upsertAdminUser = internalMutation({
+  args: {
+    workosUserId: v.string(),
+    email: v.string(),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    profilePictureUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("adminUsers")
+      .withIndex("by_workos_user_id", (q) => q.eq("workosUserId", args.workosUserId))
+      .first();
+
+    const now = Date.now();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        email: args.email,
+        firstName: args.firstName,
+        lastName: args.lastName,
+        profilePictureUrl: args.profilePictureUrl,
+        lastLoginAt: now,
+      });
+      return existing._id;
+    }
+
+    return await ctx.db.insert("adminUsers", {
+      workosUserId: args.workosUserId,
+      email: args.email,
+      firstName: args.firstName,
+      lastName: args.lastName,
+      profilePictureUrl: args.profilePictureUrl,
+      lastLoginAt: now,
+      createdAt: now,
+    });
+  },
+});
+
+export const getByWorkosUserId = query({
+  args: { workosUserId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("adminUsers")
+      .withIndex("by_workos_user_id", (q) => q.eq("workosUserId", args.workosUserId))
+      .first();
+  },
+});
+
+export const getByEmail = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("adminUsers")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+  },
+});
