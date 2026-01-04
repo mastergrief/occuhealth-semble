@@ -1,0 +1,183 @@
+{
+  "id": "web-app",
+  "name": "Web Application",
+  "description": "Standard SPA with authentication, navigation, and CRUD operations",
+  "appType": "spa",
+  "variables": ["target_area", "base_url", "auth_method"],
+  "scoutPrompts": {
+    "frontend": "AUDIT SCOUT: Frontend Discovery for {{target_area}}\n\n1. **Routes & Navigation**:\n   - Discover all route definitions (React Router, Next.js, Vue Router, etc.)\n   - Identify navigation components (sidebars, headers, tabs, breadcrumbs)\n   - Map route → component relationships\n   - Find layout wrapper components\n\n2. **Authentication Pattern**:\n   - Identify auth provider (Clerk, Auth0, WorkOS, Firebase, Supabase, custom)\n   - Find auth context/hooks (useAuth, useSession, etc.)\n   - Locate token storage mechanism (localStorage, cookies, memory)\n   - Document guard/protection patterns (PrivateRoute, withAuth, middleware)\n   - Find login/logout components and flows\n\n3. **Page Components**:\n   - List all page-level components with line counts\n   - Document what each page does (from component analysis)\n   - Identify shared components used across pages\n\n4. **Feature Inventory** (per page):\n   - Interactive elements (buttons, forms, modals, dropdowns)\n   - Data displays (tables, lists, cards, charts)\n   - State indicators (loading spinners, empty states, error boundaries)\n   - Form validation patterns\n\n5. **Selectors for Testing**:\n   - data-testid attributes if present\n   - Semantic selectors (role, aria-label)\n   - Text-based selectors for buttons/links\n   - CSS selectors as fallback\n\nReturn structured inventory with testable selectors.",
+    "backend": "AUDIT SCOUT: Backend Discovery for {{target_area}}\n\n1. **API Layer**:\n   - Identify API pattern (REST, GraphQL, tRPC, Convex, Firebase)\n   - List all endpoints/functions relevant to target area\n   - Document request/response shapes\n   - Find API client configuration\n\n2. **Database/State**:\n   - Identify data store (SQL, NoSQL, Convex, Firebase, Supabase)\n   - List tables/collections relevant to target area\n   - Document field types and relationships\n   - Find indexes and constraints\n\n3. **Data Flow**:\n   - Map which queries each page calls\n   - Map which mutations each action triggers\n   - Document expected response shapes\n   - Identify real-time subscription patterns\n\n4. **Authorization**:\n   - Document role-based access controls\n   - Find permission checks in API layer\n   - Identify protected resources\n\nReturn structured inventory with API signatures.",
+    "credentials": "CREDENTIAL DISCOVERY:\n\n1. Check environment files:\n   - .env.local, .env.test, .env.development\n   - Look for TEST_USER, TEST_EMAIL, TEST_PASSWORD patterns\n\n2. Check fixture files:\n   - cypress/fixtures/\n   - tests/fixtures/\n   - __tests__/\n   - seed scripts\n\n3. Check documentation:\n   - README.md for test credentials\n   - docs/ folder for testing guides\n\n4. Identify auth method to determine credential format:\n   - Email/password\n   - OAuth (need mock tokens?)\n   - API keys\n   - Magic links\n\nReturn: { method, credentials_location, example_format }"
+  },
+  "categories": [
+    {
+      "name": "Authentication",
+      "description": "User authentication flows",
+      "tests": [
+        {
+          "id": "AUTH-01",
+          "name": "Login Flow",
+          "purpose": "Verify user can authenticate successfully",
+          "steps": [
+            "Navigate to {{base_url}}",
+            "Locate and click login button",
+            "Enter valid credentials",
+            "Submit login form",
+            "Wait for redirect"
+          ],
+          "verify": [
+            "User is redirected to authenticated area",
+            "User info is displayed (name, avatar)",
+            "Auth token is stored correctly",
+            "No console errors"
+          ]
+        },
+        {
+          "id": "AUTH-02",
+          "name": "Logout Flow",
+          "purpose": "Verify user can sign out successfully",
+          "steps": [
+            "Ensure user is authenticated",
+            "Locate and click logout button",
+            "Confirm logout if prompted"
+          ],
+          "verify": [
+            "User is redirected to public area",
+            "Auth token is cleared",
+            "Protected routes are inaccessible"
+          ]
+        },
+        {
+          "id": "AUTH-03",
+          "name": "Auth Guard",
+          "purpose": "Verify protected routes redirect unauthenticated users",
+          "steps": [
+            "Clear all auth tokens",
+            "Attempt to navigate directly to protected route"
+          ],
+          "verify": [
+            "User is redirected to login",
+            "Original destination is preserved for post-login redirect"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Navigation",
+      "description": "Route and navigation testing",
+      "tests": [
+        {
+          "id": "NAV-01",
+          "name": "Primary Navigation",
+          "purpose": "Verify all main nav items work",
+          "steps": [
+            "Authenticate if required",
+            "Click each navigation item",
+            "Wait for page load"
+          ],
+          "verify": [
+            "Correct page content loads",
+            "Active state on nav item",
+            "URL updates correctly",
+            "No console errors"
+          ]
+        },
+        {
+          "id": "NAV-02",
+          "name": "Deep Link Support",
+          "purpose": "Verify direct URL navigation works",
+          "steps": [
+            "Navigate directly to each route via URL"
+          ],
+          "verify": [
+            "Page loads correctly",
+            "No redirect loops",
+            "Data fetches properly"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Data Display",
+      "description": "Data fetching and display",
+      "tests": [
+        {
+          "id": "DATA-01",
+          "name": "Page Load Data",
+          "purpose": "Verify data loads on page render",
+          "steps": [
+            "Navigate to data-displaying page",
+            "Wait for loading state to clear"
+          ],
+          "verify": [
+            "Data is displayed correctly",
+            "Loading state clears",
+            "No stale data shown"
+          ]
+        },
+        {
+          "id": "DATA-02",
+          "name": "Empty State",
+          "purpose": "Verify empty state displays correctly",
+          "steps": [
+            "Navigate to page with no data"
+          ],
+          "verify": [
+            "Empty state message shown",
+            "Call to action present if applicable",
+            "No broken layout"
+          ]
+        },
+        {
+          "id": "DATA-03",
+          "name": "Error State",
+          "purpose": "Verify error handling on data fetch failure",
+          "steps": [
+            "Trigger data fetch error (if possible via mocking)"
+          ],
+          "verify": [
+            "Error message displayed",
+            "Retry option available",
+            "No unhandled exceptions"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Forms & Mutations",
+      "description": "Form submission and data mutations",
+      "tests": [
+        {
+          "id": "FORM-01",
+          "name": "Form Submission",
+          "purpose": "Verify forms submit correctly",
+          "steps": [
+            "Navigate to form",
+            "Fill all required fields",
+            "Submit form"
+          ],
+          "verify": [
+            "Success feedback shown",
+            "Data persisted (verify via refresh)",
+            "Form resets or redirects"
+          ]
+        },
+        {
+          "id": "FORM-02",
+          "name": "Form Validation",
+          "purpose": "Verify client-side validation",
+          "steps": [
+            "Navigate to form",
+            "Submit without required fields",
+            "Enter invalid data formats"
+          ],
+          "verify": [
+            "Validation errors shown",
+            "Submit prevented until valid",
+            "Error messages are helpful"
+          ]
+        }
+      ]
+    }
+  ]
+}

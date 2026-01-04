@@ -1,0 +1,179 @@
+{
+  "id": "api-only",
+  "name": "API-Only Testing",
+  "description": "Backend API testing without browser UI - uses CLI/HTTP requests",
+  "appType": "api",
+  "variables": ["target_area", "api_base_url", "auth_token"],
+  "scoutPrompts": {
+    "frontend": "AUDIT SCOUT: API Client Discovery for {{target_area}}\n\n1. **API Client Configuration**:\n   - Identify HTTP client (fetch, axios, ky, etc.)\n   - Find base URL configuration\n   - Locate auth header injection\n   - Document request/response interceptors\n\n2. **Type Definitions**:\n   - Find TypeScript interfaces for API responses\n   - Locate request body types\n   - Document error response shapes\n\n3. **API Hooks/Functions**:\n   - List all API wrapper functions\n   - Find React Query/SWR hooks if present\n   - Document caching strategies\n\nReturn inventory of API client patterns.",
+    "backend": "AUDIT SCOUT: API Backend Discovery for {{target_area}}\n\n1. **Endpoints**:\n   - List all API endpoints (REST paths or function names)\n   - Document HTTP methods per endpoint\n   - Map request body schemas\n   - Document response shapes\n\n2. **Authentication**:\n   - Identify auth mechanism (JWT, API key, session)\n   - Find token validation logic\n   - Document required headers\n   - Locate permission checks\n\n3. **Validation**:\n   - Find input validation schemas (Zod, Yup, Joi)\n   - Document required vs optional fields\n   - Identify type coercion rules\n\n4. **Error Handling**:\n   - Document error response format\n   - List error codes and meanings\n   - Find rate limiting rules\n\n5. **Database Operations**:\n   - Map CRUD operations per endpoint\n   - Identify transactions\n   - Document cascading effects\n\nReturn API specification suitable for testing."
+  },
+  "categories": [
+    {
+      "name": "Authentication",
+      "description": "API authentication testing",
+      "tests": [
+        {
+          "id": "API-AUTH-01",
+          "name": "Valid Token",
+          "purpose": "Verify authenticated requests succeed",
+          "steps": [
+            "Make request with valid auth token"
+          ],
+          "verify": [
+            "200 response",
+            "Correct data returned",
+            "No auth errors"
+          ]
+        },
+        {
+          "id": "API-AUTH-02",
+          "name": "Invalid Token",
+          "purpose": "Verify invalid tokens are rejected",
+          "steps": [
+            "Make request with invalid/expired token"
+          ],
+          "verify": [
+            "401 Unauthorized response",
+            "Clear error message",
+            "No data leaked"
+          ]
+        },
+        {
+          "id": "API-AUTH-03",
+          "name": "Missing Token",
+          "purpose": "Verify missing auth is handled",
+          "steps": [
+            "Make request without auth header"
+          ],
+          "verify": [
+            "401 or 403 response",
+            "Helpful error message"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CRUD Operations",
+      "description": "Create, Read, Update, Delete testing",
+      "tests": [
+        {
+          "id": "API-CRUD-01",
+          "name": "Create Resource",
+          "purpose": "Verify resource creation",
+          "steps": [
+            "POST with valid payload"
+          ],
+          "verify": [
+            "201 Created response",
+            "Resource ID returned",
+            "Resource retrievable via GET"
+          ]
+        },
+        {
+          "id": "API-CRUD-02",
+          "name": "Read Resource",
+          "purpose": "Verify resource retrieval",
+          "steps": [
+            "GET with valid ID"
+          ],
+          "verify": [
+            "200 response",
+            "Correct data shape",
+            "All expected fields present"
+          ]
+        },
+        {
+          "id": "API-CRUD-03",
+          "name": "Update Resource",
+          "purpose": "Verify resource update",
+          "steps": [
+            "PUT/PATCH with valid payload"
+          ],
+          "verify": [
+            "200 response",
+            "Changes persisted",
+            "Unchanged fields preserved"
+          ]
+        },
+        {
+          "id": "API-CRUD-04",
+          "name": "Delete Resource",
+          "purpose": "Verify resource deletion",
+          "steps": [
+            "DELETE with valid ID"
+          ],
+          "verify": [
+            "200/204 response",
+            "Resource no longer retrievable",
+            "Related data handled correctly"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Validation",
+      "description": "Input validation testing",
+      "tests": [
+        {
+          "id": "API-VAL-01",
+          "name": "Missing Required Fields",
+          "purpose": "Verify required field validation",
+          "steps": [
+            "POST without required fields"
+          ],
+          "verify": [
+            "400 Bad Request response",
+            "Field-specific error messages",
+            "No partial creation"
+          ]
+        },
+        {
+          "id": "API-VAL-02",
+          "name": "Invalid Field Types",
+          "purpose": "Verify type validation",
+          "steps": [
+            "POST with wrong data types"
+          ],
+          "verify": [
+            "400 response",
+            "Type error indicated",
+            "Expected type in message"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Error Handling",
+      "description": "Error response testing",
+      "tests": [
+        {
+          "id": "API-ERR-01",
+          "name": "Not Found",
+          "purpose": "Verify 404 handling",
+          "steps": [
+            "GET with non-existent ID"
+          ],
+          "verify": [
+            "404 response",
+            "Clear error message",
+            "Consistent error format"
+          ]
+        },
+        {
+          "id": "API-ERR-02",
+          "name": "Server Error",
+          "purpose": "Verify 500 error handling",
+          "steps": [
+            "Trigger server error if possible"
+          ],
+          "verify": [
+            "500 response",
+            "No sensitive data exposed",
+            "Error logged server-side"
+          ]
+        }
+      ]
+    }
+  ]
+}

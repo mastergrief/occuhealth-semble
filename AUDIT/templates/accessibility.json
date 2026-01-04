@@ -1,0 +1,221 @@
+{
+  "id": "accessibility",
+  "name": "Accessibility Audit",
+  "description": "WCAG 2.1 AA compliance testing with axe-core and manual checks",
+  "appType": "a11y",
+  "variables": ["target_area", "base_url", "wcag_level"],
+  "scoutPrompts": {
+    "frontend": "AUDIT SCOUT: Accessibility Discovery for {{target_area}}\n\n1. **Semantic Structure**:\n   - Check for proper heading hierarchy (h1-h6)\n   - Verify landmark regions (header, nav, main, footer)\n   - Find skip links\n   - Check page title updates on navigation\n\n2. **Form Accessibility**:\n   - Verify label associations\n   - Check for fieldset/legend on radio groups\n   - Find error message associations (aria-describedby)\n   - Identify required field indicators\n\n3. **Interactive Elements**:\n   - Check button/link semantics\n   - Verify focus indicators\n   - Find keyboard handlers\n   - Identify custom widgets needing ARIA\n\n4. **Images & Media**:\n   - Check alt text presence\n   - Find decorative image handling\n   - Verify video captions/transcripts\n\n5. **Dynamic Content**:\n   - Find live regions (aria-live)\n   - Check modal focus management\n   - Verify loading state announcements\n   - Identify route change announcements\n\nReturn accessibility inventory with violation risks.",
+    "backend": "AUDIT SCOUT: A11y Backend Considerations for {{target_area}}\n\n1. **API Response Accessibility**:\n   - Check for accessible error messages\n   - Verify status codes match user feedback\n   - Find internationalization support\n\n2. **Content Management**:\n   - Check if CMS enforces alt text\n   - Verify heading structure in content\n   - Find link text requirements\n\n3. **Performance Impact**:\n   - Response times affecting focus management\n   - Loading states that need announcements\n   - Error recovery flows\n\nReturn considerations for accessible UX."
+  },
+  "categories": [
+    {
+      "name": "Automated Scan",
+      "description": "axe-core automated testing",
+      "tests": [
+        {
+          "id": "A11Y-AUTO-01",
+          "name": "axe-core Audit",
+          "purpose": "Run automated accessibility scan",
+          "steps": [
+            "Navigate to target page",
+            "Run auditAccessibility command",
+            "Review violations"
+          ],
+          "verify": [
+            "No critical violations",
+            "No serious violations",
+            "Document moderate/minor for review"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Keyboard Navigation",
+      "description": "Full keyboard accessibility",
+      "tests": [
+        {
+          "id": "A11Y-KB-01",
+          "name": "Tab Order",
+          "purpose": "Verify logical tab sequence",
+          "steps": [
+            "Tab through all interactive elements"
+          ],
+          "verify": [
+            "Order follows visual flow",
+            "No focus traps",
+            "All interactives reachable"
+          ]
+        },
+        {
+          "id": "A11Y-KB-02",
+          "name": "Focus Visibility",
+          "purpose": "Verify focus indicators visible",
+          "steps": [
+            "Tab through page",
+            "Observe focus styling"
+          ],
+          "verify": [
+            "Focus visible on all elements",
+            "Sufficient contrast",
+            "Consistent styling"
+          ]
+        },
+        {
+          "id": "A11Y-KB-03",
+          "name": "Keyboard Shortcuts",
+          "purpose": "Verify keyboard alternatives",
+          "steps": [
+            "Test Enter/Space on buttons",
+            "Test Escape on modals",
+            "Test arrow keys on menus"
+          ],
+          "verify": [
+            "All actions keyboard accessible",
+            "No mouse-only interactions",
+            "Shortcuts documented"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Screen Reader",
+      "description": "Screen reader compatibility",
+      "tests": [
+        {
+          "id": "A11Y-SR-01",
+          "name": "Heading Structure",
+          "purpose": "Verify heading hierarchy",
+          "steps": [
+            "Use snapshot to check headings"
+          ],
+          "verify": [
+            "Single h1 per page",
+            "No skipped levels",
+            "Headings describe content"
+          ]
+        },
+        {
+          "id": "A11Y-SR-02",
+          "name": "Link Text",
+          "purpose": "Verify descriptive link text",
+          "steps": [
+            "Review all links in snapshot"
+          ],
+          "verify": [
+            "No 'click here' or 'read more'",
+            "Links make sense out of context",
+            "No duplicate link text to different targets"
+          ]
+        },
+        {
+          "id": "A11Y-SR-03",
+          "name": "Form Labels",
+          "purpose": "Verify form field announcements",
+          "steps": [
+            "Tab through form fields"
+          ],
+          "verify": [
+            "All fields have labels",
+            "Labels associated correctly",
+            "Required fields indicated"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Visual",
+      "description": "Visual accessibility",
+      "tests": [
+        {
+          "id": "A11Y-VIS-01",
+          "name": "Color Contrast",
+          "purpose": "Verify text contrast ratios",
+          "steps": [
+            "Check text against backgrounds"
+          ],
+          "verify": [
+            "4.5:1 for normal text",
+            "3:1 for large text",
+            "3:1 for UI components"
+          ]
+        },
+        {
+          "id": "A11Y-VIS-02",
+          "name": "Color Independence",
+          "purpose": "Verify color not sole indicator",
+          "steps": [
+            "Review error states",
+            "Check status indicators"
+          ],
+          "verify": [
+            "Icons/text accompany color",
+            "Links underlined or obvious",
+            "Errors have text labels"
+          ]
+        },
+        {
+          "id": "A11Y-VIS-03",
+          "name": "Zoom/Resize",
+          "purpose": "Verify 200% zoom works",
+          "steps": [
+            "Zoom to 200%",
+            "Navigate page"
+          ],
+          "verify": [
+            "No horizontal scroll",
+            "Content still readable",
+            "No overlap/cut-off"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Dynamic Content",
+      "description": "Dynamic content accessibility",
+      "tests": [
+        {
+          "id": "A11Y-DYN-01",
+          "name": "Modal Focus",
+          "purpose": "Verify modal focus management",
+          "steps": [
+            "Open modal",
+            "Tab through",
+            "Close modal"
+          ],
+          "verify": [
+            "Focus moves to modal",
+            "Focus trapped in modal",
+            "Focus returns on close"
+          ]
+        },
+        {
+          "id": "A11Y-DYN-02",
+          "name": "Loading States",
+          "purpose": "Verify loading announcements",
+          "steps": [
+            "Trigger loading state"
+          ],
+          "verify": [
+            "Loading announced to SR",
+            "Completion announced",
+            "Focus managed appropriately"
+          ]
+        },
+        {
+          "id": "A11Y-DYN-03",
+          "name": "Error Announcements",
+          "purpose": "Verify error announcements",
+          "steps": [
+            "Trigger form error"
+          ],
+          "verify": [
+            "Error announced immediately",
+            "Error linked to field",
+            "Focus moves to error or field"
+          ]
+        }
+      ]
+    }
+  ]
+}

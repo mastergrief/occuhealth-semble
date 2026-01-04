@@ -1,0 +1,166 @@
+{
+  "id": "dashboard",
+  "name": "Dashboard Application",
+  "description": "Data visualization dashboard with charts, tables, filters, and real-time updates",
+  "appType": "dashboard",
+  "variables": ["target_area", "base_url", "data_source"],
+  "scoutPrompts": {
+    "frontend": "AUDIT SCOUT: Dashboard Frontend Discovery for {{target_area}}\n\n1. **Layout Structure**:\n   - Identify dashboard layout (grid, flex, sidebar+main)\n   - Find widget/card components\n   - Locate header with filters/controls\n   - Map responsive breakpoints\n\n2. **Data Visualization**:\n   - Identify charting library (Chart.js, Recharts, D3, etc.)\n   - List all chart types used (line, bar, pie, etc.)\n   - Find data table components\n   - Locate stat/metric cards\n\n3. **Interactivity**:\n   - Date range pickers\n   - Filter dropdowns/checkboxes\n   - Search functionality\n   - Sort controls\n   - Drill-down links\n\n4. **Real-time Features**:\n   - WebSocket connections\n   - Polling intervals\n   - Live update indicators\n   - Subscription patterns\n\n5. **Export Capabilities**:\n   - Download buttons (CSV, PDF, Excel)\n   - Print functionality\n   - Share/embed options\n\nReturn inventory with selectors for all interactive elements.",
+    "backend": "AUDIT SCOUT: Dashboard Backend Discovery for {{target_area}}\n\n1. **Data Aggregation**:\n   - Identify aggregation queries (sum, count, avg)\n   - Find time-series queries\n   - Document filter parameters accepted\n   - Map data transformation logic\n\n2. **Performance**:\n   - Identify caching strategies\n   - Find pagination patterns\n   - Locate materialized views if any\n   - Document query optimization\n\n3. **Real-time Data**:\n   - WebSocket endpoints\n   - Subscription handlers\n   - Push notification triggers\n\n4. **Export APIs**:\n   - CSV/Excel generation endpoints\n   - PDF report generation\n   - Bulk data export limits\n\nReturn API inventory with performance considerations."
+  },
+  "categories": [
+    {
+      "name": "Dashboard Load",
+      "description": "Initial dashboard rendering",
+      "tests": [
+        {
+          "id": "DASH-01",
+          "name": "Initial Render",
+          "purpose": "Verify dashboard loads with all widgets",
+          "steps": [
+            "Navigate to dashboard",
+            "Wait for all widgets to load"
+          ],
+          "verify": [
+            "All chart widgets render",
+            "Stat cards show data",
+            "No loading spinners stuck",
+            "Layout is correct"
+          ]
+        },
+        {
+          "id": "DASH-02",
+          "name": "Default Date Range",
+          "purpose": "Verify correct default time period",
+          "steps": [
+            "Navigate to dashboard",
+            "Check date range selector"
+          ],
+          "verify": [
+            "Default range is appropriate (e.g., last 30 days)",
+            "Data matches date range",
+            "Range is clearly displayed"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Filtering",
+      "description": "Filter and search functionality",
+      "tests": [
+        {
+          "id": "FILT-01",
+          "name": "Date Range Filter",
+          "purpose": "Verify date filtering works",
+          "steps": [
+            "Change date range",
+            "Wait for data refresh"
+          ],
+          "verify": [
+            "Charts update with new data",
+            "Tables reflect filtered data",
+            "Loading state shown during fetch"
+          ]
+        },
+        {
+          "id": "FILT-02",
+          "name": "Category Filter",
+          "purpose": "Verify category/dimension filtering",
+          "steps": [
+            "Select filter option",
+            "Wait for update"
+          ],
+          "verify": [
+            "Data filtered correctly",
+            "Filter selection persisted",
+            "Clear filter option available"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Charts",
+      "description": "Data visualization testing",
+      "tests": [
+        {
+          "id": "CHART-01",
+          "name": "Chart Interactivity",
+          "purpose": "Verify chart tooltips and hover",
+          "steps": [
+            "Hover over chart data points"
+          ],
+          "verify": [
+            "Tooltip shows correct data",
+            "Hover state visible",
+            "No flickering"
+          ]
+        },
+        {
+          "id": "CHART-02",
+          "name": "Chart Legend",
+          "purpose": "Verify legend toggle works",
+          "steps": [
+            "Click legend items to toggle series"
+          ],
+          "verify": [
+            "Series hides/shows correctly",
+            "Legend state updates",
+            "Chart rescales appropriately"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tables",
+      "description": "Data table functionality",
+      "tests": [
+        {
+          "id": "TABLE-01",
+          "name": "Table Sorting",
+          "purpose": "Verify column sorting",
+          "steps": [
+            "Click column header to sort"
+          ],
+          "verify": [
+            "Data sorts correctly",
+            "Sort indicator shown",
+            "Toggle asc/desc works"
+          ]
+        },
+        {
+          "id": "TABLE-02",
+          "name": "Table Pagination",
+          "purpose": "Verify pagination controls",
+          "steps": [
+            "Navigate through pages"
+          ],
+          "verify": [
+            "Correct page loads",
+            "Page indicator updates",
+            "Data changes per page"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Export",
+      "description": "Data export functionality",
+      "tests": [
+        {
+          "id": "EXPORT-01",
+          "name": "CSV Export",
+          "purpose": "Verify CSV download",
+          "steps": [
+            "Click export/download button",
+            "Select CSV format"
+          ],
+          "verify": [
+            "File downloads",
+            "Data is correct",
+            "Filename is sensible"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,185 @@
+{
+  "id": "mobile-responsive",
+  "name": "Mobile & Responsive Testing",
+  "description": "Viewport testing across devices, touch interactions, and responsive layouts",
+  "appType": "responsive",
+  "variables": ["target_area", "base_url", "breakpoints"],
+  "scoutPrompts": {
+    "frontend": "AUDIT SCOUT: Responsive Design Discovery for {{target_area}}\n\n1. **Breakpoint Analysis**:\n   - Find CSS media query breakpoints\n   - Identify Tailwind/Bootstrap breakpoint config\n   - Document layout shifts at each breakpoint\n\n2. **Responsive Components**:\n   - Find mobile-specific components (hamburger menu, drawer, etc.)\n   - Identify hidden/shown elements per breakpoint\n   - Document touch-specific handlers\n\n3. **Navigation Patterns**:\n   - Desktop nav vs mobile nav\n   - Bottom navigation if present\n   - Swipe gestures\n\n4. **Touch Targets**:\n   - Minimum touch target sizes\n   - Spacing between touchable elements\n   - Touch feedback indicators\n\n5. **Viewport Meta**:\n   - Check viewport meta tag\n   - Find zoom/scale restrictions\n   - Document orientation handling\n\nReturn responsive inventory with breakpoint behaviors.",
+    "backend": "AUDIT SCOUT: Mobile Backend Considerations for {{target_area}}\n\n1. **Performance**:\n   - Image optimization/srcset\n   - Lazy loading patterns\n   - Bundle size per route\n\n2. **Offline Capability**:\n   - Service worker presence\n   - Cache strategies\n   - Offline fallbacks\n\n3. **Device APIs**:\n   - Geolocation usage\n   - Camera/media access\n   - Push notifications\n\nReturn mobile optimization inventory."
+  },
+  "categories": [
+    {
+      "name": "Viewport Testing",
+      "description": "Test across device sizes",
+      "tests": [
+        {
+          "id": "RESP-VP-01",
+          "name": "Mobile Portrait",
+          "purpose": "Verify mobile layout (375x667)",
+          "steps": [
+            "Set viewport to 375x667 (iPhone SE)",
+            "Navigate through pages"
+          ],
+          "verify": [
+            "No horizontal scroll",
+            "Text readable without zoom",
+            "Touch targets adequate",
+            "Navigation accessible"
+          ]
+        },
+        {
+          "id": "RESP-VP-02",
+          "name": "Tablet Portrait",
+          "purpose": "Verify tablet layout (768x1024)",
+          "steps": [
+            "Set viewport to 768x1024 (iPad)",
+            "Navigate through pages"
+          ],
+          "verify": [
+            "Layout uses space well",
+            "Not stretched mobile layout",
+            "Navigation appropriate for tablet"
+          ]
+        },
+        {
+          "id": "RESP-VP-03",
+          "name": "Desktop Wide",
+          "purpose": "Verify wide desktop (1920x1080)",
+          "steps": [
+            "Set viewport to 1920x1080",
+            "Navigate through pages"
+          ],
+          "verify": [
+            "Content not stretched too wide",
+            "Max-width containers work",
+            "Sidebar layouts correct"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Mobile Navigation",
+      "description": "Mobile-specific navigation",
+      "tests": [
+        {
+          "id": "RESP-NAV-01",
+          "name": "Hamburger Menu",
+          "purpose": "Verify mobile menu works",
+          "steps": [
+            "Set mobile viewport",
+            "Click hamburger icon",
+            "Navigate via menu"
+          ],
+          "verify": [
+            "Menu opens smoothly",
+            "All nav items accessible",
+            "Menu closes on selection",
+            "Focus managed correctly"
+          ]
+        },
+        {
+          "id": "RESP-NAV-02",
+          "name": "Back Navigation",
+          "purpose": "Verify back button/gesture",
+          "steps": [
+            "Navigate forward in app",
+            "Use back navigation"
+          ],
+          "verify": [
+            "Returns to previous page",
+            "State preserved correctly",
+            "No unexpected behavior"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Touch Interactions",
+      "description": "Touch-specific behaviors",
+      "tests": [
+        {
+          "id": "RESP-TOUCH-01",
+          "name": "Touch Targets",
+          "purpose": "Verify adequate touch target sizes",
+          "steps": [
+            "Inspect interactive elements"
+          ],
+          "verify": [
+            "Minimum 44x44px touch targets",
+            "Adequate spacing between targets",
+            "No accidental tap issues"
+          ]
+        },
+        {
+          "id": "RESP-TOUCH-02",
+          "name": "Hover States",
+          "purpose": "Verify no hover-only features",
+          "steps": [
+            "Check features requiring hover"
+          ],
+          "verify": [
+            "All hover features have touch alternative",
+            "Tooltips accessible on tap",
+            "Dropdowns work on touch"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Forms on Mobile",
+      "description": "Mobile form usability",
+      "tests": [
+        {
+          "id": "RESP-FORM-01",
+          "name": "Input Types",
+          "purpose": "Verify correct mobile keyboards",
+          "steps": [
+            "Focus email input",
+            "Focus phone input",
+            "Focus number input"
+          ],
+          "verify": [
+            "Email keyboard for email",
+            "Numeric keyboard for phone",
+            "Appropriate keyboard per type"
+          ]
+        },
+        {
+          "id": "RESP-FORM-02",
+          "name": "Form Layout",
+          "purpose": "Verify mobile form layout",
+          "steps": [
+            "View forms on mobile viewport"
+          ],
+          "verify": [
+            "Labels visible when typing",
+            "Submit button visible",
+            "No zoom on focus (iOS)"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Performance",
+      "description": "Mobile performance testing",
+      "tests": [
+        {
+          "id": "RESP-PERF-01",
+          "name": "Initial Load",
+          "purpose": "Verify mobile load performance",
+          "steps": [
+            "Throttle to 3G",
+            "Load page",
+            "Capture metrics"
+          ],
+          "verify": [
+            "LCP under 2.5s",
+            "FID under 100ms",
+            "CLS under 0.1"
+          ]
+        }
+      ]
+    }
+  ]
+}

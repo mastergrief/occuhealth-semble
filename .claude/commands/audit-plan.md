@@ -1,10 +1,10 @@
 # AUDIT-PLAN - Discovery & Test Design Phase
 
 **Purpose**: Phase 0-2 of audit - discover codebase context and design test plan
-**Output**: `pending-audit.json` in context hub for `/audit-execute` to consume
+**Output**: Pending plan in `AUDIT/context-hub/pending-plans/` for `/audit-execute` to consume
 **Mode**: Any
-**Arguments**: `$ARGUMENTS` = Target to audit (e.g., "doctor portal", "employer bookings")
-**Agents**: 2 Explore (haiku, parallel) → 1 Plan (sonnet)
+**Arguments**: `$ARGUMENTS` = Target area to audit (e.g., "user dashboard", "checkout flow", "admin panel")
+**Agents**: 2-3 Explore (haiku, parallel) → 1 Plan (opus)
 
 ---
 
@@ -19,20 +19,34 @@ AskUserQuestion(
       "question": "What is the scope of this audit?",
       "header": "Scope",
       "options": [
-        {"label": "Entire portal", "description": "All tabs and features for this role"},
-        {"label": "Specific tab", "description": "Single tab/page deep dive"},
-        {"label": "Single feature", "description": "One feature across the stack"},
-        {"label": "Cross-cutting", "description": "Auth, navigation, or similar"}
+        {"label": "Full application", "description": "All authenticated areas and features"},
+        {"label": "Specific area", "description": "Single section, page, or feature"},
+        {"label": "User flow", "description": "End-to-end journey (login → action → logout)"},
+        {"label": "Component", "description": "Single UI component deep dive"}
       ],
       "multiSelect": False
     },
     {
-      "question": "What depth of testing?",
-      "header": "Depth",
+      "question": "What testing approach?",
+      "header": "Approach",
       "options": [
-        {"label": "Quick health check (Recommended)", "description": "Load each page, check for errors"},
-        {"label": "Comprehensive", "description": "Test all interactions and edge cases"},
-        {"label": "Regression", "description": "Focus on previously broken areas"}
+        {"label": "Smoke test (Recommended)", "description": "Pages load, no errors, basic flow works"},
+        {"label": "Functional", "description": "All features work as expected"},
+        {"label": "Regression", "description": "Compare to known baseline"},
+        {"label": "Exploratory", "description": "Find unknown issues"}
+      ],
+      "multiSelect": False
+    },
+    {
+      "question": "Use a template?",
+      "header": "Template",
+      "options": [
+        {"label": "web-app", "description": "Standard SPA with auth and CRUD"},
+        {"label": "dashboard", "description": "Data visualization and filtering"},
+        {"label": "api-only", "description": "Backend API testing (no browser)"},
+        {"label": "accessibility", "description": "WCAG 2.1 AA compliance"},
+        {"label": "mobile-responsive", "description": "Viewport and touch testing"},
+        {"label": "No template", "description": "Generate from scratch"}
       ],
       "multiSelect": False
     }
@@ -44,9 +58,9 @@ AskUserQuestion(
 
 ---
 
-## STEP 1: SCOUT (2 Explore Agents - Parallel)
+## STEP 1: SCOUT (2-3 Explore Agents - Parallel)
 
-### 1.1 Launch 2 Explore Agents (SINGLE message, foreground)
+### 1.1 Launch Explore Agents (SINGLE message, foreground)
 
 ```python
 # Agent 1 - Frontend Discovery
@@ -54,36 +68,41 @@ Task(
   subagent_type="Explore",
   model="haiku",
   prompt="""
-  AUDIT SCOUT 1/2: Frontend Discovery for {$ARGUMENTS}
+  AUDIT SCOUT 1/3: Frontend Discovery for {$ARGUMENTS}
 
   Find ALL UI-related files for this audit target:
 
-  1. **Layout & Routes**:
-     - Layout component (e.g., DoctorLayout.tsx, EmployerLayout.tsx)
-     - Route definitions in App.tsx
-     - Navigation structure (tabs, sidebar items)
+  1. **Routes & Navigation**:
+     - Discover all route definitions (React Router, Next.js, Vue Router, etc.)
+     - Identify navigation components (sidebars, headers, tabs, breadcrumbs)
+     - Map route → component relationships
+     - Find layout wrapper components
 
-  2. **Page Components**:
-     - All pages under relevant directory (src/pages/{role}/*.tsx)
-     - What each page is supposed to do
-     - UI components used
+  2. **Authentication Pattern**:
+     - Identify auth provider (Clerk, Auth0, WorkOS, Firebase, Supabase, custom)
+     - Find auth context/hooks (useAuth, useSession, etc.)
+     - Locate token storage mechanism (localStorage, cookies, memory)
+     - Document guard/protection patterns (PrivateRoute, withAuth, middleware)
+     - Find login/logout components
 
-  3. **Auth Context**:
-     - Auth hooks used
-     - Token storage keys
-     - Guard behavior
+  3. **Page Components**:
+     - List all page-level components with line counts
+     - Document what each page does
+     - Identify shared components
 
   4. **Feature Inventory** (per page):
-     - Forms and their fields
-     - Buttons and their actions
-     - Data displays (tables, cards, lists)
-     - Empty states text
-     - Loading states
+     - Interactive elements (buttons, forms, modals, dropdowns)
+     - Data displays (tables, lists, cards, charts)
+     - State indicators (loading, empty, error)
+     - Form validation patterns
 
-  Return structured inventory:
-  - Route → Component → Features list
-  - Selectors for interactive elements (CSS or text-based)
-  - Expected behaviors per feature
+  5. **Testable Selectors**:
+     - data-testid attributes if present
+     - Semantic selectors (role, aria-label)
+     - Text-based selectors for buttons/links
+     - CSS selectors as fallback
+
+  Return structured inventory with selectors for testing.
   """
 )
 
@@ -92,30 +111,78 @@ Task(
   subagent_type="Explore",
   model="haiku",
   prompt="""
-  AUDIT SCOUT 2/2: Backend Discovery for {$ARGUMENTS}
+  AUDIT SCOUT 2/3: Backend Discovery for {$ARGUMENTS}
 
   Find ALL backend-related files for this audit target:
 
-  1. **Convex Functions**:
-     - Queries used by this portal/feature
-     - Mutations available
-     - Function signatures and arguments
-     - Authorization checks
+  1. **API Layer**:
+     - Identify API pattern (REST, GraphQL, tRPC, Convex, Firebase)
+     - List all endpoints/functions relevant to target
+     - Document request/response shapes
+     - Find API client configuration
 
-  2. **Database Schema**:
-     - Tables relevant to this feature
-     - Fields and their types
-     - Indexes defined
+  2. **Database/State**:
+     - Identify data store (SQL, NoSQL, Convex, Firebase, Supabase)
+     - List tables/collections relevant to target
+     - Document field types and relationships
+     - Find indexes and constraints
 
   3. **Data Flow**:
-     - What queries each page calls
-     - What mutations each action triggers
-     - Expected response shapes
+     - Map which queries each page calls
+     - Map which mutations each action triggers
+     - Document expected response shapes
+     - Identify real-time subscription patterns
+
+  4. **Authorization**:
+     - Document role-based access controls
+     - Find permission checks in API layer
+     - Identify protected resources
 
   Return structured inventory:
   - Query/Mutation → Args → Returns → Auth required
   - Table → Fields → Indexes
   - Page → Queries/Mutations mapping
+  """
+)
+
+# Agent 3 - Credential Discovery (Optional - if auth required)
+Task(
+  subagent_type="Explore",
+  model="haiku",
+  prompt="""
+  AUDIT SCOUT 3/3: Credential Discovery for {$ARGUMENTS}
+
+  Find test credentials for this codebase:
+
+  1. **Environment Files**:
+     - Check .env.local, .env.test, .env.development
+     - Look for TEST_USER, TEST_EMAIL, TEST_PASSWORD patterns
+     - Find any auth-related environment variables
+
+  2. **Fixture Files**:
+     - Search cypress/fixtures/
+     - Search tests/fixtures/, __tests__/
+     - Find seed scripts or test data files
+
+  3. **Documentation**:
+     - Check README.md for test credentials
+     - Look in docs/ folder for testing guides
+     - Find any onboarding documentation
+
+  4. **Auth Method**:
+     - Identify auth method (email/password, OAuth, API keys, magic links)
+     - Document credential format required
+     - Note any MFA or additional steps
+
+  Return:
+  {
+    "auth_method": "email_password | oauth | api_key | magic_link",
+    "credentials_location": "path/to/file or env var names",
+    "test_users": [
+      { "role": "admin", "email": "...", "password_env": "..." }
+    ],
+    "notes": "any special instructions"
+  }
   """
 )
 ```
@@ -125,110 +192,125 @@ Task(
 Results returned directly from foreground Task calls:
 - `frontend_scout` = Routes, components, features, selectors
 - `backend_scout` = Queries, mutations, schema, data flow
+- `credentials_scout` = Test credentials and auth method
 
 ---
 
 ## STEP 2: PLAN (Plan Agent)
 
-### 2.1 Launch Plan Agent
+### 2.1 Load Template (if selected)
+
+```bash
+# If user selected a template
+npx tsx AUDIT/cli/audit.ts template show {templateId} --json
+```
+
+### 2.2 Launch Plan Agent
 
 ```python
 Task(
   subagent_type="Plan",
-  model="sonnet",
+  model="opus",
   prompt="""
   AUDIT TEST PLAN DESIGN: {$ARGUMENTS}
   Scope: {userScope}
-  Depth: {userDepth}
+  Approach: {userApproach}
+  Template: {templateId or "none"}
 
   ## Scout Results
   Frontend: {frontend_scout}
   Backend: {backend_scout}
+  Credentials: {credentials_scout}
+
+  ## Template (if applicable)
+  {template_content}
 
   ## Task
   Create a comprehensive browser-based audit test plan.
 
-  ### Test Categories Required:
+  ### Adapt Categories to This Codebase
 
-  **1. Authentication Tests**
-  - Login flow for this role
-  - Token storage verification (correct localStorage key)
-  - Auth guard behavior (redirect if not auth)
-  - Logout flow
+  Based on scout results, create test categories that match what exists:
 
-  **2. Navigation Tests**
-  - All tabs/routes accessible
-  - Correct content loads per route
-  - Sidebar/nav highlights correctly
-  - No console errors on navigation
-
-  **3. Feature Tests** (per page discovered)
-  For EACH page, create test cases for:
-  - Page load (queries fire, data displays)
-  - Interactive elements (buttons work)
-  - Forms (fields fillable, submit works)
-  - CRUD operations (if applicable)
-  - Empty states (correct message shown)
-  - Error states (graceful handling)
-
-  **4. Data Integrity Tests**
-  - Mutations persist correctly (refresh shows change)
-  - Queries return expected data shape
-  - Real-time updates work (if applicable)
+  - **If auth discovered**: Create Authentication test suite
+  - **If routes discovered**: Create Navigation test suite
+  - **Per page discovered**: Create page-specific test suite
+  - **If forms discovered**: Create Form/CRUD test suite
+  - **If real-time discovered**: Create Real-time test suite
 
   ### Output Format
-  Return test plan as structured markdown:
+  Return test plan as JSON for CLI consumption:
 
-  ```markdown
-  # AUDIT TEST PLAN: {target}
-
-  ## Test Credentials
-  - Role: {role}
-  - Email: {email from .env.local}
-  - Password: {password from .env.local}
-
-  ## Test Suite 1: Authentication
-  ### T1.1 - Login Flow
-  **Purpose**: Verify user can authenticate
-  **Steps**:
-  1. navigate http://localhost:5175
-  2. snapshot
-  3. click "text:Provider Login"
-  4. ... (full browser-cli commands)
-  **Verify**:
-  - URL is /{role}/dashboard
-  - Sidebar shows user name
-  - No console errors
-
-  ## Test Suite 2: Navigation
-  ### T2.1 - Tab Navigation
-  ...
-
-  ## Test Suite 3: {Tab/Feature Name}
-  ### T3.1 - {Feature Test}
-  ...
+  ```json
+  {
+    "target": "{$ARGUMENTS}",
+    "scope": "{userScope}",
+    "approach": "{userApproach}",
+    "template": "{templateId}",
+    "generatedAt": "ISO timestamp",
+    "credentials": {
+      "method": "email_password",
+      "users": [{ "role": "...", "email": "...", "passwordEnv": "..." }]
+    },
+    "baseUrl": "http://localhost:PORT",
+    "suites": [
+      {
+        "id": "auth",
+        "name": "Authentication",
+        "tests": [
+          {
+            "id": "AUTH-01",
+            "name": "Login Flow",
+            "purpose": "Verify user can authenticate",
+            "steps": [
+              "navigate {baseUrl}",
+              "snapshot",
+              "click 'text:Login'",
+              "type 'input[type=email]' '{email}'",
+              "type 'input[type=password]' '{password}'",
+              "click 'text:Sign In'",
+              "wait 2000",
+              "snapshot"
+            ],
+            "verify": [
+              "URL contains /dashboard or authenticated area",
+              "User info displayed",
+              "No console errors"
+            ],
+            "selectors": {
+              "loginButton": "text:Login",
+              "emailInput": "input[type=email]",
+              "submitButton": "text:Sign In"
+            }
+          }
+        ]
+      },
+      {
+        "id": "nav",
+        "name": "Navigation",
+        "tests": [...]
+      }
+    ]
+  }
   ```
 
   Include EXACT browser-cli commands (navigate, click, type, snapshot, etc.)
   Use selectors from scout results where available.
-  Reference NAV-MAP.md patterns for standard selectors.
+  Adapt test steps to match the codebase's actual patterns.
   """
 )
 ```
 
-### 2.2 Write Pending Audit Plan
+### 2.3 Write Pending Audit Plan
 
-```python
-# Write to Serena memory as pending audit
-mcp__serena__write_memory(
-  "PENDING_AUDIT_{$ARGUMENTS}_{timestamp}",
-  planAgentOutput
-)
+```bash
+# Write plan to AUDIT CLI pending plans
+npx tsx AUDIT/cli/audit.ts plan write-pending "{planAgentOutput}"
 ```
 
-**Plan Location**: `.serena/memories/PENDING_AUDIT_*.md`
+**Plan Location**: `AUDIT/context-hub/pending-plans/plan-<timestamp>.json`
 
-### 2.3 Present Plan Summary
+### 2.4 Present Plan Summary
 
 Display to user:
 
@@ -236,25 +318,32 @@ Display to user:
 ## Audit Plan Summary: {$ARGUMENTS}
 
 ### Scope
-- Role: {role}
-- Pages: {N} pages to test
-- Features: {M} features identified
+- Target: {target_area}
+- Approach: {approach}
+- Template: {template or "custom"}
 
 ### Test Suites
-1. **Authentication** - {X} tests
-2. **Navigation** - {Y} tests
-3. **{Tab 1}** - {Z} tests
-4. **{Tab 2}** - {W} tests
-...
+| Suite | Tests | Coverage |
+|-------|-------|----------|
+| Authentication | {N} | Login, Logout, Guards |
+| Navigation | {M} | {routes discovered} |
+| {Page 1} | {X} | {features} |
+| {Page 2} | {Y} | {features} |
 
-### Estimated Duration
-- Quick: ~2-3 minutes
+### Credentials
+- Method: {auth_method}
+- Test Users: {N} roles configured
+- Location: {credentials_location}
+
+### Estimated Tests
+- Total: {total_tests}
+- Smoke: ~2-3 minutes
 - Comprehensive: ~5-10 minutes
 
 ---
-**Plan saved to**: `.serena/memories/PENDING_AUDIT_{name}_{timestamp}.md`
+**Plan saved to**: `AUDIT/context-hub/pending-plans/plan-{timestamp}.json`
 **Next**: Review plan above, then run `/audit-execute` to begin testing.
-**Edit**: Modify plan in memory file before executing if needed.
+**Edit**: Modify plan file before executing if needed.
 ```
 
 ---
@@ -264,19 +353,21 @@ Display to user:
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  STEP 0: CLARIFICATION                                          │
-│  └── AskUserQuestion: scope, depth                              │
+│  └── AskUserQuestion: scope, approach, template                 │
 │      ▼ [User confirms]                                          │
 │                                                                 │
-│  STEP 1: SCOUT (2 parallel Explore agents - haiku)              │
+│  STEP 1: SCOUT (2-3 parallel Explore agents - haiku)            │
 │  ├── Agent 1: Frontend Discovery                                │
-│  └── Agent 2: Backend Discovery                                 │
-│      ▼ [GATE: Wait for both]                                    │
+│  ├── Agent 2: Backend Discovery                                 │
+│  └── Agent 3: Credential Discovery (if auth)                    │
+│      ▼ [GATE: Wait for all]                                     │
 │                                                                 │
-│  STEP 2: PLAN (1 Plan agent - sonnet)                           │
-│  └── Agent 3: Design comprehensive test plan                    │
-│      ▼ [Write to memory]                                        │
+│  STEP 2: PLAN (1 Plan agent - opus)                             │
+│  ├── Load template (if selected)                                │
+│  └── Design comprehensive test plan                             │
+│      ▼ [Write to AUDIT CLI]                                     │
 │                                                                 │
-│  OUTPUT: PENDING_AUDIT_*.md ready for /audit-execute            │
+│  OUTPUT: pending-plans/plan-*.json ready for /audit-execute     │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -286,19 +377,40 @@ Display to user:
 
 ```
 □ STEP 0: CLARIFICATION
-  □ Scope confirmed (portal/tab/feature/cross-cutting)
-  □ Depth confirmed (quick/comprehensive/regression)
+  □ Scope confirmed (full app/specific area/flow/component)
+  □ Approach confirmed (smoke/functional/regression/exploratory)
+  □ Template selected (or custom)
 
 □ STEP 1: SCOUT
-  □ 2 Explore agents launched (SINGLE message, foreground)
+  □ 2-3 Explore agents launched (SINGLE message, foreground)
   □ Frontend discovery complete
   □ Backend discovery complete
+  □ Credential discovery complete (if auth required)
 
 □ STEP 2: PLAN
+  □ Template loaded (if selected)
   □ Plan agent launched with scout results
-  □ Test plan generated with browser-cli commands
-  □ Plan written to memory as PENDING_AUDIT_*
+  □ Test plan generated as JSON
+  □ Plan written to AUDIT/context-hub/pending-plans/
   □ Summary presented to user
+```
+
+---
+
+## CLI REFERENCE
+
+```bash
+# List pending plans
+npx tsx AUDIT/cli/audit.ts plan list-pending
+
+# Load a pending plan
+npx tsx AUDIT/cli/audit.ts plan load-pending [name]
+
+# List available templates
+npx tsx AUDIT/cli/audit.ts template list
+
+# Show template details
+npx tsx AUDIT/cli/audit.ts template show web-app --json
 ```
 
 ---
@@ -308,25 +420,29 @@ Display to user:
 1. **STEP 0 is mandatory** - Always clarify scope before launching agents
 2. **Do NOT run agents in background** - Foreground, wait for completion
 3. **Launch parallel agents in SINGLE message** - Multiple `Task` calls
-4. **Include exact browser-cli commands** - Not pseudocode
-5. **Reference .env.local for credentials** - Don't hardcode
-6. **End after presenting plan** - User runs `/audit-execute` next
+4. **Adapt to codebase** - Scout results drive test design, not assumptions
+5. **Discover credentials** - Don't assume credential locations or formats
+6. **Use JSON output** - For CLI consumption and `/audit-execute` parsing
+7. **End after presenting plan** - User runs `/audit-execute` next
 
 ---
 
 ## EXAMPLE USAGE
 
 ```bash
-# Plan audit for doctor portal
-/audit-plan doctor portal
+# Plan audit for user dashboard
+/audit-plan user dashboard
 
-# Plan audit for specific feature
-/audit-plan employer bookings
+# Plan audit for checkout flow
+/audit-plan checkout flow --template=web-app
 
-# Plan audit for admin compliance
-/audit-plan admin GDPR
+# Plan audit for API endpoints
+/audit-plan API endpoints --template=api-only
+
+# Plan accessibility audit
+/audit-plan main pages --template=accessibility
 ```
 
 ---
 
-**IMPORTANT**: This command ends after presenting the plan. User reviews, optionally edits the memory file, then runs `/audit-execute` to begin browser testing.
+**IMPORTANT**: This command ends after presenting the plan. User reviews, optionally edits the pending plan file, then runs `/audit-execute` to begin browser testing.
