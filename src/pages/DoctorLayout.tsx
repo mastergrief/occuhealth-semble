@@ -6,7 +6,18 @@ import { Button } from "@/components/ui/button";
 import { LayoutDashboard, Calendar, Clock, FileText, Settings, LogOut } from "lucide-react";
 
 export function DoctorLayout() {
-  const { isAuthenticated, isLoading, workosUserId, logoutDoctor } = useDoctorAuth();
+  const { isAuthenticated, isLoading, workosUserId, logoutDoctor, sessionId } = useDoctorAuth();
+
+  const handleLogout = () => {
+    logoutDoctor();
+    localStorage.clear();
+    sessionStorage.clear();
+    if (sessionId) {
+      window.location.href = `${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/logout?sessionId=${sessionId}`;
+    } else {
+      window.location.href = "/";
+    }
+  };
 
   // Fetch doctor data from Convex using WorkOS user ID
   const doctor = useQuery(
@@ -74,7 +85,7 @@ export function DoctorLayout() {
         </nav>
 
         <div className="absolute bottom-4 left-4 right-4">
-          <Button variant="ghost" className="w-full justify-start" onClick={logoutDoctor}>
+          <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
             <LogOut className="h-5 w-5 mr-2" />
             Sign Out
           </Button>

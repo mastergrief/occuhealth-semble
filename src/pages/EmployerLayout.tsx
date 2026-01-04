@@ -14,7 +14,18 @@ import {
 } from "lucide-react";
 
 export function EmployerLayout() {
-  const { isAuthenticated, isLoading, workosUserId, logoutEmployer } = useEmployerAuth();
+  const { isAuthenticated, isLoading, workosUserId, logoutEmployer, sessionId } = useEmployerAuth();
+
+  const handleLogout = () => {
+    logoutEmployer();
+    localStorage.clear();
+    sessionStorage.clear();
+    if (sessionId) {
+      window.location.href = `${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/logout?sessionId=${sessionId}`;
+    } else {
+      window.location.href = "/";
+    }
+  };
 
   // Fetch employer data from Convex using WorkOS user ID
   const employer = useQuery(
@@ -100,7 +111,7 @@ export function EmployerLayout() {
         </nav>
 
         <div className="absolute bottom-4 left-4 right-4">
-          <Button variant="ghost" className="w-full justify-start" onClick={logoutEmployer}>
+          <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
             <LogOut className="h-5 w-5 mr-2" />
             Sign Out
           </Button>

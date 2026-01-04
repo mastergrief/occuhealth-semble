@@ -18,6 +18,10 @@ export function EmployerRegistrationForm() {
   const workosUserId = searchParams.get("userId") || "";
   const accessToken = searchParams.get("accessToken") || "";
   const refreshToken = searchParams.get("refreshToken") || "";
+  const sessionId = searchParams.get("sessionId") || "";
+
+  // Validate required tokens are present
+  const tokensValid = workosUserId && accessToken;
 
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -102,8 +106,8 @@ export function EmployerRegistrationForm() {
         }),
       ]);
 
-      // Store auth tokens
-      loginAsEmployer(workosUserId, accessToken, refreshToken);
+      // Store auth tokens (including sessionId for proper logout)
+      loginAsEmployer(workosUserId, accessToken, refreshToken, sessionId || undefined);
 
       // Redirect to employer dashboard
       navigate("/employer");
@@ -113,6 +117,27 @@ export function EmployerRegistrationForm() {
       setIsSubmitting(false);
     }
   };
+
+  // Show error if required tokens are missing
+  if (!tokensValid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-destructive">Registration Error</CardTitle>
+            <CardDescription>
+              Missing authentication tokens. Please try signing in again.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Button onClick={() => navigate("/")}>
+              Return to Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">

@@ -313,19 +313,21 @@ export function useEmployerAuth(): {
   employer: Employer | null;
   workosUserId: string | null;
   accessToken: string | null;
+  sessionId: string | null;
   isVerified: boolean;
   loginAsEmployer: (
     workosUserId: string,
     accessToken: string,
-    refreshToken: string
+    refreshToken: string,
+    sessionId?: string
   ) => void;
   logoutEmployer: () => void;
 } {
   const auth = useWorkOSAuth();
 
   const loginAsEmployer = useCallback(
-    (workosUserId: string, accessToken: string, refreshToken: string) => {
-      auth.login("employer", { workosUserId, accessToken, refreshToken });
+    (workosUserId: string, accessToken: string, refreshToken: string, sessionId?: string) => {
+      auth.login("employer", { workosUserId, accessToken, refreshToken, sessionId });
     },
     [auth]
   );
@@ -340,6 +342,8 @@ export function useEmployerAuth(): {
       auth.role === "employer" ? (auth.tokens?.workosUserId ?? null) : null,
     accessToken:
       auth.role === "employer" ? (auth.tokens?.accessToken ?? null) : null,
+    sessionId:
+      auth.role === "employer" ? (auth.tokens?.sessionId ?? null) : null,
     isVerified: false, // Determined by employer status from Convex
     loginAsEmployer,
     logoutEmployer: auth.logout,
@@ -356,18 +360,20 @@ export function useDoctorAuth(): {
   doctor: Doctor | null;
   workosUserId: string | null;
   accessToken: string | null;
+  sessionId: string | null;
   loginAsDoctor: (
     workosUserId: string,
     accessToken: string,
-    refreshToken: string
+    refreshToken: string,
+    sessionId?: string
   ) => void;
   logoutDoctor: () => void;
 } {
   const auth = useWorkOSAuth();
 
   const loginAsDoctor = useCallback(
-    (workosUserId: string, accessToken: string, refreshToken: string) => {
-      auth.login("doctor", { workosUserId, accessToken, refreshToken });
+    (workosUserId: string, accessToken: string, refreshToken: string, sessionId?: string) => {
+      auth.login("doctor", { workosUserId, accessToken, refreshToken, sessionId });
     },
     [auth]
   );
@@ -382,6 +388,8 @@ export function useDoctorAuth(): {
       auth.role === "doctor" ? (auth.tokens?.workosUserId ?? null) : null,
     accessToken:
       auth.role === "doctor" ? (auth.tokens?.accessToken ?? null) : null,
+    sessionId:
+      auth.role === "doctor" ? (auth.tokens?.sessionId ?? null) : null,
     loginAsDoctor,
     logoutDoctor: auth.logout,
   };

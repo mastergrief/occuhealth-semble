@@ -4,6 +4,8 @@ import { Routes, Route } from "react-router-dom";
 import { useAdminAuth } from "@/lib/workos-auth";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/layout";
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 // Admin GDPR pages
 import { EmployerVerification } from "@/pages/admin/EmployerVerification";
@@ -42,6 +44,12 @@ function AdminDashboardContent({ adminUser }: { adminUser: { userId: string } | 
 export function AdminLayout() {
   const { isAdminAuthenticated, isLoading, adminUser, logoutAdmin, sessionId } = useAdminAuth();
 
+  // Verify admin exists in database (defense-in-depth)
+  const dbAdmin = useQuery(
+    api.adminUsers.getByWorkosUserId,
+    adminUser?.userId ? { workosUserId: adminUser.userId } : "skip"
+  );
+
   const handleLogout = () => {
     logoutAdmin();
     // Clear all storage
@@ -55,7 +63,8 @@ export function AdminLayout() {
     }
   };
 
-  if (isLoading) {
+  // Show loading while checking auth OR verifying admin in DB
+  if (isLoading || (isAdminAuthenticated && dbAdmin === undefined)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -63,15 +72,21 @@ export function AdminLayout() {
     );
   }
 
-  if (!isAdminAuthenticated) {
+  // Block access if not authenticated OR not in admin database
+  if (!isAdminAuthenticated || dbAdmin === null) {
+    // Clear potentially forged tokens if DB returned null
+    if (dbAdmin === null && isAdminAuthenticated) {
+      logoutAdmin();
+      localStorage.removeItem("workos_admin_auth");
+    }
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Admin Access Required</h1>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+        <div className="text-center max-w-md p-6">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">Admin Access Required</h1>
           <p className="text-muted-foreground mb-6">Please sign in with your admin credentials.</p>
           <a
             href={`${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/login`}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             Sign in as Admin
           </a>

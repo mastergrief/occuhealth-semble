@@ -1,0 +1,152 @@
+{
+  "id": "plan-20260104-auth-e2e-fixes",
+  "created": "2026-01-04T14:30:00Z",
+  "status": "pending",
+  "title": "Auth E2E Bug Fixes (BUG-001, BUG-002, BUG-003)",
+  "priority": "critical",
+  "summary": "Fix 3 authentication bugs: token loss during registration, admin UI access without DB verification, session persistence after logout",
+
+  "scope": {
+    "ui_files": 8,
+    "api_files": 6,
+    "total_lines": 2060,
+    "estimated_changes": "~150 lines across 7 files"
+  },
+
+  "phases": [
+    {
+      "id": 1,
+      "name": "BUG-001: Token Loss During Registration",
+      "priority": "CRITICAL",
+      "status": "blocks_all_registrations",
+      "files": [
+        {
+          "path": "src/components/auth/AdminAuthCallback.tsx",
+          "lines": 82,
+          "change": "Preserve URL params when navigating to registration routes",
+          "location": "line 53"
+        },
+        {
+          "path": "src/pages/register/ChooseRole.tsx",
+          "lines": 83,
+          "change": "Add token validation + sessionId passing",
+          "location": "lines 9-20"
+        },
+        {
+          "path": "src/components/employer/EmployerRegistrationForm.tsx",
+          "lines": 331,
+          "change": "Add token validation + sessionId to loginAsEmployer",
+          "location": "lines 18-20, 106"
+        },
+        {
+          "path": "src/lib/workos-auth.tsx",
+          "lines": 405,
+          "change": "Add sessionId parameter to loginAsEmployer signature",
+          "location": "lines 309-346"
+        }
+      ],
+      "dependencies": [],
+      "verification": "Navigate OAuth callback -> /register/choose-role should have tokens in URL"
+    },
+    {
+      "id": 2,
+      "name": "BUG-003: Session Persistence After Logout",
+      "priority": "HIGH",
+      "status": "security_concern",
+      "files": [
+        {
+          "path": "src/lib/workos-auth.tsx",
+          "lines": 405,
+          "change": "Expose sessionId in useEmployerAuth and useDoctorAuth return values",
+          "location": "lines 309-387"
+        },
+        {
+          "path": "src/pages/EmployerLayout.tsx",
+          "lines": 132,
+          "change": "Add handleLogout with WorkOS /auth/logout endpoint call",
+          "location": "lines 16, 103"
+        },
+        {
+          "path": "src/pages/DoctorLayout.tsx",
+          "lines": 90,
+          "change": "Add handleLogout with WorkOS /auth/logout endpoint call",
+          "location": "lines 8, 77"
+        }
+      ],
+      "dependencies": ["phase_1_workos_auth_changes"],
+      "verification": "Logout should redirect to WorkOS logout URL with sessionId"
+    },
+    {
+      "id": 3,
+      "name": "BUG-002: Admin UI Without DB Verification",
+      "priority": "MEDIUM",
+      "status": "defense_in_depth",
+      "files": [
+        {
+          "path": "src/pages/AdminLayout.tsx",
+          "lines": 118,
+          "change": "Add Convex query to verify admin exists in adminUsers table",
+          "location": "after line 42"
+        }
+      ],
+      "dependencies": [],
+      "verification": "Forged admin token should show 'Admin Access Required', not dashboard"
+    }
+  ],
+
+  "risks": [
+    {
+      "risk": "Token encoding issues in URL params",
+      "likelihood": "low",
+      "impact": "high",
+      "mitigation": "Use URLSearchParams for proper encoding"
+    },
+    {
+      "risk": "localStorage.clear() side effects",
+      "likelihood": "medium",
+      "impact": "low",
+      "mitigation": "Acceptable - only clears auth-related data"
+    },
+    {
+      "risk": "Extra DB query on admin pages",
+      "likelihood": "high",
+      "impact": "low",
+      "mitigation": "Query uses indexed field, fast execution"
+    }
+  ],
+
+  "critical_files": [
+    "src/lib/workos-auth.tsx",
+    "src/components/auth/AdminAuthCallback.tsx",
+    "src/pages/register/ChooseRole.tsx",
+    "src/pages/EmployerLayout.tsx",
+    "src/pages/AdminLayout.tsx"
+  ],
+
+  "reference_pattern": {
+    "file": "src/pages/AdminLayout.tsx",
+    "lines": "44-55",
+    "description": "Correct logout implementation with WorkOS endpoint"
+  },
+
+  "test_commands": {
+    "bug_001": [
+      "navigate localhost:5175",
+      "click 'text:Provider Login'",
+      "evaluate 'window.location.search'",
+      "# Should contain accessToken, userId, sessionId"
+    ],
+    "bug_003": [
+      "restoreState authenticated-employer",
+      "navigate localhost:5175/employer/dashboard",
+      "click 'text:Sign Out'",
+      "evaluate 'window.location.href'",
+      "# Should redirect to /auth/logout?sessionId=..."
+    ],
+    "bug_002": [
+      "evaluate \"localStorage.setItem('workos_admin_auth', JSON.stringify({userId:'fake',accessToken:'fake'}))\"",
+      "navigate localhost:5175/admin",
+      "assert 'text:Admin Access Required' visible"
+    ]
+  }
+}

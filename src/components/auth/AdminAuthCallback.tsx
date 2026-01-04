@@ -49,8 +49,18 @@ export function AdminAuthCallback() {
       sessionId: sessionId || undefined,
     });
 
-    // Redirect to appropriate path or admin dashboard
-    navigate(redirectPath || "/admin", { replace: true });
+    // Redirect to appropriate path, preserving tokens for registration flows
+    if (redirectPath?.startsWith("/register")) {
+      const params = new URLSearchParams({
+        accessToken: accessToken || "",
+        refreshToken: refreshToken || "",
+        userId: userId || "",
+        sessionId: sessionId || "",
+      });
+      navigate(`${redirectPath}?${params.toString()}`, { replace: true });
+    } else {
+      navigate(redirectPath || "/admin", { replace: true });
+    }
   }, [searchParams, loginAsAdmin, navigate]);
 
   if (error) {
