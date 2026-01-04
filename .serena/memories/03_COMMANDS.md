@@ -5,7 +5,7 @@
 ### Development
 ```bash
 npm run dev              # Start all (frontend + backend + typecheck watch)
-npm run dev:frontend     # Vite dev server only (port 5173)
+npm run dev:frontend     # Vite dev server only (port 5175)
 npm run dev:backend      # Convex dev only
 npm run dev:typecheck    # tsgo watch mode
 ```
@@ -51,7 +51,7 @@ npm run cap:android      # Open Android project
 ```bash
 npx tsx BROWSER-CLI/SCRIPTS/browser-cmd.ts <command>
 # Examples:
-# navigate http://localhost:5173
+# navigate http://localhost:5175
 # snapshot
 # click e5
 # screenshot test.png
@@ -75,5 +75,6 @@ npx tsx CONVEX-CLI/SCRIPTS/convex-env.ts list --masked
 ## Port Usage
 | Port | Service |
 |------|---------|
-| 5173 | Vite dev server |
+| 5175 | Vite dev server |
+| 5176 | Vite preview server |
 | 3456 | Browser-CLI daemon |

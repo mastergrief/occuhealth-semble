@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useAdminAuth } from "@/lib/workos-auth";
 import { Button } from "@/components/ui/button";
@@ -45,9 +46,10 @@ export function AdminLayout() {
   const { isAdminAuthenticated, isLoading, adminUser, logoutAdmin, sessionId } = useAdminAuth();
 
   // Verify admin exists in database (defense-in-depth)
+  // Uses verifyAdmin which checks ctx.auth internally - no need to pass workosUserId
   const dbAdmin = useQuery(
-    api.adminUsers.getByWorkosUserId,
-    adminUser?.userId ? { workosUserId: adminUser.userId } : "skip"
+    api.adminUsers.verifyAdmin,
+    isAdminAuthenticated ? {} : "skip"
   );
 
   const handleLogout = () => {
@@ -63,6 +65,17 @@ export function AdminLayout() {
     }
   };
 
+  // Clear potentially forged tokens if DB returned null (must be in useEffect, not render)
+  // IMPORTANT: This hook must be BEFORE any early returns to maintain hooks order
+  // NOTE: Currently ctx.auth.getUserIdentity() returns null due to WorkOS JWT integration issue
+  // See memory: WORKOS_CONVEX_AUTH_INTEGRATION_ISSUE_20260104
+  useEffect(() => {
+    if (dbAdmin === null && isAdminAuthenticated) {
+      logoutAdmin();
+      localStorage.removeItem("workos_admin_auth");
+    }
+  }, [dbAdmin, isAdminAuthenticated, logoutAdmin]);
+
   // Show loading while checking auth OR verifying admin in DB
   if (isLoading || (isAdminAuthenticated && dbAdmin === undefined)) {
     return (
@@ -74,11 +87,6 @@ export function AdminLayout() {
 
   // Block access if not authenticated OR not in admin database
   if (!isAdminAuthenticated || dbAdmin === null) {
-    // Clear potentially forged tokens if DB returned null
-    if (dbAdmin === null && isAdminAuthenticated) {
-      logoutAdmin();
-      localStorage.removeItem("workos_admin_auth");
-    }
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
         <div className="text-center max-w-md p-6">

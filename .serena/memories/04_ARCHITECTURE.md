@@ -40,15 +40,26 @@
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-## Authentication Flow (WorkOS AuthKit)
+## Authentication Flow (WorkOS AuthKit + JWT)
 ```
-1. User clicks login → Redirect to WorkOS
-2. WorkOS authenticates → Callback to /auth/callback
-3. Convex HTTP handler:
-   - Exchanges code for tokens
-   - Creates/updates user in adminUsers/employers/doctorSettings
-   - Sets session cookie
-4. Frontend reads session → Shows authenticated UI
+┌─────────────────────────────────────────────────────────────────────┐
+│ 1. User clicks login → Redirect to WorkOS AuthKit                   │
+│ 2. WorkOS authenticates → Callback to /auth/callback                │
+│ 3. Convex HTTP handler:                                             │
+│    - Exchanges code for access/refresh tokens                       │
+│    - Creates/updates user in adminUsers/employers/doctorSettings    │
+│    - Returns tokens via URL params to frontend                      │
+│ 4. Frontend stores tokens in localStorage                           │
+│ 5. ConvexProviderWithAuthKit sends JWT in requests                  │
+│ 6. auth.config.ts validates JWT via WorkOS JWKS                     │
+│ 7. ctx.auth.getUserIdentity() returns authenticated user            │
+└─────────────────────────────────────────────────────────────────────┘
+
+Token Validation (auth.config.ts):
+- Two providers required for WorkOS:
+  1. SSO: issuer "https://api.workos.com/"
+  2. User Management: issuer "https://api.workos.com/user_management/{clientId}"
+- Both use same JWKS: https://api.workos.com/sso/jwks/{clientId}
 ```
 
 ## Database Schema (Key Tables)
@@ -77,7 +88,9 @@
 ## Key Files
 | File | Purpose |
 |------|---------|
+| `src/main.tsx` | ConvexProviderWithAuthKit + WorkOS setup |
 | `src/App.tsx` | Root routing, lazy loading |
-| `src/lib/workos-auth.tsx` | WorkOS auth providers |
-| `convex/http.ts` | Auth HTTP endpoints |
+| `src/lib/workos-auth.tsx` | WorkOS auth context and role-specific hooks |
+| `convex/auth.config.ts` | **Two-provider JWT config** (SSO + User Management) |
+| `convex/http.ts` | Auth HTTP endpoints (/auth/login, /auth/callback) |
 | `convex/schema.ts` | Database schema |

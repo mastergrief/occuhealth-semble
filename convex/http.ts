@@ -222,4 +222,65 @@ http.route({
   }),
 });
 
+
+// ---------------------------------------------------------------------------
+// CORS Headers for API Endpoints
+// ---------------------------------------------------------------------------
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// ---------------------------------------------------------------------------
+// Token Refresh Endpoint
+// ---------------------------------------------------------------------------
+http.route({
+  path: "/auth/refresh",
+  method: "POST",
+  handler: httpAction(async (_, request) => {
+    try {
+      const body = await request.json();
+      const refreshToken = body?.refreshToken;
+
+      if (!refreshToken) {
+        return new Response(
+          JSON.stringify({ error: "Missing refresh token" }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+
+      const workos = getWorkOS();
+      const clientId = process.env.WORKOS_CLIENT_ID!;
+      const result = await workos.userManagement.authenticateWithRefreshToken({
+        clientId,
+        refreshToken,
+      });
+
+      return new Response(
+        JSON.stringify({
+          accessToken: result.accessToken,
+          refreshToken: result.refreshToken,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    } catch (error) {
+      console.error("Token refresh failed:", error);
+      return new Response(
+        JSON.stringify({ error: "Token refresh failed" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+  }),
+});
+
+// CORS preflight for refresh endpoint
+http.route({
+  path: "/auth/refresh",
+  method: "OPTIONS",
+  handler: httpAction(async () => {
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }),
+});
+
 export default http;

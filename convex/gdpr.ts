@@ -11,6 +11,12 @@ import { Doc } from "./_generated/dataModel";
 // Type for GDPR stats return value
 import { paginatedQueryArgs, toPaginatedResult } from "./helpers/pagination";
 
+import { ConvexError } from "convex/values";
+import {
+  requireAdmin,
+  requireEmployerOwnership,
+} from "./authModules/authorization";
+
 type GDPRStats = {
   pendingErasureCount: number;
   totalPatients: number;
@@ -61,6 +67,9 @@ export const createConsent = mutation({
     collectedByEmployerId: v.id("employers"),
   },
   handler: async (ctx, args) => {
+    // Authorization: Only the owning employer can create consent
+    await requireEmployerOwnership(ctx, args.collectedByEmployerId);
+
     return ctx.db.insert("consents", {
       ...args,
       granted: true,
@@ -73,6 +82,13 @@ export const createConsent = mutation({
 export const withdrawConsent = mutation({
   args: { consentId: v.id("consents") },
   handler: async (ctx, { consentId }) => {
+    // Authorization: Only the owning employer can withdraw consent
+    const consent = await ctx.db.get(consentId);
+    if (!consent) {
+      throw new ConvexError({ code: "NOT_FOUND", message: "Consent not found" });
+    }
+    await requireEmployerOwnership(ctx, consent.collectedByEmployerId);
+
     await ctx.db.patch(consentId, {
       granted: false,
       withdrawnAt: Date.now(),
@@ -84,6 +100,13 @@ export const withdrawConsent = mutation({
 export const getConsentsByPatient = query({
   args: { patientId: v.id("patients") },
   handler: async (ctx, { patientId }) => {
+    // Authorization: Only the owning employer can view patient consents
+    const patient = await ctx.db.get(patientId);
+    if (!patient) {
+      throw new ConvexError({ code: "NOT_FOUND", message: "Patient not found" });
+    }
+    await requireEmployerOwnership(ctx, patient.employerId);
+
     return ctx.db
       .query("consents")
       .withIndex("by_patient", (q) => q.eq("patientId", patientId))
@@ -118,6 +141,9 @@ export const requestErasure = mutation({
 export const listErasureRequests = query({
   args: { status: v.optional(v.string()), ...paginatedQueryArgs },
   handler: async (ctx, args) => {
+    // Authorization: Only admins can list erasure requests
+    await requireAdmin(ctx);
+
     if (args.status) {
       const result = await ctx.db
         .query("erasureRequests")
@@ -136,7 +162,7 @@ export const listErasureRequests = query({
       .paginate(args.paginationOpts);
     return toPaginatedResult(result);
   },
-});;;
+});
 
 // Process erasure (admin)
 export const processErasure = mutation({
@@ -145,6 +171,9 @@ export const processErasure = mutation({
     processedBy: v.string(),
   },
   handler: async (ctx, { requestId, processedBy }) => {
+    // Authorization: Only admins can process erasure requests
+    await requireAdmin(ctx);
+
     const request = await ctx.db.get(requestId);
     if (!request) throw new Error("Request not found");
 
@@ -226,7 +255,7 @@ export const processErasure = mutation({
       processedBy,
     });
   },
-});;
+});
 
 // Get audit logs (admin)
 export const getAuditLogs = query({
@@ -234,6 +263,9 @@ export const getAuditLogs = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { limit }) => {
+    // Authorization: Only admins can view audit logs
+    await requireAdmin(ctx);
+
     const q = ctx.db
       .query("auditLogs")
       .withIndex("by_timestamp")
@@ -253,6 +285,9 @@ export const getAuditLogsByResource = query({
     resourceId: v.string(),
   },
   handler: async (ctx, { resourceType, resourceId }) => {
+    // Authorization: Only admins can view audit logs by resource
+    await requireAdmin(ctx);
+
     return ctx.db
       .query("auditLogs")
       .withIndex("by_resource", (q) =>
@@ -266,6 +301,9 @@ export const getAuditLogsByResource = query({
 export const getGDPRStats = query({
   args: {},
   handler: async (ctx): Promise<GDPRStats> => {
+    // Authorization: Only admins can view GDPR statistics
+    await requireAdmin(ctx);
+
     const pendingErasures = await ctx.db
       .query("erasureRequests")
       .withIndex("by_status", (q) => q.eq("status", "pending"))

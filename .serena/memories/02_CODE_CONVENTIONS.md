@@ -22,10 +22,12 @@ src/
 │   └── register/    # Registration flows
 ├── lib/
 │   ├── utils.ts     # cn() helper
-│   └── workos-auth.tsx  # WorkOS auth providers
+│   └── workos-auth.tsx  # WorkOS auth context + role hooks
+├── main.tsx         # ConvexProviderWithAuthKit setup
 └── App.tsx          # Root routing
 
 convex/
+├── auth.config.ts   # WorkOS JWT providers (two-provider config)
 ├── schema.ts        # Database schema
 ├── http.ts          # HTTP endpoints (auth callbacks)
 ├── authModules/     # Auth utilities

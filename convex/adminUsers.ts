@@ -57,7 +57,7 @@ export const getByWorkosId = internalQuery({
   },
 });
 
-export const getByWorkosUserId = query({
+export const getByWorkosUserId = internalQuery({
   args: { workosUserId: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
@@ -67,12 +67,34 @@ export const getByWorkosUserId = query({
   },
 });
 
-export const getByEmail = query({
+export const getByEmail = internalQuery({
   args: { email: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db
       .query("adminUsers")
       .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
+  },
+});
+
+// Public query that verifies admin status using authenticated identity
+// This prevents admin enumeration - caller can only check their own admin status
+export const verifyAdmin = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null; // Not authenticated
+    }
+
+    // Get admin by the identity's subject (which is the WorkOS user ID)
+    const admin = await ctx.db
+      .query("adminUsers")
+      .withIndex("by_workos_user_id", (q) =>
+        q.eq("workosUserId", identity.subject)
+      )
+      .first();
+
+    return admin;
   },
 });

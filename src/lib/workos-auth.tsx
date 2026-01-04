@@ -90,6 +90,71 @@ const isTokenExpired = (token: string): boolean => {
   }
 };
 
+
+// =============================================================================
+// Token Refresh Mutex
+// =============================================================================
+
+// Token refresh mutex to prevent concurrent refresh attempts
+let isRefreshing = false;
+let refreshPromise: Promise<{ accessToken: string; refreshToken: string } | null> | null = null;
+
+/**
+ * Refresh access token using refresh token
+ * Uses mutex to prevent concurrent refresh attempts
+ */
+export async function refreshAccessToken(
+  refreshToken: string,
+  role: UserRole
+): Promise<{ accessToken: string; refreshToken: string } | null> {
+  // Mutex: If already refreshing, wait for that promise
+  if (isRefreshing && refreshPromise) {
+    return refreshPromise;
+  }
+
+  isRefreshing = true;
+  refreshPromise = (async () => {
+    try {
+      const convexUrl = import.meta.env.VITE_CONVEX_URL as string;
+      // Convert .convex.cloud to .convex.site for HTTP actions
+      const siteUrl = convexUrl.replace(".convex.cloud", ".convex.site");
+
+      const response = await fetch(`${siteUrl}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+
+      if (!response.ok) {
+        console.error("Token refresh failed:", response.status);
+        return null;
+      }
+
+      const tokens = await response.json();
+
+      // Update localStorage with new tokens
+      const storageKey = STORAGE_KEYS[role];
+      const existing = localStorage.getItem(storageKey);
+      if (existing) {
+        const data = JSON.parse(existing);
+        data.accessToken = tokens.accessToken;
+        data.refreshToken = tokens.refreshToken;
+        localStorage.setItem(storageKey, JSON.stringify(data));
+      }
+
+      return tokens;
+    } catch (error) {
+      console.error("Token refresh error:", error);
+      return null;
+    } finally {
+      isRefreshing = false;
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
+}
+
 // =============================================================================
 // Provider Component
 // =============================================================================
