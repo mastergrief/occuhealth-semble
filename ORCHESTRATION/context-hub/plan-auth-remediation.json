@@ -13,6 +13,7 @@
       "id": "phase-0",
       "name": "IMMEDIATE Security Fixes (P0)",
       "description": "Add authorization guards to unprotected GDPR endpoints and convert admin queries to internal. This phase MUST deploy with Phase 1.1-1.2 to avoid breaking guards.",
+      "parallelizable": false,
       "subtasks": [
         {
           "id": "task-0.1",
@@ -22,26 +23,9 @@
           "dependencies": [],
           "estimatedTokens": 8000,
           "context": {
-            "files": [
-              "convex/gdpr.ts",
-              "convex/authModules/authorization.ts"
-            ],
-            "memories": [
-              "AUTH_ANALYSIS_SPRINT_03_SECURITY"
-            ],
-            "symbols": [
-              "createConsent",
-              "withdrawConsent",
-              "requestErasure",
-              "processErasure",
-              "listErasureRequests",
-              "getConsentsByPatient",
-              "getAuditLogs",
-              "getAuditLogsByResource",
-              "getGDPRStats",
-              "requireAdmin",
-              "requireEmployerOwnership"
-            ]
+            "files": ["convex/gdpr.ts", "convex/authModules/authorization.ts"],
+            "memories": ["AUTH_ANALYSIS_SPRINT_03_SECURITY"],
+            "symbols": ["createConsent", "withdrawConsent", "requestErasure", "processErasure", "listErasureRequests", "getConsentsByPatient", "getAuditLogs", "getAuditLogsByResource", "getGDPRStats", "requireAdmin", "requireEmployerOwnership"]
           },
           "acceptanceCriteria": [
             "All 8 GDPR mutations/queries have authorization guards",
@@ -55,21 +39,12 @@
           "description": "Convert admin queries to internal in convex/adminUsers.ts: Change getByWorkosUserId from query to internalQuery, change getByEmail from query to internalQuery. Note: AdminLayout.tsx uses getByWorkosUserId - requires workaround in Phase 1.",
           "agentType": "developer",
           "priority": "critical",
-          "dependencies": [
-            "task-0.1"
-          ],
+          "dependencies": ["task-0.1"],
           "estimatedTokens": 3000,
           "context": {
-            "files": [
-              "convex/adminUsers.ts"
-            ],
-            "memories": [
-              "AUTH_ANALYSIS_SPRINT_03_SECURITY"
-            ],
-            "symbols": [
-              "getByWorkosUserId",
-              "getByEmail"
-            ]
+            "files": ["convex/adminUsers.ts"],
+            "memories": ["AUTH_ANALYSIS_SPRINT_03_SECURITY"],
+            "symbols": ["getByWorkosUserId", "getByEmail"]
           },
           "acceptanceCriteria": [
             "getByWorkosUserId converted to internalQuery",
@@ -79,13 +54,13 @@
           ]
         }
       ],
-      "parallelizable": false,
       "gateCondition": "Typecheck passes. CRITICAL: Do NOT deploy until Phase 1.1-1.2 complete - guards depend on ctx.auth integration."
     },
     {
       "id": "phase-1",
       "name": "Convex Auth Integration (P1)",
       "description": "Configure Convex to accept WorkOS JWT tokens so ctx.auth.getUserIdentity() returns user identity instead of null.",
+      "parallelizable": false,
       "subtasks": [
         {
           "id": "task-1.1",
@@ -96,9 +71,7 @@
           "estimatedTokens": 2000,
           "context": {
             "files": [],
-            "memories": [
-              "PLAN_CONVEX_WORKOS_AUTH_INTEGRATION"
-            ]
+            "memories": ["PLAN_CONVEX_WORKOS_AUTH_INTEGRATION"]
           },
           "acceptanceCriteria": [
             "convex/auth.config.ts created",
@@ -111,25 +84,12 @@
           "description": "Update src/main.tsx (21 lines) to use ConvexProviderWithAuth instead of ConvexProvider. Create ConvexAuthBridge component that uses useWorkOSAuth() to provide tokens to Convex. Tokens from localStorage must be passed via fetchAccessToken callback.",
           "agentType": "developer",
           "priority": "high",
-          "dependencies": [
-            "task-1.1"
-          ],
+          "dependencies": ["task-1.1"],
           "estimatedTokens": 5000,
           "context": {
-            "files": [
-              "src/main.tsx",
-              "src/lib/workos-auth.tsx"
-            ],
-            "memories": [
-              "PLAN_CONVEX_WORKOS_AUTH_INTEGRATION"
-            ],
-            "symbols": [
-              "WorkOSAuthProvider",
-              "useWorkOSAuth",
-              "useAdminAuth",
-              "useEmployerAuth",
-              "useDoctorAuth"
-            ]
+            "files": ["src/main.tsx", "src/lib/workos-auth.tsx"],
+            "memories": ["PLAN_CONVEX_WORKOS_AUTH_INTEGRATION"],
+            "symbols": ["WorkOSAuthProvider", "useWorkOSAuth", "useAdminAuth", "useEmployerAuth", "useDoctorAuth"]
           },
           "acceptanceCriteria": [
             "ConvexProviderWithAuth replaces ConvexProvider",
@@ -143,21 +103,12 @@
           "description": "Add POST /auth/refresh endpoint to convex/http.ts (225 lines). Use WorkOS SDK authenticateWithRefreshToken method to refresh tokens. Return new accessToken and refreshToken in JSON response.",
           "agentType": "developer",
           "priority": "high",
-          "dependencies": [
-            "task-1.2"
-          ],
+          "dependencies": ["task-1.2"],
           "estimatedTokens": 4000,
           "context": {
-            "files": [
-              "convex/http.ts"
-            ],
-            "memories": [
-              "PLAN_CONVEX_WORKOS_AUTH_INTEGRATION"
-            ],
-            "symbols": [
-              "getWorkOS",
-              "http"
-            ]
+            "files": ["convex/http.ts"],
+            "memories": ["PLAN_CONVEX_WORKOS_AUTH_INTEGRATION"],
+            "symbols": ["getWorkOS", "http"]
           },
           "acceptanceCriteria": [
             "/auth/refresh endpoint added",
@@ -171,22 +122,12 @@
           "description": "Add refreshAccessToken function to src/lib/workos-auth.tsx (412 lines). Implement mutex to prevent concurrent refresh attempts. Call /auth/refresh endpoint and update localStorage. Add auto-refresh before token expiry.",
           "agentType": "developer",
           "priority": "high",
-          "dependencies": [
-            "task-1.3"
-          ],
+          "dependencies": ["task-1.3"],
           "estimatedTokens": 6000,
           "context": {
-            "files": [
-              "src/lib/workos-auth.tsx"
-            ],
-            "memories": [
-              "PLAN_CONVEX_WORKOS_AUTH_INTEGRATION"
-            ],
-            "symbols": [
-              "isTokenExpired",
-              "STORAGE_KEYS",
-              "AuthTokens"
-            ]
+            "files": ["src/lib/workos-auth.tsx"],
+            "memories": ["PLAN_CONVEX_WORKOS_AUTH_INTEGRATION"],
+            "symbols": ["isTokenExpired", "STORAGE_KEYS", "AuthTokens"]
           },
           "acceptanceCriteria": [
             "refreshAccessToken function implemented",
@@ -200,19 +141,11 @@
           "description": "Create workaround for AdminLayout.tsx dependency on getByWorkosUserId (now internal). Options: (A) Create public wrapper with auth check, (B) Use HTTP action endpoint, (C) Refactor AdminLayout to use different data flow.",
           "agentType": "developer",
           "priority": "high",
-          "dependencies": [
-            "task-0.2",
-            "task-1.2"
-          ],
+          "dependencies": ["task-0.2", "task-1.2"],
           "estimatedTokens": 4000,
           "context": {
-            "files": [
-              "src/layouts/AdminLayout.tsx",
-              "convex/adminUsers.ts"
-            ],
-            "memories": [
-              "AUTH_ANALYSIS_SPRINT_07_REMEDIATION"
-            ]
+            "files": ["src/layouts/AdminLayout.tsx", "convex/adminUsers.ts"],
+            "memories": ["AUTH_ANALYSIS_SPRINT_07_REMEDIATION"]
           },
           "acceptanceCriteria": [
             "AdminLayout can verify admin status",
@@ -221,28 +154,24 @@
           ]
         }
       ],
-      "parallelizable": false,
       "gateCondition": "All subtasks complete. Typecheck passes. ctx.auth.getUserIdentity() returns user identity in dev environment."
     },
     {
       "id": "phase-2",
       "name": "Validation & Verification",
       "description": "Verify auth integration works end-to-end. Test all role portals.",
+      "parallelizable": true,
       "subtasks": [
         {
           "id": "task-2.1",
           "description": "Verify admin portal authentication: Login as admin, access /admin dashboard, verify ctx.auth.getUserIdentity() returns user in backend logs, verify GDPR queries work with authorization.",
           "agentType": "browser",
           "priority": "high",
-          "dependencies": [
-            "task-1.5"
-          ],
+          "dependencies": ["task-1.5"],
           "estimatedTokens": 5000,
           "context": {
             "files": [],
-            "memories": [
-              "AUTH_ANALYSIS_SPRINT_05_BROWSER_CLI"
-            ]
+            "memories": ["AUTH_ANALYSIS_SPRINT_05_BROWSER_CLI"]
           },
           "acceptanceCriteria": [
             "Admin login succeeds",
@@ -256,15 +185,11 @@
           "description": "Verify employer portal authentication: Login as employer, access /employer/dashboard, verify employer queries work, test employee creation with consent.",
           "agentType": "browser",
           "priority": "high",
-          "dependencies": [
-            "task-1.5"
-          ],
+          "dependencies": ["task-1.5"],
           "estimatedTokens": 5000,
           "context": {
             "files": [],
-            "memories": [
-              "AUTH_ANALYSIS_SPRINT_05_BROWSER_CLI"
-            ]
+            "memories": ["AUTH_ANALYSIS_SPRINT_05_BROWSER_CLI"]
           },
           "acceptanceCriteria": [
             "Employer login succeeds",
@@ -278,16 +203,11 @@
           "description": "Verify authorization guards: Attempt cross-role access (employer trying admin endpoints), verify ConvexError with UNAUTHORIZED code returned.",
           "agentType": "browser",
           "priority": "medium",
-          "dependencies": [
-            "task-2.1",
-            "task-2.2"
-          ],
+          "dependencies": ["task-2.1", "task-2.2"],
           "estimatedTokens": 4000,
           "context": {
             "files": [],
-            "memories": [
-              "AUTH_ANALYSIS_SPRINT_03_SECURITY"
-            ]
+            "memories": ["AUTH_ANALYSIS_SPRINT_03_SECURITY"]
           },
           "acceptanceCriteria": [
             "Employer cannot access processErasure",
@@ -296,7 +216,6 @@
           ]
         }
       ],
-      "parallelizable": true,
       "gateCondition": "All validation tests pass. Screenshots captured for evidence. No UNAUTHENTICATED errors in normal flows."
     }
   ],

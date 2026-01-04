@@ -1,4 +1,5 @@
 {
+  "url": "http://localhost:5175/",
   "cookies": [
     {
       "name": "_cfuvid",
@@ -61,5 +62,7 @@
       "sameSite": "Lax"
     }
   ],
-  "origins": []
+  "localStorage": "{\"workos_employer_auth\":\"{\\\"workosUserId\\\":\\\"\\\",\\\"accessToken\\\":\\\"\\\",\\\"refreshToken\\\":\\\"\\\"}\",\"workos_admin_auth\":\"{\\\"userId\\\":\\\"user_01KE2KZFNT7A3HRQJ980NKCHQV\\\",\\\"accessToken\\\":\\\"eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxS0UxS0FCUlc1TUM4Uk42UFc0WkQ5UUpYIn0.eyJpc3MiOiJodHRwczovL2FwaS53b3Jrb3MuY29tL3VzZXJfbWFuYWdlbWVudC9jbGllbnRfMDFLRTFLQUMzQ1pYWldUUlEzNFBFTU5SNU4iLCJzdWIiOiJ1c2VyXzAxS0UyS1pGTlQ3QTNIUlFKOTgwTktDSFFWIiwic2lkIjoic2Vzc2lvbl8wMUtFMzBXQ1RGUlc2UEcxNFJCQzhCVFJaVCIsImp0aSI6IjAxS0UzMFdEN1lDRFZZMEVWNlFENUNCNDQ0IiwiZXhwIjoxNzY3NDgwOTM2LCJpYXQiOjE3Njc0ODA2MzZ9.DHRL9w1utnN0Lzj6xFyySq9i9j8Uvi1-6mpwoHbPnQ__ht2_r-by3JKG08roYeeKOV6z1pvTHRkCfQljaXBsdX1a2sSmiIsZoVRQyM-AMb7HIo9fe6UONZ6V-y3S4TOroYceupYgQb32qQJOZc6JPNB9_BjOs2TREAUgtuzycwDYCx_alAok2nB-lJzty-bWGMr5LvHDq1HhfQIt_RcL8MU3by0ixRhU5jEyIZdi4IOgDo2xLYWXiPGJtJybLRmIzxUHBFjDsbhjpXZ67edUBh24mQvoqI55wi7Sj2ymfLDyWT4kSpfqtl4kcdmBKNFHXnoOFG3RF4o6umMK9MlJLg\\\",\\\"refreshToken\\\":\\\"nee2QSSdDaBHCAB0AueC1iKc0\\\",\\\"sessionId\\\":\\\"session_01KE30WCTFRW6PG14RBC8BTRZT\\\"}\"}",
+  "sessionStorage": "{}",
+  "timestamp": 1767480938185
 }

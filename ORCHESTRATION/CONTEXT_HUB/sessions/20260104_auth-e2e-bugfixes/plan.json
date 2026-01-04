@@ -1,0 +1,270 @@
+{
+  "id": "f8e7d6c5-b4a3-4291-8c0d-1e2f3a4b5c6d",
+  "type": "plan",
+  "metadata": {
+    "promptId": "ORCH-20260104-AUTH-E2E-FIXES",
+    "sessionId": "20260104_auth-e2e-bugfixes",
+    "timestamp": "2026-01-04T12:00:00.000Z",
+    "version": "1.0.0"
+  },
+  "summary": "Fix 3 critical authentication bugs: BUG-001 (token loss during registration), BUG-002 (admin UI visible without DB verification), BUG-003 (WorkOS session persists after logout). Priority order: BUG-001 > BUG-003 > BUG-002.",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "BUG-001: Token Loss During Registration",
+      "description": "Fix critical token loss that blocks ALL new user registrations. Tokens are lost when AdminAuthCallback navigates to /register/choose-role without preserving URL parameters.",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-1.1",
+          "description": "Fix AdminAuthCallback.tsx line 53: Preserve URL query parameters (accessToken, refreshToken, userId, sessionId) when navigating to redirectPath. Currently uses navigate(redirectPath) which loses all URL params. Must construct URL with params preserved: navigate(`${redirectPath}?accessToken=${accessToken}&refreshToken=${refreshToken}&userId=${userId}&sessionId=${sessionId}`)",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": [],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": ["src/components/auth/AdminAuthCallback.tsx"],
+            "memories": ["UI_AUTH_FILES_BUG_FIX_INVENTORY_20260104"]
+          },
+          "acceptanceCriteria": [
+            "navigate() call includes all URL params",
+            "accessToken, refreshToken, userId, sessionId preserved in URL",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-1.2",
+          "description": "Update ChooseRole.tsx: Add sessionId extraction from URL params (line 10-12 area), pass sessionId to registration forms via URLSearchParams. Currently only passes accessToken, refreshToken, userId. Must add: const sessionId = searchParams.get('sessionId') || '' and include in params object.",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": ["task-1.1"],
+          "estimatedTokens": 2500,
+          "context": {
+            "files": ["src/pages/register/ChooseRole.tsx"],
+            "memories": ["UI_AUTH_FILES_BUG_FIX_INVENTORY_20260104"]
+          },
+          "acceptanceCriteria": [
+            "sessionId extracted from URL params",
+            "sessionId passed to /register/employer and /register/doctor URLs",
+            "Token validation: if any required param is empty, show error instead of proceeding",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-1.3",
+          "description": "Update workos-auth.tsx loginAsEmployer signature: Add sessionId parameter to loginAsEmployer function (currently takes workosUserId, accessToken, refreshToken). Update the login() call inside to include sessionId. Reference useAdminAuth loginAsAdmin pattern which already accepts sessionId.",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": ["task-1.2"],
+          "estimatedTokens": 3500,
+          "context": {
+            "files": ["src/lib/workos-auth.tsx"],
+            "memories": ["UI_AUTH_FILES_BUG_FIX_INVENTORY_20260104"]
+          },
+          "acceptanceCriteria": [
+            "loginAsEmployer accepts sessionId as 4th parameter",
+            "loginAsDoctor accepts sessionId as 4th parameter (same pattern)",
+            "sessionId stored in localStorage auth object",
+            "useEmployerAuth returns sessionId (add to return object)",
+            "useDoctorAuth returns sessionId (add to return object)",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-1.4",
+          "description": "Update EmployerRegistrationForm.tsx: Extract sessionId from URL params (line 18-20 area), add validation that workosUserId and accessToken are non-empty before form submission, pass sessionId to loginAsEmployer call. Show error UI if tokens are missing.",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": ["task-1.3"],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": ["src/components/employer/EmployerRegistrationForm.tsx"],
+            "memories": ["UI_AUTH_FILES_BUG_FIX_INVENTORY_20260104"]
+          },
+          "acceptanceCriteria": [
+            "sessionId extracted from URL params",
+            "Validation: if workosUserId or accessToken empty, show error message",
+            "loginAsEmployer called with sessionId",
+            "Form submission blocked if tokens missing",
+            "Typecheck passes"
+          ]
+        }
+      ],
+      "gateCondition": "All BUG-001 subtasks complete AND typecheck passes. Token flow verified: AdminAuthCallback -> ChooseRole -> EmployerRegistrationForm preserves all 4 tokens (accessToken, refreshToken, userId, sessionId)."
+    },
+    {
+      "id": "phase-2",
+      "name": "BUG-003: WorkOS Session Persistence After Logout",
+      "description": "Fix session persistence issue where WorkOS session cookie remains after app logout. Employer and Doctor layouts need to call WorkOS logout endpoint with sessionId, matching the pattern already implemented in AdminLayout.",
+      "parallelizable": true,
+      "subtasks": [
+        {
+          "id": "task-2.1",
+          "description": "Update EmployerLayout.tsx: Add handleLogout function matching AdminLayout pattern (lines 45-56). Import sessionId from useEmployerAuth (now available after task-1.3). Replace onClick={logoutEmployer} with onClick={handleLogout}. handleLogout must: call logoutEmployer(), clear localStorage, clear sessionStorage, redirect to ${CONVEX_URL}/auth/logout?sessionId=${sessionId}",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-1.3"],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": ["src/pages/EmployerLayout.tsx", "src/pages/AdminLayout.tsx"],
+            "memories": ["UI_AUTH_FILES_BUG_FIX_INVENTORY_20260104"]
+          },
+          "acceptanceCriteria": [
+            "sessionId destructured from useEmployerAuth()",
+            "handleLogout function implemented matching AdminLayout pattern",
+            "Logout button calls handleLogout instead of logoutEmployer directly",
+            "localStorage.clear() and sessionStorage.clear() called",
+            "Redirects to WorkOS logout endpoint with sessionId",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-2.2",
+          "description": "Update DoctorLayout.tsx: Add handleLogout function matching AdminLayout pattern. Import sessionId from useDoctorAuth (now available after task-1.3). Replace onClick={logoutDoctor} with onClick={handleLogout}. Same implementation as EmployerLayout fix.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-1.3"],
+          "estimatedTokens": 2500,
+          "context": {
+            "files": ["src/pages/DoctorLayout.tsx", "src/pages/AdminLayout.tsx"],
+            "memories": ["UI_AUTH_FILES_BUG_FIX_INVENTORY_20260104"]
+          },
+          "acceptanceCriteria": [
+            "sessionId destructured from useDoctorAuth()",
+            "handleLogout function implemented matching AdminLayout pattern",
+            "Logout button calls handleLogout instead of logoutDoctor directly",
+            "localStorage.clear() and sessionStorage.clear() called",
+            "Redirects to WorkOS logout endpoint with sessionId",
+            "Typecheck passes"
+          ]
+        }
+      ],
+      "gateCondition": "Both layout files updated with proper logout handling. Typecheck passes. All three portals (Admin, Employer, Doctor) now use consistent logout pattern with WorkOS session termination."
+    },
+    {
+      "id": "phase-3",
+      "name": "BUG-002: Admin UI Access Without DB Verification",
+      "description": "Add database verification to prevent non-admin users from seeing admin UI. Currently useAdminAuth only checks localStorage role, not the adminUsers table. This is defense-in-depth since backend already blocks unauthorized access.",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-3.1",
+          "description": "Update AdminLayout.tsx: Add Convex query to verify user exists in adminUsers table. Import useQuery from convex/react. Query api.adminUsers.getByWorkosId with userId from adminUser. If query returns null (not found in adminUsers), show 'Admin Access Denied' message instead of admin content. Keep existing backend protection as fallback.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": ["task-2.1", "task-2.2"],
+          "estimatedTokens": 4000,
+          "context": {
+            "files": ["src/pages/AdminLayout.tsx", "convex/adminUsers.ts"],
+            "memories": ["UI_AUTH_FILES_BUG_FIX_INVENTORY_20260104"]
+          },
+          "acceptanceCriteria": [
+            "useQuery imports added from convex/react",
+            "Query adminUsers.getByWorkosId with adminUser.userId",
+            "Loading state handled while query pending",
+            "If query returns null, show access denied UI",
+            "If query returns admin record, show normal admin content",
+            "Existing isAdminAuthenticated check still in place",
+            "Typecheck passes"
+          ]
+        }
+      ],
+      "gateCondition": "AdminLayout verifies user against adminUsers database before rendering. Non-admin users with forged tokens see access denied instead of admin UI."
+    },
+    {
+      "id": "phase-4",
+      "name": "Verification & Testing",
+      "description": "Verify all fixes work together via Browser-CLI E2E testing. Test registration flow, logout flow, and admin access control.",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-4.1",
+          "description": "E2E verification using Browser-CLI: Test complete registration flow - navigate to landing, initiate login, complete WorkOS OAuth (manual step), verify tokens preserved through ChooseRole to EmployerRegistrationForm. Verify localStorage contains valid workosUserId and sessionId after registration.",
+          "agentType": "playwright",
+          "priority": "high",
+          "dependencies": ["task-3.1"],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [],
+            "memories": ["AUTH_E2E_SPRINT_04_BROWSER_CLI_TESTING"]
+          },
+          "acceptanceCriteria": [
+            "Registration flow completes without token loss",
+            "localStorage.workos_employer_auth contains non-empty workosUserId",
+            "localStorage.workos_employer_auth contains sessionId",
+            "User lands on /employer/dashboard after registration"
+          ]
+        },
+        {
+          "id": "task-4.2",
+          "description": "E2E verification of logout: Using authenticated-employer saved state, test logout button. Verify redirect to WorkOS logout endpoint. Verify session cleared (clicking Provider Login shows WorkOS login form, not direct redirect to choose-role).",
+          "agentType": "playwright",
+          "priority": "high",
+          "dependencies": ["task-4.1"],
+          "estimatedTokens": 5000,
+          "context": {
+            "files": [],
+            "memories": ["AUTH_E2E_SPRINT_04_BROWSER_CLI_TESTING"]
+          },
+          "acceptanceCriteria": [
+            "Logout button triggers redirect to WorkOS logout endpoint",
+            "localStorage cleared after logout",
+            "Re-clicking Provider Login shows WorkOS auth form (not auto-redirect)",
+            "Session cookie properly cleared"
+          ]
+        }
+      ],
+      "gateCondition": "All E2E tests pass. No regressions. BUG-001, BUG-002, BUG-003 verified fixed via browser testing."
+    }
+  ],
+  "totalEstimatedTokens": 34500,
+  "risks": [
+    {
+      "description": "WorkOS OAuth callback URL may need updating if sessionId parameter handling changes",
+      "mitigation": "Test with real WorkOS OAuth flow, not just mocked localStorage",
+      "severity": "medium"
+    },
+    {
+      "description": "Breaking change to loginAsEmployer/loginAsDoctor signatures may affect other callers",
+      "mitigation": "Search for all usages of these functions before modifying. Make sessionId optional with default empty string.",
+      "severity": "low"
+    },
+    {
+      "description": "Admin DB query may fail if adminUsers table/query doesn't exist or has different schema",
+      "mitigation": "Verify adminUsers.ts exports getByWorkosId query before implementing UI change",
+      "severity": "medium"
+    },
+    {
+      "description": "CONVEX_URL environment variable needed for logout redirect - may differ between environments",
+      "mitigation": "Use import.meta.env.VITE_CONVEX_URL with fallback",
+      "severity": "low"
+    }
+  ],
+  "fileChangeManifest": {
+    "phase1_bug001": [
+      "src/components/auth/AdminAuthCallback.tsx",
+      "src/pages/register/ChooseRole.tsx",
+      "src/lib/workos-auth.tsx",
+      "src/components/employer/EmployerRegistrationForm.tsx"
+    ],
+    "phase2_bug003": [
+      "src/pages/EmployerLayout.tsx",
+      "src/pages/DoctorLayout.tsx"
+    ],
+    "phase3_bug002": [
+      "src/pages/AdminLayout.tsx"
+    ]
+  },
+  "referenceImplementations": {
+    "correctLogoutPattern": {
+      "file": "src/pages/AdminLayout.tsx",
+      "lines": "45-56",
+      "description": "handleLogout with sessionId + WorkOS endpoint"
+    },
+    "sessionIdInHook": {
+      "file": "src/lib/workos-auth.tsx",
+      "symbol": "useAdminAuth",
+      "description": "Already returns sessionId - use as pattern for employer/doctor hooks"
+    }
+  }
+}
