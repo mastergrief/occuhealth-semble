@@ -1,0 +1,88 @@
+{
+  "url": "http://localhost:5175/doctor",
+  "cookies": [
+    {
+      "name": "_cfuvid",
+      "value": "wYBeWUzFU4HZ1O1GUHlstC0g8HrLxs3z1QQ2p6rrh8Q-1767480518320-0.0.1.1-604800000",
+      "domain": ".workos.com",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "__wuid",
+      "value": "Fe26.2*1*39347c584fd240900974e8d647a48d333748c58badbe426b94425e480d251fd3*jER5gg8-bbVf9SN1o1vrIQ*1vLPklV_zKYPPxcahgR8YTEOZLpHbUilf_sD2OTJ_iB0pFd0FqC5dVKwnfHhL0bvnPkFnLfQiBkoEgMkeRAbFHtBVpOzXTzt7yMIiPlKUMc*1772664521064*3288f97cd1e179c955b6d27d99942979de8b07c4f379f8d783d2e9ff9d2fa27e*eLDQYhdR7N0UnP7lgUaNumujIRhcpYXiycjZfLBeyII~2",
+      "domain": "gentle-wagon-89-staging.authkit.app",
+      "path": "/",
+      "expires": 1772664521,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "ajs_anonymous_id",
+      "value": "7ee455fa-a718-4794-b25e-047bd7e86634",
+      "domain": ".workos.com",
+      "path": "/",
+      "expires": 1799086138,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_dd_s",
+      "value": "aid=ab2ab864-2e3e-4b7a-97fc-d3d8be8d38d6&rum=0&expire=1767563234125",
+      "domain": "gentle-wagon-89-staging.authkit.app",
+      "path": "/",
+      "expires": 1799098334,
+      "httpOnly": false,
+      "secure": false,
+      "sameSite": "Strict"
+    },
+    {
+      "name": "__kduid",
+      "value": "Fe26.2*1*660e657ea5505ba9e2cfdc05bd3eacf658f703cded61103172de873ad6838bf7*um-5ZXHJgq_z5LDx_rjheg*bOJVCMuR_HRqSQVFKdlqnVU3Oj59mlfLpP5Bs_4JPfQ0fxBqkcoJkL9LV2I8aiMKrDSVcqe3LcpB0EAWDxBlfNCqck8FIV7ppm-ctgUIEUExDGGsvpMn2TsIwYCMWN5M*1799098335165*684b378d3725299a28c09dc9d40f0194bb05c528f05d3502c18e806149841ede*XZWSMLD9FZA9R_wdjn7RtEI2CmMl1h8d8bDInbRREfI~2",
+      "domain": "gentle-wagon-89-staging.authkit.app",
+      "path": "/",
+      "expires": 1799098335.220535,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "__recent_auth",
+      "value": "Fe26.2*1*f215901d897015ed13d93b900682ee547732257badd67b73eea27ea111a1a94b*QyFh7lVsMj9oAE1vqD5ERQ*T6QvbXucBGIjZVUUNJKOnHegkPaaSeliyfW8E5tGvdM-1En_fPZF07QhRckdo39NtWxE3BXkQZN787Dk_l_u8A*1768167135205*22ced4bcca4cef5f793cc25c2b5c7bf227658f1d67849431ac67a2263eabe0d9*Ux9ZZ1gCRcvRUh4vCok4Q9dVB2yVzbziCSX1kFo31Nw~2",
+      "domain": "gentle-wagon-89-staging.authkit.app",
+      "path": "/",
+      "expires": 1768167135.220717,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "session",
+      "value": "9hG5ilE920Ip73j7RhoLLkWMv",
+      "domain": "gentle-wagon-89-staging.authkit.app",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "access-token",
+      "value": "eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxS0UxS0FCUlc1TUM4Uk42UFc0WkQ5UUpYIn0.eyJhdWQiOiJodHRwczovL2FwaS53b3Jrb3MuY29tL3gvYXV0aGtpdCIsImlzcyI6Imh0dHBzOi8vYXBpLndvcmtvcy5jb20veC9hdXRoa2l0Iiwic3ViIjoidXNlcl8wMUtFMktZUzc3RDU3WkUxTTlOQ0syMzY1WSIsInNpZCI6InNlc3Npb25fMDFLRTVFU01QOFZKVEFZR0hCQVBGSlZHQVoiLCJqdGkiOiIwMUtFNUVTTVNFVkFFQ0hOM1RHQVNROUtaNCIsImV4cCI6MTc2NzU2MjYzNSwiaWF0IjoxNzY3NTYyMzM1fQ.snQiKXDmjqF4nPMIXIwzaMQ55mtNITVk4_RVBv5BXuUQrvvJFJ2EcCFIBTxRgU8JCfWIDWvH6HfTJb5wFEfTJ-ODb1f1v8drqMSATiFUwo4SrmbNCvGj12fYLI7Y1yelTwGXj327JfmggyOsoTVxThUNTa4b60lGTr7N3ymD6Y2xNQI4mnbi-hYQVN9VucZXdhjUUD3mC9geD-zPYxCnELkOcpPQNjQT9I1C-fesk5IaxAfzmd16dPnJFvWs03lmJ_qzYra_skfels7YPrxl34eRjysD8pziNb6esU3DE-IY9Sxy9MeQFt-SGNySXqRqIVf7MtgQnyCE2g2p-1lylA",
+      "domain": "gentle-wagon-89-staging.authkit.app",
+      "path": "/",
+      "expires": 1767562635.220818,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    }
+  ],
+  "localStorage": "{\"workos_doctor_auth\":\"{\\\"workosUserId\\\":\\\"user_01KE2KYS77D57ZE1M9NCK2365Y\\\",\\\"accessToken\\\":\\\"eyJhbGciOiJSUzI1NiIsImtpZCI6InNzb19vaWRjX2tleV9wYWlyXzAxS0UxS0FCUlc1TUM4Uk42UFc0WkQ5UUpYIn0.eyJpc3MiOiJodHRwczovL2FwaS53b3Jrb3MuY29tL3VzZXJfbWFuYWdlbWVudC9jbGllbnRfMDFLRTFLQUMzQ1pYWldUUlEzNFBFTU5SNU4iLCJzdWIiOiJ1c2VyXzAxS0UyS1lTNzdENTdaRTFNOU5DSzIzNjVZIiwic2lkIjoic2Vzc2lvbl8wMUtFNUVTTVA4VkpUQVlHSEJBUEZKVkdBWiIsImp0aSI6IjAxS0U1RVNOQ0dOS1pNWUQyWUMyQldFSjdEIiwiZXhwIjoxNzY3NTYyNjM1LCJpYXQiOjE3Njc1NjIzMzV9.dULsko0-EceBtMbWHVsnDKoeu0YenQPADzGoqBRc4OfQ9QpIfE1Rj_YpNzUa0LPFtpqYPsWvCQNOUXplK29M_eSnWHwYPWZiJkKcaBjOGirX20IOyUztloa1J3N3vC_srxt3YfEog6bQup1rTp1-V0ZSjDB-AvruWz0LWMoPq5FS94Jx_iTg7oakmUMCFzZ3DQa61jYGGbmSBYGzbnZ2w2JI_REyAvtm1HTe-34mThmx0dJdV6LWTYXLZFUvJQvWYDgwCOswTFQ74oWz-gMd8GHqyi1TE9fuLiQAAAQAE9AJComZwvS564lwXB21M-BEV3L5zAb1Url_FMi7sIy1MA\\\",\\\"refreshToken\\\":\\\"yNwcdw8sPWFAvLRGWTSJUQ0oj\\\",\\\"sessionId\\\":\\\"session_01KE5ESMP8VJTAYGHBAPFJVGAZ\\\"}\"}",
+  "sessionStorage": "{}",
+  "timestamp": 1767562387220
+}

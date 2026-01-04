@@ -1,0 +1,28 @@
+{
+  "name": "test-suite",
+  "startedAt": "2026-01-04T21:40:43.985Z",
+  "tests": [
+    {
+      "id": "AUTH-01",
+      "status": "PASS",
+      "evidence": "screenshot-login.png",
+      "timestamp": "2026-01-04T21:40:55.499Z",
+      "notes": "Login successful"
+    },
+    {
+      "id": "NAV-01",
+      "status": "FAIL",
+      "evidence": "error.png",
+      "timestamp": "2026-01-04T21:40:57.915Z",
+      "notes": "Navigation broken"
+    },
+    {
+      "id": "NAV-02",
+      "status": "PARTIAL",
+      "evidence": "partial.png",
+      "timestamp": "2026-01-04T21:41:00.376Z",
+      "notes": "Some links work"
+    }
+  ],
+  "completedAt": "2026-01-04T21:41:24.263Z"
+}
