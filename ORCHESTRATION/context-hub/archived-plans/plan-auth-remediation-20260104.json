@@ -1,218 +1,213 @@
 {
   "planId": "auth-remediation-20260104",
-  "created": "2026-01-04T12:00:00Z",
-  "title": "Auth System Remediation (WorkOS + Convex Integration)",
+  "title": "Auth Remediation - Fix AdminAuthCallback Role Detection",
+  "created": "2026-01-04T14:30:00Z",
   "status": "pending",
+  "estimatedEffort": "4 hours",
+  "complexity": "medium",
+
   "summary": {
-    "scope": {
-      "ui": { "files": 24, "lines": 2388 },
-      "api": { "files": 10, "functions": 59, "guardedPct": 70 },
-      "db": { "tables": 13, "indexes": 28 }
-    },
-    "criticalProblem": "ctx.auth.getUserIdentity() returns NULL - tokens not sent to Convex backend",
-    "securityScore": { "current": "4/10", "target": "8/10" }
+    "problem": "AdminAuthCallback.tsx always calls loginAsAdmin() regardless of user role, storing ALL tokens in workos_admin_auth key. This breaks doctor and employer portal access.",
+    "solution": "Fix role detection in AdminAuthCallback, create DoctorRegistrationForm, add missing route",
+    "impact": "Doctor/Employer portals will become functional (currently 0% → 100%)"
   },
+
+  "scope": {
+    "ui": {
+      "components": 2,
+      "newComponents": 1,
+      "modifiedComponents": 1
+    },
+    "api": {
+      "mutations": 0,
+      "queries": 0,
+      "changes": "None - backend is correct"
+    },
+    "db": {
+      "tables": 0,
+      "changes": "None - schema is correct"
+    }
+  },
+
   "phases": [
     {
-      "id": "phase-0",
-      "name": "IMMEDIATE Security Fixes",
+      "id": 1,
+      "name": "Fix AdminAuthCallback Role Detection",
       "priority": "P0",
-      "timeline": "This Week",
-      "tasks": [
+      "effort": "1 hour",
+      "files": [
         {
-          "id": "0.1",
-          "name": "Add GDPR Authorization Guards",
-          "file": "convex/gdpr.ts",
-          "lines": 352,
-          "description": "Add requireAdmin/requireEmployerOwnership guards to 9 unguarded functions",
-          "functions": [
-            "createConsent → requireEmployerOwnership",
-            "withdrawConsent → requireEmployerOwnership",
-            "requestErasure → requireAuthenticated",
-            "processErasure → requireAdmin",
-            "listErasureRequests → requireAdmin",
-            "getConsentsByPatient → requireEmployerOwnership",
-            "getAuditLogs → requireAdmin",
-            "getAuditLogsByResource → requireAdmin",
-            "getGDPRStats → requireAdmin"
-          ],
-          "effort": "2-3 hours",
-          "risk": "MEDIUM - Guards throw UNAUTHENTICATED until Phase 1",
-          "verification": ["TypeScript compile passes", "Unguarded calls fail with UNAUTHENTICATED"]
-        },
-        {
-          "id": "0.2",
-          "name": "Convert Admin Queries to Internal",
-          "file": "convex/adminUsers.ts",
-          "lines": 78,
-          "description": "Change getByWorkosUserId and getByEmail from query to internalQuery",
-          "effort": "30 min",
-          "risk": "MEDIUM - Requires frontend update for AdminLayout",
-          "verification": ["Direct API calls fail", "AdminLayout continues working"]
+          "path": "src/components/auth/AdminAuthCallback.tsx",
+          "lines": 91,
+          "changes": [
+            "Line 3: Add useDoctorAuth, useEmployerAuth imports",
+            "Lines 14-16: Add hook calls",
+            "Lines 44-50: Replace loginAsAdmin with role-based logic"
+          ]
         }
-      ]
+      ],
+      "tasks": [
+        "Import useDoctorAuth and useEmployerAuth hooks",
+        "Add hook calls at component level",
+        "Replace hardcoded loginAsAdmin with conditional role detection",
+        "Run typecheck to verify no errors"
+      ],
+      "verification": [
+        "Admin login still works (regression test)",
+        "Token stored in correct localStorage key based on role"
+      ],
+      "dependencies": []
     },
     {
-      "id": "phase-1",
-      "name": "Convex Auth Integration",
-      "priority": "P1",
-      "timeline": "Sprint 1 (Week 2)",
-      "tasks": [
+      "id": 2,
+      "name": "Create DoctorRegistrationForm Component",
+      "priority": "P0",
+      "effort": "2 hours",
+      "files": [
         {
-          "id": "1.1",
-          "name": "Create Convex Auth Configuration",
-          "file": "convex/auth.config.ts",
-          "lines": 10,
-          "description": "New file - Configure WorkOS as JWT provider",
-          "effort": "30 min",
-          "risk": "MEDIUM - JWT format may be incompatible",
-          "verification": ["npx convex dev starts without errors"]
+          "path": "src/components/doctor/DoctorRegistrationForm.tsx",
+          "lines": "~150 (new file)",
+          "changes": ["Create new component based on EmployerRegistrationForm pattern"]
         },
         {
-          "id": "1.2",
-          "name": "Update Main Entry Point",
-          "file": "src/main.tsx",
-          "lines": 21,
-          "description": "Replace ConvexProvider with ConvexProviderWithAuth, add ConvexAuthBridge",
-          "effort": "2 hours",
-          "risk": "HIGH - Affects all pages",
-          "dependencies": ["1.1"],
-          "verification": ["App loads", "ctx.auth.getUserIdentity() returns user", "All portals work"]
-        },
-        {
-          "id": "1.3",
-          "name": "Add Token Refresh Endpoint",
-          "file": "convex/http.ts",
-          "lines": 225,
-          "description": "Add POST /auth/refresh endpoint using WorkOS SDK",
-          "effort": "1 hour",
-          "risk": "LOW - Additive change",
-          "verification": ["POST with valid refresh token returns new tokens"]
-        },
-        {
-          "id": "1.4",
-          "name": "Add Frontend Token Refresh",
-          "file": "src/lib/workos-auth.tsx",
-          "lines": 412,
-          "description": "Add refreshAccessToken function with mutex, integrate with ConvexAuthBridge",
-          "effort": "2 hours",
-          "dependencies": ["1.3"],
-          "risk": "LOW - Additive change",
-          "verification": ["Token auto-refreshes after expiry"]
+          "path": "src/components/doctor/index.ts",
+          "lines": "~5 (new file)",
+          "changes": ["Create export barrel"]
         }
-      ]
+      ],
+      "tasks": [
+        "Create src/components/doctor/ directory",
+        "Create DoctorRegistrationForm.tsx with form fields: name, email, zoomPersonalLink",
+        "Implement form submission calling doctorSettings.create mutation",
+        "Call loginAsDoctor on successful registration",
+        "Navigate to /doctor on completion",
+        "Create index.ts export",
+        "Run typecheck"
+      ],
+      "verification": [
+        "Component renders without errors",
+        "Form validation works",
+        "Submission creates doctor record"
+      ],
+      "dependencies": []
     },
     {
-      "id": "phase-2",
-      "name": "Testing & Documentation",
-      "priority": "P2",
-      "timeline": "Sprint 2 (Week 3)",
-      "tasks": [
+      "id": 3,
+      "name": "Add Doctor Registration Route",
+      "priority": "P0",
+      "effort": "30 minutes",
+      "files": [
         {
-          "id": "2.1",
-          "name": "Add Vitest Configuration",
-          "files": ["vitest.config.ts", "tests/setup.ts"],
-          "description": "Install vitest, @testing-library/react, configure jsdom",
-          "effort": "1 hour",
-          "risk": "LOW"
-        },
-        {
-          "id": "2.2",
-          "name": "Create Auth Hook Tests",
-          "files": ["tests/unit/auth/isTokenExpired.test.ts", "tests/unit/auth/useAdminAuth.test.tsx"],
-          "description": "Unit tests for token expiration and auth hooks",
-          "effort": "3 hours",
-          "dependencies": ["2.1"],
-          "risk": "LOW"
-        },
-        {
-          "id": "2.3",
-          "name": "Create Guard Tests",
-          "files": ["tests/unit/convex/authorization.test.ts"],
-          "description": "Unit tests for backend authorization guards",
-          "effort": "2 hours",
-          "dependencies": ["2.1"],
-          "risk": "LOW"
-        },
-        {
-          "id": "2.4",
-          "name": "Create API Documentation",
-          "files": ["DOCUMENTS/API.md"],
-          "description": "Document auth endpoints, guards, error codes",
-          "effort": "2 hours",
-          "risk": "LOW"
+          "path": "src/App.tsx",
+          "lines": 252,
+          "changes": [
+            "After line 46: Add lazy import for DoctorRegistrationForm",
+            "After line 78: Add /register/doctor route"
+          ]
         }
-      ]
+      ],
+      "tasks": [
+        "Add lazy import for DoctorRegistrationForm",
+        "Add Route path='/register/doctor' with Suspense wrapper",
+        "Run typecheck"
+      ],
+      "verification": [
+        "Route renders DoctorRegistrationForm",
+        "ChooseRole navigation works"
+      ],
+      "dependencies": [2]
+    },
+    {
+      "id": 4,
+      "name": "End-to-End Verification",
+      "priority": "P0",
+      "effort": "30 minutes",
+      "files": [],
+      "tasks": [
+        "Test admin login (regression)",
+        "Test existing doctor login",
+        "Test existing employer login",
+        "Test new doctor registration flow"
+      ],
+      "verification": [
+        "Admin: redirects to /admin, token in workos_admin_auth",
+        "Doctor: redirects to /doctor, token in workos_doctor_auth",
+        "Employer: redirects to /employer, token in workos_employer_auth",
+        "New doctor: choose-role → registration → dashboard"
+      ],
+      "dependencies": [1, 2, 3]
     }
   ],
+
   "criticalFiles": [
     {
-      "path": "convex/gdpr.ts",
-      "lines": 352,
-      "priority": "CRITICAL",
-      "change": "Add guards to 9 functions"
+      "path": "src/components/auth/AdminAuthCallback.tsx",
+      "action": "modify",
+      "lines": "3, 14-16, 44-50",
+      "reason": "THE BUG LOCATION - fix role detection"
     },
     {
-      "path": "src/main.tsx",
-      "lines": 21,
-      "priority": "CRITICAL",
-      "change": "ConvexProvider → ConvexProviderWithAuth"
+      "path": "src/components/doctor/DoctorRegistrationForm.tsx",
+      "action": "create",
+      "lines": "~150",
+      "reason": "Missing component for doctor registration"
     },
     {
-      "path": "convex/adminUsers.ts",
-      "lines": 78,
-      "priority": "HIGH",
-      "change": "query → internalQuery for 2 functions"
-    },
-    {
-      "path": "convex/auth.config.ts",
-      "lines": 10,
-      "priority": "HIGH",
-      "change": "New file - WorkOS provider config"
-    },
-    {
-      "path": "convex/http.ts",
-      "lines": 225,
-      "priority": "MEDIUM",
-      "change": "Add /auth/refresh endpoint"
-    },
-    {
-      "path": "src/lib/workos-auth.tsx",
-      "lines": 412,
-      "priority": "MEDIUM",
-      "change": "Add token refresh logic"
+      "path": "src/App.tsx",
+      "action": "modify",
+      "lines": "46, 78-85",
+      "reason": "Add lazy import and route"
     }
   ],
+
   "risks": [
     {
-      "phase": "0.1",
-      "level": "MEDIUM",
-      "description": "Guards will throw UNAUTHENTICATED until Phase 1 completes",
-      "mitigation": "Deploy Phase 0.1 + Phase 1.1-1.2 together"
+      "risk": "Admin flow breaks after change",
+      "likelihood": "low",
+      "impact": "critical",
+      "mitigation": "Test admin login first after AdminAuthCallback changes"
     },
     {
-      "phase": "1.1",
-      "level": "MEDIUM",
-      "description": "WorkOS JWT format may be incompatible with Convex built-in auth",
-      "mitigation": "Implement custom JWT verification via HTTP action if needed"
+      "risk": "Type mismatch in hook signatures",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigation": "loginAsDoctor/loginAsEmployer use positional params; use refreshToken || '' for undefined"
     },
     {
-      "phase": "1.2",
-      "level": "HIGH",
-      "description": "Provider change affects all pages",
-      "mitigation": "Thorough E2E testing before deployment"
+      "risk": "New users token storage",
+      "likelihood": "low",
+      "impact": "medium",
+      "mitigation": "Verify choose-role flow doesn't require login call"
     }
   ],
-  "successMetrics": {
-    "securityScore": { "before": "4/10", "after": "8/10" },
-    "testCoverage": { "before": "30%", "after": "70%" },
-    "documentation": { "before": "57%", "after": "80%" },
-    "gdprCompliance": { "before": "FAIL", "after": "PASS" },
-    "guardEffectiveness": { "before": "0%", "after": "100%" }
+
+  "testCredentials": {
+    "admin": {
+      "email": "testadmin@occuhealth.com",
+      "password": "(TestPass1234"
+    },
+    "doctor": {
+      "email": "testdoc@occuhealth.com",
+      "password": "(TestPass1234"
+    },
+    "employer": {
+      "email": "testemployee@occuhealth.com",
+      "password": "(TestPass1234"
+    }
   },
-  "deploymentStrategy": {
-    "phase0": "Deploy with Phase 1.1-1.2 to avoid breaking guards",
-    "phase1": "Feature flag recommended for gradual rollout",
-    "phase2": "No production impact - testing only"
+
+  "successCriteria": [
+    "TypeScript compilation passes with no errors",
+    "Admin login stores token in workos_admin_auth",
+    "Doctor login stores token in workos_doctor_auth",
+    "Employer login stores token in workos_employer_auth",
+    "New doctor registration flow works end-to-end",
+    "No console errors during auth flows"
+  ],
+
+  "executionNotes": {
+    "parallelizable": "Phases 1 and 2 can run in parallel",
+    "blocking": "Phase 3 requires Phase 2",
+    "finalVerification": "Phase 4 requires all previous phases"
   }
 }

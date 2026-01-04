@@ -44,6 +44,9 @@ const ChooseRole = lazy(() =>
 const EmployerRegistrationForm = lazy(() =>
   import("./components/employer/EmployerRegistrationForm").then(m => ({ default: m.EmployerRegistrationForm }))
 );
+const DoctorRegistrationForm = lazy(() =>
+  import("./components/doctor/DoctorRegistrationForm").then(m => ({ default: m.DoctorRegistrationForm }))
+);
 
 // =============================================================================
 // Loading fallback component
@@ -74,6 +77,11 @@ export default function App() {
       <Route path="/register/employer" element={
         <Suspense fallback={<PageLoader />}>
           <EmployerRegistrationForm />
+        </Suspense>
+      } />
+      <Route path="/register/doctor" element={
+        <Suspense fallback={<PageLoader />}>
+          <DoctorRegistrationForm />
         </Suspense>
       } />
 

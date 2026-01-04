@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query, internalQuery } from "./_generated/server";
+import { mutation, query, internalQuery, internalMutation } from "./_generated/server";
 import { Doc } from "./_generated/dataModel";
 
 // ---------------------------------------------------------------------------
@@ -151,5 +151,29 @@ export const reject = mutation({
       rejectionReason: reason,
       updatedAt: Date.now(),
     });
+  },
+});
+
+
+// Internal mutation to fix workosUserId for existing employers
+export const linkWorkosUser = internalMutation({
+  args: {
+    email: v.string(),
+    workosUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const employer = await ctx.db
+      .query("employers")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+
+    if (employer) {
+      await ctx.db.patch(employer._id, {
+        workosUserId: args.workosUserId,
+        updatedAt: Date.now(),
+      });
+      return { updated: true, email: args.email };
+    }
+    return { updated: false, email: args.email };
   },
 });

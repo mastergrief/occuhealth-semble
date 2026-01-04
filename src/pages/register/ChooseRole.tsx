@@ -1,7 +1,7 @@
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Building2, Stethoscope } from "lucide-react";
+import { Building2, Stethoscope, LogOut } from "lucide-react";
 
 export function ChooseRole() {
   const [searchParams] = useSearchParams();
@@ -97,10 +97,26 @@ export function ChooseRole() {
           </Card>
         </div>
 
-        <div className="text-center">
+        <div className="text-center space-y-2">
           <Button variant="link" onClick={() => navigate("/")}>
             Back to Home
           </Button>
+          <div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              onClick={() => {
+                // Clear any local storage and redirect to WorkOS logout
+                localStorage.clear();
+                const logoutUrl = `${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/logout${sessionId ? `?sessionId=${sessionId}` : ''}`;
+                window.location.href = logoutUrl;
+              }}
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign out / Use different account
+            </Button>
+          </div>
         </div>
       </div>
     </div>

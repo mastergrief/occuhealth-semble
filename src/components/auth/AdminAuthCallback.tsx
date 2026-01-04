@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useAdminAuth } from "@/lib/workos-auth";
+import { useAdminAuth, useDoctorAuth, useEmployerAuth } from "@/lib/workos-auth";
 
 // ---------------------------------------------------------------------------
 // Admin Auth Callback
@@ -13,6 +13,8 @@ export function AdminAuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { loginAsAdmin } = useAdminAuth();
+  const { loginAsDoctor } = useDoctorAuth();
+  const { loginAsEmployer } = useEmployerAuth();
   const [error, setError] = useState<string | null>(null);
   const processedRef = useRef(false);
 
@@ -41,13 +43,20 @@ export function AdminAuthCallback() {
     // Mark as processed to prevent re-runs
     processedRef.current = true;
 
-    // Store tokens (including sessionId for proper logout)
-    loginAsAdmin({
-      accessToken,
-      refreshToken: refreshToken || undefined,
-      userId,
-      sessionId: sessionId || undefined,
-    });
+    // Store tokens in role-appropriate localStorage key based on backend's redirectPath
+    if (redirectPath?.startsWith("/admin")) {
+      loginAsAdmin({
+        accessToken,
+        refreshToken: refreshToken || undefined,
+        userId,
+        sessionId: sessionId || undefined,
+      });
+    } else if (redirectPath?.startsWith("/doctor")) {
+      loginAsDoctor(userId, accessToken, refreshToken || "", sessionId || undefined);
+    } else if (redirectPath?.startsWith("/employer")) {
+      loginAsEmployer(userId, accessToken, refreshToken || "", sessionId || undefined);
+    }
+    // else: new user going to /register/choose-role - no login storage needed yet
 
     // Redirect to appropriate path, preserving tokens for registration flows
     if (redirectPath?.startsWith("/register")) {
@@ -61,7 +70,7 @@ export function AdminAuthCallback() {
     } else {
       navigate(redirectPath || "/admin", { replace: true });
     }
-  }, [searchParams, loginAsAdmin, navigate]);
+  }, [searchParams, loginAsAdmin, loginAsDoctor, loginAsEmployer, navigate]);
 
   if (error) {
     return (

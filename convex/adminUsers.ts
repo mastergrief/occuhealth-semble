@@ -98,3 +98,21 @@ export const verifyAdmin = query({
     return admin;
   },
 });
+
+
+// Temporary mutation to fix data issues - delete admin by email
+export const deleteByEmail = internalMutation({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    const admin = await ctx.db
+      .query("adminUsers")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+
+    if (admin) {
+      await ctx.db.delete(admin._id);
+      return { deleted: true, email: args.email };
+    }
+    return { deleted: false, email: args.email };
+  },
+});
