@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Container } from "@/components/layout/Container"
-import { ArrowRight, Play, ClipboardCheck } from "lucide-react"
+import { ArrowRight, ClipboardCheck } from "lucide-react"
 
 interface HeroSectionProps {
   onDemoClick?: () => void
@@ -15,7 +15,7 @@ export function HeroSection({ onDemoClick }: HeroSectionProps) {
           <div className="flex flex-col gap-6 max-w-xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-medical-blue/10 text-medical-blue text-sm font-medium w-fit">
               <ClipboardCheck className="h-4 w-4" />
-              HIPAA Compliant Platform
+              GDPR Compliant Platform
             </div>
 
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
@@ -32,9 +32,6 @@ export function HeroSection({ onDemoClick }: HeroSectionProps) {
               <Button size="lg" variant="medical" className="gap-2" onClick={onDemoClick}>
                 Request Demo <ArrowRight className="h-4 w-4" />
               </Button>
-              <Button size="lg" variant="outline" className="gap-2">
-                <Play className="h-4 w-4" /> Watch Video
-              </Button>
             </div>
 
             <div className="flex items-center gap-6 mt-4 text-sm text-muted-foreground">
@@ -47,8 +44,8 @@ export function HeroSection({ onDemoClick }: HeroSectionProps) {
                 <span>Uptime</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-2xl font-bold text-foreground">500+</span>
-                <span>Providers</span>
+                <span className="text-2xl font-bold text-foreground">UK-wide</span>
+                <span>Network</span>
               </div>
             </div>
           </div>

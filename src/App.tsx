@@ -12,7 +12,7 @@ import { NavigationBar, Footer } from "@/components/layout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // Landing page sections
-import { HeroSection, FeaturesSection, TestimonialsSection, CTASection } from "@/components/landing";
+import { HeroSection, FeaturesSection, HowItWorksSection, PricingSection, TestimonialsSection, CTASection } from "@/components/landing";
 
 // Auth components
 import { SignOutButton, AdminAuthCallback } from "@/components/auth";
@@ -177,6 +177,8 @@ function LandingPage() {
     <>
       <HeroSection />
       <FeaturesSection />
+      <HowItWorksSection />
+      <PricingSection />
       <TestimonialsSection />
       <CTASection />
 

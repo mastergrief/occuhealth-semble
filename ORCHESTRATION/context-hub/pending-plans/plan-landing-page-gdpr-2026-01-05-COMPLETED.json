@@ -1,0 +1,208 @@
+{
+  "planId": "landing-page-gdpr-2026-01-05",
+  "createdAt": "2026-01-05T00:00:00Z",
+  "title": "Landing Page Updates for UK GDPR Occupational Health Platform",
+  "status": "pending",
+  "summary": "Transform OccuHealth landing page from US HIPAA-focused to UK GDPR-compliant messaging, add missing sections (Pricing, HowItWorks), fix brand consistency.",
+
+  "phases": [
+    {
+      "id": 1,
+      "name": "Critical Compliance Changes (HIPAA to GDPR)",
+      "priority": "CRITICAL",
+      "parallelizable": true,
+      "tasks": [
+        {
+          "id": "1.1",
+          "file": "src/components/landing/HeroSection.tsx",
+          "lines": 78,
+          "changes": [
+            "Badge: HIPAA Compliant Platform → GDPR Compliant Platform",
+            "Stats: 500+ Providers → UK-wide Network"
+          ]
+        },
+        {
+          "id": "1.2",
+          "file": "src/components/landing/FeaturesSection.tsx",
+          "lines": 67,
+          "changes": [
+            "Feature card: HIPAA Compliant → GDPR Compliant",
+            "Feature card: Multi-Provider Network → Employer Portal",
+            "Add new feature: Doctor Portal"
+          ]
+        },
+        {
+          "id": "1.3",
+          "file": "src/components/layout/Footer.tsx",
+          "lines": 114,
+          "changes": [
+            "Compliance: HIPAA Compliant → GDPR Compliant",
+            "Add: UK Data Protection Act 2018"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Brand Consistency (MedReport Pro to OccuHealth)",
+      "priority": "HIGH",
+      "parallelizable": true,
+      "dependsOn": [1],
+      "tasks": [
+        {
+          "id": "2.1",
+          "file": "src/components/landing/TestimonialsSection.tsx",
+          "lines": 71,
+          "changes": [
+            "Replace all 'MedReport Pro' references with 'OccuHealth' (3 occurrences)"
+          ]
+        },
+        {
+          "id": "2.2",
+          "file": "src/components/landing/CTASection.tsx",
+          "lines": 42,
+          "changes": [
+            "Brand: MedReport Pro → OccuHealth",
+            "Text: 500+ healthcare providers → UK employers"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "New Sections (PricingSection, HowItWorksSection)",
+      "priority": "HIGH",
+      "parallelizable": false,
+      "dependsOn": [1, 2],
+      "tasks": [
+        {
+          "id": "3.1",
+          "file": "src/components/landing/PricingSection.tsx",
+          "status": "CREATE_NEW",
+          "estimatedLines": 45,
+          "description": "Contact-only pricing section with 3 pricing options (One-off, Subscription, Custom Retainer)"
+        },
+        {
+          "id": "3.2",
+          "file": "src/components/landing/HowItWorksSection.tsx",
+          "status": "CREATE_NEW",
+          "estimatedLines": 50,
+          "description": "6-step workflow (Create Account → Book → Review → Consultation → Report → Delivery)"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Integration & Export Updates",
+      "priority": "MEDIUM",
+      "parallelizable": false,
+      "dependsOn": [3],
+      "tasks": [
+        {
+          "id": "4.1",
+          "file": "src/components/landing/index.ts",
+          "lines": 4,
+          "changes": [
+            "Add export: HowItWorksSection",
+            "Add export: PricingSection"
+          ]
+        },
+        {
+          "id": "4.2",
+          "file": "src/App.tsx",
+          "lines": "175-197",
+          "changes": [
+            "Add HowItWorksSection between FeaturesSection and TestimonialsSection",
+            "Add PricingSection between TestimonialsSection and CTASection",
+            "Add imports for new sections"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Non-Functional Button Cleanup",
+      "priority": "LOW",
+      "parallelizable": true,
+      "dependsOn": [4],
+      "tasks": [
+        {
+          "id": "5.1",
+          "file": "src/components/landing/HeroSection.tsx",
+          "changes": [
+            "Remove 'Watch Video' button",
+            "Remove Play icon import"
+          ]
+        },
+        {
+          "id": "5.2",
+          "file": "src/components/landing/CTASection.tsx",
+          "changes": [
+            "Remove 'Schedule a Call' button",
+            "Remove Phone icon import"
+          ]
+        }
+      ]
+    }
+  ],
+
+  "fileSummary": {
+    "modify": [
+      "src/components/landing/HeroSection.tsx",
+      "src/components/landing/FeaturesSection.tsx",
+      "src/components/landing/TestimonialsSection.tsx",
+      "src/components/landing/CTASection.tsx",
+      "src/components/layout/Footer.tsx",
+      "src/components/landing/index.ts",
+      "src/App.tsx"
+    ],
+    "create": [
+      "src/components/landing/PricingSection.tsx",
+      "src/components/landing/HowItWorksSection.tsx"
+    ],
+    "totalFiles": 9
+  },
+
+  "acceptanceCriteria": [
+    "No 'HIPAA' text anywhere on landing page",
+    "'GDPR' appears in hero badge, features, footer",
+    "'OccuHealth' in all testimonials (not 'MedReport Pro')",
+    "Pricing section exists and #pricing nav anchor works",
+    "How It Works section exists and #about nav anchor works",
+    "No 'Watch Video' button (or wired to functional video)",
+    "No 'Schedule a Call' button (or wired to functional booking)",
+    "No 'nationwide' or US-centric language"
+  ],
+
+  "risks": [
+    {
+      "risk": "Nav anchors broken during transition",
+      "likelihood": "Medium",
+      "impact": "High",
+      "mitigation": "Verify id='pricing' and id='about' match NavigationBar links"
+    },
+    {
+      "risk": "Missing import statements",
+      "likelihood": "Low",
+      "impact": "Medium",
+      "mitigation": "Verify all lucide-react icons imported"
+    },
+    {
+      "risk": "Broken export barrel",
+      "likelihood": "Low",
+      "impact": "High",
+      "mitigation": "Update index.ts before App.tsx"
+    }
+  ],
+
+  "estimatedEffort": {
+    "phase1": "20 min",
+    "phase2": "10 min",
+    "phase3": "25 min",
+    "phase4": "10 min",
+    "phase5": "5 min",
+    "total": "~70 min"
+  },
+
+  "browserTestSuite": "LANDING_PAGE_SPRINT_03_BROWSER_TESTING"
+}

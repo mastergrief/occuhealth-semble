@@ -5,7 +5,7 @@ import { Quote } from "lucide-react"
 
 const testimonials = [
   {
-    quote: "MedReport Pro reduced our screening time by 60%. The platform is intuitive and the reports are thorough.",
+    quote: "OccuHealth reduced our screening time by 60%. The platform is intuitive and the reports are thorough.",
     author: "Dr. Sarah Chen",
     role: "Chief Medical Officer",
     company: "TechCorp Industries",
@@ -36,7 +36,7 @@ export function TestimonialsSection() {
             Trusted by Healthcare Professionals
           </h2>
           <p className="text-lg text-muted-foreground">
-            See what our customers have to say about MedReport Pro.
+            See what our customers have to say about OccuHealth.
           </p>
         </div>
 

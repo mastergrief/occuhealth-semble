@@ -1,6 +1,6 @@
 import { Container } from "@/components/layout/Container"
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Building2, Activity, Clock, Shield, Users, FileText } from "lucide-react"
+import { Building2, Activity, Clock, Shield, Users, FileText, Stethoscope } from "lucide-react"
 
 const features = [
   {
@@ -20,18 +20,23 @@ const features = [
   },
   {
     icon: Shield,
-    title: "HIPAA Compliant",
-    description: "Enterprise-grade security with full regulatory compliance.",
+    title: "GDPR Compliant",
+    description: "UK data protection standards with enterprise-grade security.",
   },
   {
     icon: Users,
-    title: "Multi-Provider Network",
-    description: "Access to certified occupational health professionals nationwide.",
+    title: "Employer Portal",
+    description: "Manage employee bookings and access reports in one place.",
   },
   {
     icon: FileText,
     title: "Digital Reports",
     description: "Secure online portal for instant access to all medical documentation.",
+  },
+  {
+    icon: Stethoscope,
+    title: "Doctor Portal",
+    description: "Manage your schedule, conduct assessments, and send reports.",
   },
 ]
 

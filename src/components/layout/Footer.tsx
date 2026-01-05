@@ -80,12 +80,15 @@ export function Footer() {
               <h4 className="font-semibold mb-4">Compliance</h4>
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <Shield className="h-4 w-4 text-trust-green" />
-                <span>HIPAA Compliant</span>
+                <span>GDPR Compliant</span>
               </div>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                 <Lock className="h-4 w-4 text-trust-green" />
                 <span>256-bit SSL Encryption</span>
               </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                Compliant with UK Data Protection Act 2018
+              </p>
             </div>
           </div>
         </div>
