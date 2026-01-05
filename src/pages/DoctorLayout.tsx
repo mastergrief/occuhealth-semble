@@ -1,9 +1,58 @@
-import { Outlet, NavLink, Navigate } from "react-router-dom";
+import { NavLink, Navigate, Routes, Route } from "react-router-dom";
+import { lazy, Suspense, createContext, useContext } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useDoctorAuth } from "@/lib/workos-auth";
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, Calendar, Clock, FileText, Settings, LogOut } from "lucide-react";
+import { Doc } from "../../convex/_generated/dataModel";
+
+// Context for sharing doctor data with child routes
+export const DoctorContext = createContext<{ doctor: Doc<"doctorSettings"> | null | undefined }>({ doctor: undefined });
+export const useDoctorContext = () => useContext(DoctorContext);
+
+// Lazy load doctor pages
+const DoctorDashboard = lazy(() =>
+  import("./doctor/Dashboard").then(m => ({ default: m.DoctorDashboard }))
+);
+const DoctorAppointments = lazy(() =>
+  import("./doctor/Appointments").then(m => ({ default: m.DoctorAppointments }))
+);
+const DoctorSchedule = lazy(() =>
+  import("./doctor/Schedule").then(m => ({ default: m.DoctorSchedule }))
+);
+const DoctorReports = lazy(() =>
+  import("./doctor/Reports").then(m => ({ default: m.DoctorReports }))
+);
+const DoctorSettings = lazy(() =>
+  import("./doctor/Settings").then(m => ({ default: m.DoctorSettings }))
+);
+
+/**
+ * DoctorLayout - Main layout component for the Doctor Portal
+ *
+ * Provides authentication guard, sidebar navigation, and shared context
+ * for all doctor portal pages.
+ *
+ * @component
+ * @requires useDoctorAuth - Authentication hook from workos-auth
+ *
+ * ## Features
+ * - Authentication guard with redirect to landing
+ * - Lazy-loaded child page routes
+ * - DoctorContext provider for shared state
+ * - Responsive sidebar navigation
+ *
+ * ## Routes
+ * - /doctor/dashboard - Today's schedule
+ * - /doctor/appointments - Browse by date
+ * - /doctor/schedule - Manage availability
+ * - /doctor/reports - Create fitness reports
+ * - /doctor/settings - Profile management
+ *
+ * @see DoctorContextType - Context interface
+ * @see useDoctorContext - Context consumer hook
+ */
 
 export function DoctorLayout() {
   const { isAuthenticated, isLoading, workosUserId, logoutDoctor, sessionId } = useDoctorAuth();
@@ -93,7 +142,18 @@ export function DoctorLayout() {
       </aside>
 
       <main className="flex-1 p-6">
-        <Outlet context={{ doctor }} />
+        <DoctorContext.Provider value={{ doctor }}>
+          <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+            <Routes>
+              <Route path="dashboard" element={<DoctorDashboard />} />
+              <Route path="appointments" element={<DoctorAppointments />} />
+              <Route path="schedule" element={<DoctorSchedule />} />
+              <Route path="reports" element={<DoctorReports />} />
+              <Route path="settings" element={<DoctorSettings />} />
+              <Route index element={<Navigate to="dashboard" replace />} />
+            </Routes>
+          </Suspense>
+        </DoctorContext.Provider>
       </main>
     </div>
   );

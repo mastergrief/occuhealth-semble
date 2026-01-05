@@ -31,6 +31,18 @@ export const getById = query({
 });
 
 // Get report by appointment
+/**
+ * Get report by appointment ID.
+ *
+ * Used by both doctors and employers to view reports.
+ * Doctors can view any report, employers can only view their own.
+ *
+ * @auth doctor | employer - Doctor authentication or employer ownership required
+ * @throws {ConvexError} UNAUTHENTICATED - User not logged in
+ * @param ctx - Convex query context
+ * @param args.appointmentId - The appointment document ID
+ * @returns Report document or null if not found
+ */
 export const getByAppointment = query({
   args: { appointmentId: v.id("appointments") },
   handler: async (ctx, { appointmentId }) => {
@@ -100,6 +112,23 @@ export const listByEmployer = query({
 });;
 
 // Create report
+/**
+ * Create a fitness-for-work report.
+ *
+ * Creates a medical assessment report for a completed appointment.
+ * Links the report to the appointment and logs for audit trail.
+ *
+ * @auth doctor - Requires doctor authentication
+ * @throws {Error} Appointment not found
+ * @param ctx - Convex mutation context
+ * @param args.appointmentId - The appointment this report is for
+ * @param args.fitForWork - Fitness assessment status
+ * @param args.summary - Clinical summary (shared with employer)
+ * @param args.restrictions - Optional workplace restrictions
+ * @param args.followUpRequired - Whether follow-up is needed
+ * @param args.followUpNotes - Optional follow-up details
+ * @returns The newly created report document ID
+ */
 export const create = mutation({
   args: {
     appointmentId: v.id("appointments"),
@@ -147,6 +176,17 @@ export const create = mutation({
 });;
 
 // Send report to employer
+/**
+ * Send a report to the employer.
+ *
+ * Marks the report as sent and logs for audit trail.
+ * Only doctors can send reports to employers.
+ *
+ * @auth doctor - Requires doctor authentication
+ * @throws {ConvexError} REPORT_NOT_FOUND - Report not found
+ * @param ctx - Convex mutation context
+ * @param args.reportId - The report document ID to send
+ */
 export const sendToEmployer = mutation({
   args: { reportId: v.id("reports") },
   handler: async (ctx, { reportId }) => {

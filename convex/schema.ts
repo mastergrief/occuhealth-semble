@@ -116,6 +116,7 @@ export default defineSchema({
   // Available Slots
   // ---------------------------------------------------------------------------
   availableSlots: defineTable({
+    doctorId: v.id("doctorSettings"),
     date: v.string(),
     startTime: v.string(),
     endTime: v.string(),
@@ -124,7 +125,9 @@ export default defineSchema({
   })
     .index("by_date", ["date"])
     .index("by_status", ["status"])
-    .index("by_date_status", ["date", "status"]),
+    .index("by_date_status", ["date", "status"])
+    .index("by_doctor", ["doctorId"])
+    .index("by_doctor_date", ["doctorId", "date"]),
 
   // ---------------------------------------------------------------------------
   // Appointments

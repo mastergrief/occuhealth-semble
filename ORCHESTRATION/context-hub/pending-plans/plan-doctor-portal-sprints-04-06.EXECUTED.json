@@ -1,0 +1,322 @@
+{
+  "id": "plan-doctor-portal-sprints-04-06",
+  "created": "2026-01-05T12:00:00Z",
+  "status": "pending",
+  "title": "Doctor Portal Sprints 04-06: Testing & Documentation",
+  "description": "Implementation of unit testing, browser E2E testing, and documentation for Doctor Portal",
+  "totalTokenBudget": 149000,
+  "estimatedHours": "18-28",
+
+  "sprints": [
+    {
+      "id": "sprint-04",
+      "name": "Unit/Integration Testing",
+      "priority": "P1-HIGH",
+      "tokenBudget": 55000,
+      "phases": [
+        {
+          "id": "04-A",
+          "name": "Framework Setup",
+          "tokenBudget": 8000,
+          "dependencies": [],
+          "agentType": "developer",
+          "files": {
+            "create": [
+              {"path": "vitest.config.ts", "lines": 40, "purpose": "Vitest configuration with jsdom, coverage"},
+              {"path": "tests/setup.ts", "lines": 50, "purpose": "Global mocks for Convex and React Router"},
+              {"path": "tests/mocks/convex.ts", "lines": 30, "purpose": "Convex mock factory functions"},
+              {"path": "tests/mocks/router.ts", "lines": 25, "purpose": "Router mock factory"}
+            ],
+            "modify": [
+              {"path": "package.json", "changes": "Add vitest, testing-library devDeps + test scripts"}
+            ]
+          },
+          "tasks": [
+            "npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom @testing-library/user-event",
+            "Create vitest.config.ts with jsdom environment and coverage config",
+            "Create tests/setup.ts with global mocks",
+            "Create mock factory files",
+            "Add test scripts to package.json",
+            "Run npm run test to verify setup"
+          ]
+        },
+        {
+          "id": "04-B",
+          "name": "Auth Unit Tests",
+          "tokenBudget": 12000,
+          "dependencies": ["04-A"],
+          "agentType": "developer",
+          "files": {
+            "create": [
+              {"path": "src/lib/__tests__/workos-auth.test.ts", "lines": 150, "purpose": "Auth hook unit tests"}
+            ]
+          },
+          "tasks": [
+            "Test isTokenExpired with valid/expired/malformed tokens",
+            "Test useDoctorAuth returns correct state",
+            "Test role-based authentication flags",
+            "Test token refresh logic",
+            "Run tests and verify coverage"
+          ]
+        },
+        {
+          "id": "04-C",
+          "name": "Component Integration Tests",
+          "tokenBudget": 25000,
+          "dependencies": ["04-A"],
+          "agentType": "developer",
+          "files": {
+            "create": [
+              {"path": "src/pages/doctor/__tests__/Dashboard.test.tsx", "lines": 120},
+              {"path": "src/pages/doctor/__tests__/Appointments.test.tsx", "lines": 130},
+              {"path": "src/pages/doctor/__tests__/Schedule.test.tsx", "lines": 140},
+              {"path": "src/pages/doctor/__tests__/Reports.test.tsx", "lines": 150},
+              {"path": "src/pages/doctor/__tests__/Settings.test.tsx", "lines": 100}
+            ]
+          },
+          "tasks": [
+            "Create Dashboard tests (stats, appointments list, empty state)",
+            "Create Appointments tests (date picker, mark complete, list)",
+            "Create Schedule tests (slot grid, add slot, block slot, validation)",
+            "Create Reports tests (form, submission, empty state)",
+            "Create Settings tests (profile, Zoom link, save)",
+            "Run npm run test:coverage and verify >70%"
+          ]
+        },
+        {
+          "id": "04-D",
+          "name": "Backend Authorization Tests",
+          "tokenBudget": 10000,
+          "dependencies": ["04-A"],
+          "agentType": "developer",
+          "files": {
+            "create": [
+              {"path": "convex/__tests__/doctor-authorization.test.ts", "lines": 100}
+            ]
+          },
+          "tasks": [
+            "Test createSlots requires doctor role",
+            "Test blockSlot requires slot ownership",
+            "Test Zoom URL validation",
+            "Run convex test"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sprint-05",
+      "name": "Browser-CLI E2E Testing",
+      "priority": "P1-HIGH",
+      "tokenBudget": 49000,
+      "phases": [
+        {
+          "id": "05-A",
+          "name": "Test Suite T1-T2 (Auth & Navigation)",
+          "tokenBudget": 15000,
+          "dependencies": [],
+          "agentType": "browser",
+          "tests": [
+            "T1.1 - Doctor login flow",
+            "T1.2 - Token storage verification",
+            "T1.3 - Auth guard (unauthenticated redirect)",
+            "T1.4 - Save fresh auth state",
+            "T1.5 - Logout flow",
+            "T2.1 - Sidebar structure",
+            "T2.2 - Tab navigation",
+            "T2.3 - Active tab highlighting"
+          ],
+          "evidence": ["T1.1-login-success.png", "T1.5-logout.png", "T2-navigation.png"]
+        },
+        {
+          "id": "05-B",
+          "name": "Test Suite T3-T4 (Dashboard & Appointments)",
+          "tokenBudget": 12000,
+          "dependencies": ["05-A"],
+          "agentType": "browser",
+          "tests": [
+            "T3.1 - Dashboard renders",
+            "T3.2 - Stats cards display",
+            "T3.3 - Appointments list",
+            "T3.4 - Zoom join button",
+            "T4.1 - Date picker",
+            "T4.2 - Appointments by date",
+            "T4.3 - Mark complete button",
+            "T4.4 - Empty state"
+          ],
+          "evidence": ["T3.1-dashboard.png", "T4.1-appointments.png"]
+        },
+        {
+          "id": "05-C",
+          "name": "Test Suite T5-T6 (Schedule & Reports)",
+          "tokenBudget": 12000,
+          "dependencies": ["05-B"],
+          "agentType": "browser",
+          "tests": [
+            "T5.1 - Slot grid display",
+            "T5.2 - Add slot form",
+            "T5.3 - Block slot",
+            "T5.4 - Time validation",
+            "T6.1 - Reports page display",
+            "T6.2 - Create report dialog",
+            "T6.3 - Report submission",
+            "T6.4 - Empty state"
+          ],
+          "evidence": ["T5.1-schedule.png", "T5.2-add-slot.png", "T6.1-reports.png"]
+        },
+        {
+          "id": "05-D",
+          "name": "Test Suite T7 & Summary",
+          "tokenBudget": 10000,
+          "dependencies": ["05-C"],
+          "agentType": "browser",
+          "tests": [
+            "T7.1 - Profile display",
+            "T7.2 - Zoom link input",
+            "T7.3 - Save settings",
+            "T7.4 - URL validation"
+          ],
+          "evidence": ["T7.1-settings.png"],
+          "deliverables": ["Test execution summary report", "Pass/fail counts", "Screenshot index"]
+        }
+      ]
+    },
+    {
+      "id": "sprint-06",
+      "name": "Documentation & Polish",
+      "priority": "P2-MEDIUM",
+      "tokenBudget": 45000,
+      "phases": [
+        {
+          "id": "06-A",
+          "name": "Type Definitions",
+          "tokenBudget": 8000,
+          "dependencies": [],
+          "agentType": "developer",
+          "files": {
+            "create": [
+              {"path": "src/types/doctor.ts", "lines": 80, "purpose": "Shared type definitions"}
+            ]
+          },
+          "types": [
+            "DoctorContextType",
+            "FitForWorkStatus",
+            "ReportFormData",
+            "AppointmentStatus",
+            "SlotStatus"
+          ]
+        },
+        {
+          "id": "06-B",
+          "name": "Component JSDoc",
+          "tokenBudget": 15000,
+          "dependencies": ["06-A"],
+          "agentType": "developer",
+          "files": {
+            "modify": [
+              {"path": "src/pages/doctor/Dashboard.tsx", "changes": "Add JSDoc header (+30 LOC)"},
+              {"path": "src/pages/doctor/Appointments.tsx", "changes": "Add JSDoc header (+35 LOC)"},
+              {"path": "src/pages/doctor/Schedule.tsx", "changes": "Add JSDoc header (+35 LOC)"},
+              {"path": "src/pages/doctor/Reports.tsx", "changes": "Add JSDoc header (+40 LOC)"},
+              {"path": "src/pages/doctor/Settings.tsx", "changes": "Add JSDoc header (+30 LOC)"},
+              {"path": "src/pages/DoctorLayout.tsx", "changes": "Add JSDoc header (+35 LOC)"}
+            ]
+          }
+        },
+        {
+          "id": "06-C",
+          "name": "Backend JSDoc",
+          "tokenBudget": 12000,
+          "dependencies": ["06-A"],
+          "agentType": "developer",
+          "files": {
+            "modify": [
+              {"path": "convex/doctorSettings.ts", "changes": "Add JSDoc to all functions (+60 LOC)"},
+              {"path": "convex/availableSlots.ts", "changes": "Add JSDoc to all functions (+80 LOC)"},
+              {"path": "convex/appointments.ts", "changes": "Add JSDoc to doctor functions (+100 LOC)"},
+              {"path": "convex/reports.ts", "changes": "Add JSDoc to all functions (+70 LOC)"}
+            ]
+          }
+        },
+        {
+          "id": "06-D",
+          "name": "README & Polish",
+          "tokenBudget": 10000,
+          "dependencies": ["06-B", "06-C"],
+          "agentType": "developer",
+          "files": {
+            "create": [
+              {"path": "src/pages/doctor/README.md", "lines": 150, "purpose": "Architecture documentation"},
+              {"path": "src/lib/auth-utils.ts", "lines": 40, "purpose": "Consolidated logout logic"},
+              {"path": "src/components/DoctorErrorBoundary.tsx", "lines": 60, "purpose": "Error boundary"}
+            ],
+            "modify": [
+              {"path": "src/pages/doctor/Dashboard.tsx", "changes": "Add 10 data-testid attrs"},
+              {"path": "src/pages/doctor/Appointments.tsx", "changes": "Add 8 data-testid attrs"},
+              {"path": "src/pages/doctor/Schedule.tsx", "changes": "Add 10 data-testid attrs"},
+              {"path": "src/pages/doctor/Reports.tsx", "changes": "Add 10 data-testid attrs"},
+              {"path": "src/pages/doctor/Settings.tsx", "changes": "Add 6 data-testid attrs"}
+            ]
+          }
+        }
+      ]
+    }
+  ],
+
+  "risks": [
+    {
+      "id": "RISK-01",
+      "description": "Convex mock complexity",
+      "likelihood": "Medium",
+      "mitigation": "Use simple return value mocks, not full implementation"
+    },
+    {
+      "id": "RISK-02",
+      "description": "Stale browser auth state",
+      "likelihood": "Medium",
+      "mitigation": "Use saveState after login, verify token expiry"
+    },
+    {
+      "id": "RISK-03",
+      "description": "No test data in DB",
+      "likelihood": "High",
+      "mitigation": "Tests must handle empty states gracefully"
+    },
+    {
+      "id": "RISK-04",
+      "description": "Path alias resolution in Vitest",
+      "likelihood": "Medium",
+      "mitigation": "Ensure vitest.config matches vite.config exactly"
+    }
+  ],
+
+  "verification": {
+    "sprint04": [
+      "npm run test executes without errors",
+      "npm run test:coverage shows >70% for doctor pages",
+      "Auth unit tests pass (5+ tests)",
+      "Component integration tests pass (15+ tests)"
+    ],
+    "sprint05": [
+      "All 24 E2E tests executed",
+      "Screenshots saved for each page",
+      "assertConsole --level=error passes on all pages",
+      "Test report generated"
+    ],
+    "sprint06": [
+      "npm run typecheck passes",
+      "src/types/doctor.ts exists with 5+ types",
+      "All doctor pages have JSDoc headers",
+      "All Convex doctor functions have JSDoc",
+      "src/pages/doctor/README.md exists",
+      "44+ data-testid attributes in doctor pages"
+    ]
+  },
+
+  "criticalFiles": [
+    {"path": "vitest.config.ts", "reason": "Must create first; configures test framework"},
+    {"path": "src/lib/workos-auth.tsx", "lines": 477, "reason": "Core auth logic to unit test"},
+    {"path": "src/pages/DoctorLayout.tsx", "lines": 134, "reason": "Layout with routing and context"},
+    {"path": "convex/availableSlots.ts", "lines": 129, "reason": "Backend mutations for schedule"},
+    {"path": "tests/e2e/fixtures/auth.fixture.ts", "reason": "Has authenticatedDoctorPage pattern"}
+  ]
+}

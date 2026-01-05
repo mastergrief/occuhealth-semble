@@ -8,6 +8,25 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Id } from "../../../convex/_generated/dataModel";
 
+/**
+ * DoctorReports - Fitness-for-work report creation
+ *
+ * Create and submit occupational health reports for completed appointments.
+ *
+ * @component
+ * @requires DoctorLayout - Parent component providing context
+ *
+ * ## Features
+ * - List of completed appointments awaiting reports
+ * - Report creation dialog with fitness status
+ * - Summary and restrictions input
+ * - Follow-up scheduling
+ * - Send report to employer
+ *
+ * @example
+ * // Rendered by DoctorLayout when URL is /doctor/reports
+ * <Route path="reports" element={<DoctorReports />} />
+ */
 type FitForWork = "fit" | "fit_with_restrictions" | "temporarily_unfit" | "needs_further_assessment";
 
 export function DoctorReports() {
@@ -18,6 +37,8 @@ export function DoctorReports() {
     followUpRequired: false,
     followUpNotes: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const todaysAppointments = useQuery(api.appointments.getTodaysAppointments);
   const completedWithoutReport = todaysAppointments?.filter(
@@ -30,17 +51,45 @@ export function DoctorReports() {
   const handleSubmit = async () => {
     if (!selectedAppointment) return;
 
-    const reportId = await createReport({
-      appointmentId: selectedAppointment,
-      fitForWork: formData.fitForWork,
-      summary: formData.summary,
-      followUpRequired: formData.followUpRequired,
-      followUpNotes: formData.followUpNotes || undefined,
-    });
+    // Validation
+    if (!formData.summary.trim()) {
+      setSubmitError("Summary is required");
+      return;
+    }
 
-    await sendToEmployer({ reportId });
-    setSelectedAppointment(null);
-    setFormData({ fitForWork: "fit", summary: "", followUpRequired: false, followUpNotes: "" });
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    let reportId: Id<"reports"> | null = null;
+
+    try {
+      // Step 1: Create report
+      reportId = await createReport({
+        appointmentId: selectedAppointment,
+        fitForWork: formData.fitForWork,
+        summary: formData.summary,
+        followUpRequired: formData.followUpRequired,
+        followUpNotes: formData.followUpNotes || undefined,
+      });
+
+      // Step 2: Send to employer
+      await sendToEmployer({ reportId });
+
+      // Success - close dialog and reset
+      setSelectedAppointment(null);
+      setFormData({ fitForWork: "fit", summary: "", followUpRequired: false, followUpNotes: "" });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Operation failed";
+
+      // Provide context about partial failure
+      if (reportId) {
+        setSubmitError(`Report created but failed to send: ${message}. Please try sending again.`);
+      } else {
+        setSubmitError(`Failed to create report: ${message}`);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -53,14 +102,14 @@ export function DoctorReports() {
         </CardHeader>
         <CardContent>
           {completedWithoutReport && completedWithoutReport.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-2" data-testid="reports-list">
               {completedWithoutReport.map((apt) => (
                 <div key={apt._id} className="flex justify-between items-center p-3 border rounded-lg">
                   <div>
                     <p className="font-medium">{apt.scheduledTime}</p>
                     <p className="text-sm text-muted-foreground">Patient: {apt.patientId}</p>
                   </div>
-                  <Button onClick={() => setSelectedAppointment(apt._id)}>
+                  <Button onClick={() => setSelectedAppointment(apt._id)} data-testid="create-report-btn">
                     Create Report
                   </Button>
                 </div>
@@ -74,11 +123,16 @@ export function DoctorReports() {
 
       {selectedAppointment && (
         <Dialog open onOpenChange={() => setSelectedAppointment(null)}>
-          <DialogContent>
+          <DialogContent data-testid="report-dialog">
             <DialogHeader>
               <DialogTitle>Create Fitness Report</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
+              {submitError && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-2 rounded">
+                  {submitError}
+                </div>
+              )}
               <div>
                 <Label>Fitness Assessment</Label>
                 <select
@@ -123,8 +177,8 @@ export function DoctorReports() {
                 <Button variant="outline" onClick={() => setSelectedAppointment(null)} className="flex-1">
                   Cancel
                 </Button>
-                <Button onClick={handleSubmit} className="flex-1">
-                  Submit & Send to Employer
+                <Button onClick={handleSubmit} disabled={isSubmitting} className="flex-1" data-testid="submit-report-btn">
+                  {isSubmitting ? "Submitting..." : "Submit & Send to Employer"}
                 </Button>
               </div>
             </div>

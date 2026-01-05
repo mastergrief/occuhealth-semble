@@ -1,0 +1,310 @@
+{
+  "id": "plan-doctor-portal-sprint-20260105",
+  "created": "2026-01-05T12:00:00Z",
+  "title": "Doctor Portal Sprint Series Implementation",
+  "description": "6-sprint remediation of Doctor Portal: routing fix, security, error handling, testing, documentation",
+  "status": "pending",
+  "estimatedEffort": "24-36 hours",
+
+  "summary": {
+    "scope": {
+      "ui": {
+        "components": 6,
+        "hooks": 1,
+        "totalLines": 555,
+        "criticalFile": "src/pages/DoctorLayout.tsx"
+      },
+      "api": {
+        "mutations": 6,
+        "queries": 8,
+        "vulnerabilities": 5,
+        "criticalFiles": ["convex/availableSlots.ts", "convex/doctorSettings.ts"]
+      },
+      "db": {
+        "tablesAffected": 1,
+        "schemaChanges": "Add doctorId field + 2 indexes to availableSlots",
+        "criticalFile": "convex/schema.ts"
+      }
+    }
+  },
+
+  "phases": [
+    {
+      "id": "sprint-01",
+      "name": "Routing Fix",
+      "priority": "P0-CRITICAL",
+      "estimatedHours": "2-4",
+      "dependencies": [],
+      "description": "Fix DoctorLayout.tsx to add <Routes> block - currently pages don't render",
+      "files": [
+        {
+          "path": "src/pages/DoctorLayout.tsx",
+          "action": "modify",
+          "currentLines": 100,
+          "targetLines": 150,
+          "changes": [
+            "Add Routes, Route, Navigate imports",
+            "Add lazy imports for 5 doctor pages",
+            "Create DoctorContext + useDoctorContext hook",
+            "Replace <Outlet> with <Routes> block + Suspense"
+          ]
+        },
+        {
+          "path": "src/pages/doctor/Dashboard.tsx",
+          "action": "modify",
+          "currentLines": 88,
+          "changes": ["Replace useOutletContext with useDoctorContext"]
+        },
+        {
+          "path": "src/pages/doctor/Settings.tsx",
+          "action": "modify",
+          "currentLines": 70,
+          "changes": ["Replace useOutletContext with useDoctorContext"]
+        }
+      ],
+      "verification": [
+        "npm run typecheck",
+        "Navigate to /doctor - should redirect to /doctor/dashboard",
+        "All 5 pages render content"
+      ],
+      "risks": [
+        {
+          "risk": "Child component context migration",
+          "probability": "Low",
+          "mitigation": "Test Dashboard.tsx and Settings.tsx individually"
+        }
+      ]
+    },
+    {
+      "id": "sprint-02",
+      "name": "Security Remediation",
+      "priority": "P0-CRITICAL",
+      "estimatedHours": "2-3",
+      "dependencies": ["sprint-01"],
+      "description": "Fix 5 authorization vulnerabilities in slot and settings mutations",
+      "files": [
+        {
+          "path": "convex/schema.ts",
+          "action": "modify",
+          "currentLines": 265,
+          "changes": [
+            "Add doctorId: v.id('doctorSettings') to availableSlots",
+            "Add index by_doctor",
+            "Add index by_doctor_date"
+          ]
+        },
+        {
+          "path": "convex/availableSlots.ts",
+          "action": "modify",
+          "currentLines": 102,
+          "targetLines": 140,
+          "changes": [
+            "Import requireDoctorAccess, ConvexError",
+            "Add requireDoctorAccess() to createSlots",
+            "Add doctorId to slot creation",
+            "Add requireDoctorAccess() + ownership check to blockSlot",
+            "Add requireDoctorAccess() + ownership check to unblockSlot"
+          ]
+        },
+        {
+          "path": "convex/doctorSettings.ts",
+          "action": "modify",
+          "currentLines": 70,
+          "targetLines": 95,
+          "changes": [
+            "Import requireDoctorAccess, ConvexError",
+            "Add isValidZoomUrl() helper function",
+            "Add requireDoctorAccess() to update mutation",
+            "Add ownership check (doctor._id === doctorId)",
+            "Add Zoom URL validation"
+          ]
+        }
+      ],
+      "verification": [
+        "npx convex dev - schema deploys without errors",
+        "npm run typecheck",
+        "Employer cannot call createSlots",
+        "Invalid Zoom URL rejected"
+      ],
+      "risks": [
+        {
+          "risk": "Schema change breaks existing data",
+          "probability": "Medium",
+          "mitigation": "Run data migration first; test in staging"
+        }
+      ]
+    },
+    {
+      "id": "sprint-03",
+      "name": "Error Handling",
+      "priority": "P1-HIGH",
+      "estimatedHours": "4-6",
+      "dependencies": ["sprint-01"],
+      "description": "Add try/catch, loading states, error messages to all doctor pages",
+      "files": [
+        {
+          "path": "src/pages/doctor/Appointments.tsx",
+          "action": "modify",
+          "currentLines": 72,
+          "targetLines": 100,
+          "changes": ["Add completingId state", "Add try/catch for markCompleted", "Show loading/error UI"]
+        },
+        {
+          "path": "src/pages/doctor/Schedule.tsx",
+          "action": "modify",
+          "currentLines": 89,
+          "targetLines": 130,
+          "changes": ["Add isAdding, blockingId, addError states", "Add validation", "Add try/catch for mutations"]
+        },
+        {
+          "path": "src/pages/doctor/Reports.tsx",
+          "action": "modify",
+          "currentLines": 136,
+          "targetLines": 180,
+          "changes": ["Add isSubmitting, submitError states", "Handle two-step mutation failure", "Add validation"]
+        },
+        {
+          "path": "src/pages/doctor/Settings.tsx",
+          "action": "modify",
+          "currentLines": 70,
+          "targetLines": 100,
+          "changes": ["Add isSaving, saveStatus states", "Add URL validation", "Show success/error messages"]
+        }
+      ],
+      "verification": [
+        "All mutations show loading state",
+        "Failed mutations show error",
+        "Successful mutations confirm to user"
+      ]
+    },
+    {
+      "id": "sprint-04",
+      "name": "Testing Strategy",
+      "priority": "P1-HIGH",
+      "estimatedHours": "8-12",
+      "dependencies": ["sprint-01", "sprint-02"],
+      "description": "Set up Vitest, create unit and integration tests",
+      "files": [
+        {
+          "path": "vitest.config.ts",
+          "action": "create",
+          "targetLines": 30,
+          "changes": ["Vitest configuration with jsdom, coverage, aliases"]
+        },
+        {
+          "path": "tests/setup.ts",
+          "action": "create",
+          "targetLines": 40,
+          "changes": ["Test setup with mocks for convex/react and react-router-dom"]
+        },
+        {
+          "path": "src/lib/__tests__/workos-auth.test.ts",
+          "action": "create",
+          "targetLines": 80,
+          "changes": ["Unit tests for token expiration, role auth, refresh"]
+        },
+        {
+          "path": "src/pages/doctor/__tests__/Dashboard.test.tsx",
+          "action": "create",
+          "targetLines": 100,
+          "changes": ["Integration tests for stats, appointments, empty state"]
+        }
+      ],
+      "verification": [
+        "npm run test passes",
+        "Coverage report generated",
+        "80%+ coverage target"
+      ]
+    },
+    {
+      "id": "sprint-05",
+      "name": "Browser Testing",
+      "priority": "P1-HIGH",
+      "estimatedHours": "4-6",
+      "dependencies": ["sprint-01", "sprint-04"],
+      "description": "E2E tests using Browser-CLI (24 tests across 7 suites)",
+      "testSuites": [
+        {"id": "T1", "name": "Authentication", "tests": 5},
+        {"id": "T2", "name": "Navigation", "tests": 3},
+        {"id": "T3", "name": "Dashboard", "tests": 4},
+        {"id": "T4", "name": "Appointments", "tests": 4},
+        {"id": "T5", "name": "Schedule", "tests": 4},
+        {"id": "T6", "name": "Reports", "tests": 4},
+        {"id": "T7", "name": "Settings", "tests": 4}
+      ],
+      "artifacts": [
+        "BROWSER-CLI/states/authenticated-doctor.json",
+        "BROWSER-CLI/screenshots/T*.png"
+      ],
+      "verification": [
+        "All 24 tests pass",
+        "No console errors",
+        "Screenshots captured"
+      ]
+    },
+    {
+      "id": "sprint-06",
+      "name": "Documentation",
+      "priority": "P2-MEDIUM",
+      "estimatedHours": "4-6",
+      "dependencies": ["sprint-01", "sprint-02", "sprint-03", "sprint-04", "sprint-05"],
+      "description": "JSDoc, type definitions, README, data-testid attributes",
+      "files": [
+        {
+          "path": "src/types/doctor.ts",
+          "action": "create",
+          "targetLines": 60,
+          "changes": ["DoctorContextType, FitForWorkStatus, ReportFormData, etc."]
+        },
+        {
+          "path": "src/pages/doctor/README.md",
+          "action": "create",
+          "targetLines": 80,
+          "changes": ["Architecture, data flow, page responsibilities"]
+        }
+      ],
+      "verification": [
+        "All components have JSDoc",
+        "Type definitions complete",
+        "Documentation coverage 95%"
+      ]
+    }
+  ],
+
+  "criticalPath": ["sprint-01", "sprint-02"],
+
+  "executionOrder": [
+    "sprint-01",
+    "sprint-02",
+    "sprint-03",
+    "sprint-04",
+    "sprint-05",
+    "sprint-06"
+  ],
+
+  "parallelizableGroups": [
+    ["sprint-03", "sprint-04"]
+  ],
+
+  "globalRisks": [
+    {
+      "risk": "Schema migration required before Sprint 02 security fixes",
+      "mitigation": "Deploy schema changes first, verify in Convex dashboard"
+    },
+    {
+      "risk": "Context migration may break Dashboard and Settings",
+      "mitigation": "Test each component individually after Sprint 01"
+    }
+  ],
+
+  "verificationChecklist": [
+    "npm run typecheck passes",
+    "npm run dev starts without errors",
+    "/doctor/dashboard shows content",
+    "All 5 doctor pages render correctly",
+    "Browser-CLI tests T1-T7 pass",
+    "Unit tests pass with 80%+ coverage",
+    "No console errors on any page",
+    "Documentation coverage at 95%"
+  ]
+}

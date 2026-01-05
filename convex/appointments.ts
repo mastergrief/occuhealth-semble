@@ -83,6 +83,18 @@ export const listByEmployer = query({
 
 // List appointments by date (for doctor)
 // Authorization: Only doctors can view all appointments by date
+/**
+ * List appointments by date with patient and employer info.
+ *
+ * Used by doctor Appointments page to browse appointments by date.
+ * Returns paginated results with enriched patient, employer, and type data.
+ *
+ * @auth doctor - Requires doctor authentication
+ * @param ctx - Convex query context
+ * @param args.date - Date in YYYY-MM-DD format
+ * @param args.paginationOpts - Pagination options (cursor, numItems)
+ * @returns Paginated list of appointments with related entities
+ */
 export const listByDate = query({
   args: { date: v.string(), ...paginatedQueryArgs },
   handler: async (ctx, { date, paginationOpts }) => {
@@ -119,6 +131,15 @@ export const listByDate = query({
 
 // Get today's appointments (for doctor dashboard)
 // Authorization: Only doctors can view today's appointments
+/**
+ * Get all appointments scheduled for today.
+ *
+ * Used by doctor Dashboard to show today's schedule.
+ *
+ * @auth doctor - Requires doctor authentication
+ * @param ctx - Convex query context
+ * @returns Array of appointment documents for today
+ */
 export const getTodaysAppointments = query({
   args: {},
   handler: async (ctx): Promise<Doc<"appointments">[]> => {
@@ -200,6 +221,17 @@ export const book = mutation({
 
 // Mark appointment complete
 // Authorization: Only doctors can mark appointments as completed
+/**
+ * Mark an appointment as completed.
+ *
+ * Used by doctors after completing a patient consultation.
+ * Creates an audit log entry for compliance tracking.
+ *
+ * @auth doctor - Requires doctor authentication
+ * @throws {ConvexError} NOT_FOUND - Appointment not found
+ * @param ctx - Convex mutation context
+ * @param args.appointmentId - The appointment document ID to mark complete
+ */
 export const markCompleted = mutation({
   args: { appointmentId: v.id("appointments") },
   handler: async (ctx, { appointmentId }) => {

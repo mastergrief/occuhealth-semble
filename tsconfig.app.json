@@ -25,5 +25,5 @@
     }
   },
   "include": ["src", "convex", "ORCHESTRATION"],
-  "exclude": ["convex/_generated", "**/_generated", "ORCHESTRATION/tests/**"]
+  "exclude": ["convex/_generated", "**/_generated", "ORCHESTRATION/tests/**", "**/__tests__/**", "**/*.test.ts", "**/*.test.tsx", "tests/**"]
 }
