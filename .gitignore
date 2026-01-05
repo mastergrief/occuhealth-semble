@@ -20,3 +20,14 @@ npm-debug.log*
 
 # Build
 *.tsbuildinfo
+
+# Browser-CLI runtime files
+BROWSER-CLI/browser-state.json
+BROWSER-CLI/manager.pid
+BROWSER-CLI/session.token
+BROWSER-CLI/states/*.json
+
+# Test artifacts
+*.png
+T*-*
+
