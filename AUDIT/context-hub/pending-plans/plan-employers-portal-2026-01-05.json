@@ -1,0 +1,1333 @@
+{
+  "target": "Employers Portal",
+  "scope": "Specific area - /employer/* routes",
+  "approach": "Functional",
+  "template": null,
+  "generatedAt": "2026-01-05T12:00:00.000Z",
+  "credentials": {
+    "method": "workos_authkit",
+    "savedState": "authenticated-employer",
+    "users": [
+      {
+        "role": "employer",
+        "email": "testemployee@occuhealth.com",
+        "password": "(TestPass1234"
+      }
+    ]
+  },
+  "baseUrl": "http://localhost:5175",
+  "suites": [
+    {
+      "id": "AUTH",
+      "name": "Authentication & Authorization",
+      "priority": "critical",
+      "tests": [
+        {
+          "id": "AUTH-01",
+          "name": "Restore authenticated state",
+          "purpose": "Verify saved state restoration bypasses login flow",
+          "preconditions": ["authenticated-employer state exists in BROWSER-CLI/states/"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Page displays Dashboard heading",
+            "Sidebar navigation visible with OccuHealth branding",
+            "No login redirect occurs"
+          ],
+          "selectors": {
+            "dashboardHeading": "text:Dashboard",
+            "logoText": "text:OccuHealth",
+            "sidebarNav": "a[href=\"/employer/dashboard\"]"
+          }
+        },
+        {
+          "id": "AUTH-02",
+          "name": "Auth guard redirect unauthenticated",
+          "purpose": "Verify unauthenticated users are redirected to landing page",
+          "preconditions": ["No saved state restored", "Fresh browser session"],
+          "steps": [
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "User is redirected to landing page (/)",
+            "Employer dashboard is NOT visible",
+            "Landing page hero content visible"
+          ],
+          "selectors": {
+            "landingHero": "text:Occupational Health",
+            "providerLogin": "text:Provider Login"
+          }
+        },
+        {
+          "id": "AUTH-03",
+          "name": "Logout functionality",
+          "purpose": "Verify logout clears session and redirects to landing",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 1500",
+            "snapshot",
+            "click \"text:Sign Out\"",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Sign Out button clicks successfully",
+            "User redirected to landing page or WorkOS logout",
+            "Employer portal no longer accessible"
+          ],
+          "selectors": {
+            "signOutButton": "text:Sign Out"
+          }
+        },
+        {
+          "id": "AUTH-04",
+          "name": "Token persistence check",
+          "purpose": "Verify localStorage contains employer auth token after restore",
+          "preconditions": ["authenticated-employer state restored"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 1500",
+            "evaluate 'localStorage.getItem(\"workos_employer_auth\") !== null'"
+          ],
+          "verify": [
+            "localStorage contains workos_employer_auth key",
+            "Token is valid JSON with workosUserId field"
+          ],
+          "selectors": {}
+        }
+      ]
+    },
+    {
+      "id": "NAV",
+      "name": "Navigation",
+      "priority": "high",
+      "tests": [
+        {
+          "id": "NAV-01",
+          "name": "Navigate to Dashboard via sidebar",
+          "purpose": "Verify sidebar Dashboard link navigates correctly",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1000",
+            "snapshot",
+            "click \"a[href='/employer/dashboard']\"",
+            "wait 500",
+            "snapshot"
+          ],
+          "verify": [
+            "URL changes to /employer/dashboard",
+            "Dashboard heading visible",
+            "Dashboard link shows active state (bg-blue-600)"
+          ],
+          "selectors": {
+            "dashboardLink": "a[href=\"/employer/dashboard\"]",
+            "dashboardHeading": "text:Dashboard"
+          }
+        },
+        {
+          "id": "NAV-02",
+          "name": "Navigate to Employees via sidebar",
+          "purpose": "Verify sidebar Employees link navigates correctly",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 1000",
+            "snapshot",
+            "click \"a[href='/employer/employees']\"",
+            "wait 500",
+            "snapshot"
+          ],
+          "verify": [
+            "URL changes to /employer/employees",
+            "Employees heading visible",
+            "Add Employee button visible"
+          ],
+          "selectors": {
+            "employeesLink": "a[href=\"/employer/employees\"]",
+            "employeesHeading": "text:Employees",
+            "addEmployeeBtn": "text:Add Employee"
+          }
+        },
+        {
+          "id": "NAV-03",
+          "name": "Navigate to Bookings via sidebar",
+          "purpose": "Verify sidebar Bookings link navigates correctly",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 1000",
+            "snapshot",
+            "click \"a[href='/employer/bookings']\"",
+            "wait 500",
+            "snapshot"
+          ],
+          "verify": [
+            "URL changes to /employer/bookings",
+            "Bookings heading visible",
+            "All Appointments card visible"
+          ],
+          "selectors": {
+            "bookingsLink": "a[href=\"/employer/bookings\"]",
+            "bookingsHeading": "text:Bookings",
+            "appointmentsCard": "text:All Appointments"
+          }
+        },
+        {
+          "id": "NAV-04",
+          "name": "Navigate to Reports via sidebar",
+          "purpose": "Verify sidebar Reports link navigates correctly",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 1000",
+            "snapshot",
+            "click \"a[href='/employer/reports']\"",
+            "wait 500",
+            "snapshot"
+          ],
+          "verify": [
+            "URL changes to /employer/reports",
+            "Reports heading visible"
+          ],
+          "selectors": {
+            "reportsLink": "a[href=\"/employer/reports\"]",
+            "reportsHeading": "text:Reports"
+          }
+        },
+        {
+          "id": "NAV-05",
+          "name": "Navigate to Settings via sidebar",
+          "purpose": "Verify sidebar Settings link navigates correctly",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 1000",
+            "snapshot",
+            "click \"a[href='/employer/settings']\"",
+            "wait 500",
+            "snapshot"
+          ],
+          "verify": [
+            "URL changes to /employer/settings",
+            "Settings heading visible",
+            "Company Information card visible"
+          ],
+          "selectors": {
+            "settingsLink": "a[href=\"/employer/settings\"]",
+            "settingsHeading": "text:Settings",
+            "companyInfoCard": "text:Company Information"
+          }
+        },
+        {
+          "id": "NAV-06",
+          "name": "Direct URL navigation to Employees",
+          "purpose": "Verify deep linking to /employer/employees works",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Employees page loads directly",
+            "No redirect to dashboard or login",
+            "Employees sidebar link shows active state"
+          ],
+          "selectors": {
+            "employeesHeading": "text:Employees",
+            "activeNavLink": "a[href=\"/employer/employees\"].bg-blue-600"
+          }
+        },
+        {
+          "id": "NAV-07",
+          "name": "Active link highlighting",
+          "purpose": "Verify current page shows active nav state",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1000",
+            "snapshot",
+            "evaluate 'document.querySelector(\"a[href='/employer/bookings']\").classList.contains(\"bg-blue-600\")'"
+          ],
+          "verify": [
+            "Bookings link has bg-blue-600 class (active state)",
+            "Other nav links do not have active styling"
+          ],
+          "selectors": {
+            "bookingsLink": "a[href=\"/employer/bookings\"]"
+          }
+        }
+      ]
+    },
+    {
+      "id": "DASHBOARD",
+      "name": "Dashboard Page",
+      "priority": "high",
+      "tests": [
+        {
+          "id": "DASHBOARD-01",
+          "name": "Dashboard stats cards display",
+          "purpose": "Verify all 4 stats cards render with correct titles",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Dashboard heading visible",
+            "Employees stat card visible",
+            "Appointments stat card visible",
+            "Reports stat card visible",
+            "Pending stat card visible",
+            "Each card displays a numeric value"
+          ],
+          "selectors": {
+            "dashboardHeading": "text:Dashboard",
+            "employeesCard": "text:Employees",
+            "appointmentsCard": "text:Appointments",
+            "reportsCard": "text:Reports",
+            "pendingCard": "text:Pending"
+          }
+        },
+        {
+          "id": "DASHBOARD-02",
+          "name": "Dashboard data loading from Convex",
+          "purpose": "Verify real-time Convex queries execute",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 2000",
+            "network --filter=convex",
+            "console"
+          ],
+          "verify": [
+            "Convex websocket connection active",
+            "No console errors",
+            "patients.list query executed",
+            "appointments.listByEmployer query executed"
+          ],
+          "selectors": {}
+        },
+        {
+          "id": "DASHBOARD-03",
+          "name": "Recent appointments section",
+          "purpose": "Verify recent appointments display or empty state",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Recent Appointments section exists OR",
+            "Empty state message if no appointments"
+          ],
+          "selectors": {
+            "recentAppointments": "text:Recent Appointments",
+            "emptyState": "text:No appointments yet"
+          }
+        }
+      ]
+    },
+    {
+      "id": "EMPLOYEES",
+      "name": "Employee Management",
+      "priority": "critical",
+      "tests": [
+        {
+          "id": "EMPLOYEES-01",
+          "name": "Employees page loads",
+          "purpose": "Verify Employees page renders with list or empty state",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Employees heading visible",
+            "Add Employee button visible",
+            "Employee list OR empty state visible"
+          ],
+          "selectors": {
+            "employeesHeading": "text:Employees",
+            "addEmployeeBtn": "text:Add Employee",
+            "emptyState": "text:No employees added yet",
+            "employeeDirectory": "text:Employee Directory"
+          }
+        },
+        {
+          "id": "EMPLOYEES-02",
+          "name": "Empty state when no employees",
+          "purpose": "Verify empty state message displays correctly",
+          "preconditions": ["Authenticated employer with no employees"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "If no employees: 'No employees added yet' text visible",
+            "Add Employee button is enabled and clickable"
+          ],
+          "selectors": {
+            "emptyState": "text:No employees added yet",
+            "addEmployeeBtn": "text:Add Employee"
+          }
+        },
+        {
+          "id": "EMPLOYEES-03",
+          "name": "Add Employee modal opens",
+          "purpose": "Verify clicking Add Employee opens form dialog",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1000",
+            "snapshot",
+            "click \"text:Add Employee\"",
+            "wait 500",
+            "snapshot"
+          ],
+          "verify": [
+            "Dialog modal opens",
+            "Dialog title shows 'Add Employee'",
+            "Form fields visible: First Name, Last Name, Email, Date of Birth",
+            "Cancel and Add Employee buttons visible"
+          ],
+          "selectors": {
+            "addEmployeeBtn": "text:Add Employee",
+            "dialogTitle": "text:Add Employee",
+            "firstNameLabel": "text:First Name",
+            "lastNameLabel": "text:Last Name",
+            "emailLabel": "text:Email",
+            "dobLabel": "text:Date of Birth",
+            "cancelBtn": "text:Cancel"
+          }
+        },
+        {
+          "id": "EMPLOYEES-04",
+          "name": "Form validation - required fields",
+          "purpose": "Verify form enforces required fields before submission",
+          "preconditions": ["Add Employee modal open"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1000",
+            "click \"text:Add Employee\"",
+            "wait 500",
+            "snapshot --forms"
+          ],
+          "verify": [
+            "First Name field marked as required (*)",
+            "Last Name field marked as required (*)",
+            "Email field marked as required (*)",
+            "Date of Birth field marked as required (*)",
+            "Job Title and Department are optional"
+          ],
+          "selectors": {
+            "firstNameRequired": "text:First Name *",
+            "lastNameRequired": "text:Last Name *",
+            "emailRequired": "text:Email *",
+            "dobRequired": "text:Date of Birth *"
+          }
+        },
+        {
+          "id": "EMPLOYEES-05",
+          "name": "Create employee with GDPR consent",
+          "purpose": "Verify employee creation triggers consent and patient mutations",
+          "preconditions": ["Authenticated employer state", "Add Employee modal open"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1000",
+            "snapshot",
+            "click \"text:Add Employee\"",
+            "wait 500",
+            "snapshot --forms",
+            "type \"label:First Name\" \"Test\"",
+            "type \"label:Last Name\" \"Employee\"",
+            "type \"input[type='email']\" \"test.employee@example.com\"",
+            "type \"input[type='date']\" \"1990-01-15\"",
+            "type \"label:Job Title\" \"Engineer\"",
+            "type \"label:Department\" \"IT\"",
+            "snapshot",
+            "click \"button[type='submit']\"",
+            "wait 2000",
+            "snapshot",
+            "assertNetwork gdpr:createConsent",
+            "assertNetwork patients:create",
+            "console"
+          ],
+          "verify": [
+            "Form submits successfully",
+            "gdpr.createConsent mutation fires first",
+            "patients.create mutation fires second",
+            "Dialog closes after success",
+            "New employee appears in list (real-time update)",
+            "No console errors"
+          ],
+          "selectors": {
+            "submitBtn": "button[type='submit']",
+            "firstNameInput": "label:First Name",
+            "lastNameInput": "label:Last Name",
+            "emailInput": "input[type='email']",
+            "dobInput": "input[type='date']"
+          }
+        },
+        {
+          "id": "EMPLOYEES-06",
+          "name": "Cancel button closes modal",
+          "purpose": "Verify Cancel button closes dialog without submission",
+          "preconditions": ["Add Employee modal open"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1000",
+            "click \"text:Add Employee\"",
+            "wait 500",
+            "snapshot",
+            "click \"text:Cancel\"",
+            "wait 300",
+            "snapshot"
+          ],
+          "verify": [
+            "Dialog closes",
+            "No mutation fires",
+            "Employee list unchanged"
+          ],
+          "selectors": {
+            "cancelBtn": "text:Cancel"
+          }
+        },
+        {
+          "id": "EMPLOYEES-07",
+          "name": "Employee list displays data correctly",
+          "purpose": "Verify employee records show name, email, job info",
+          "preconditions": ["Authenticated employer with at least 1 employee"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Employee Directory card visible",
+            "Each employee shows first and last name",
+            "Email visible for each employee",
+            "Job title and department visible if provided"
+          ],
+          "selectors": {
+            "employeeDirectory": "text:Employee Directory",
+            "employeeList": ".divide-y"
+          }
+        },
+        {
+          "id": "EMPLOYEES-08",
+          "name": "Submitting state shows loading indicator",
+          "purpose": "Verify button shows 'Adding...' during submission",
+          "preconditions": ["Add Employee modal open with valid data"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1000",
+            "click \"text:Add Employee\"",
+            "wait 500",
+            "type \"label:First Name\" \"Loading\"",
+            "type \"label:Last Name\" \"Test\"",
+            "type \"input[type='email']\" \"loading.test@example.com\"",
+            "type \"input[type='date']\" \"1990-01-15\"",
+            "click \"button[type='submit']\"",
+            "snapshot"
+          ],
+          "verify": [
+            "Button text changes to 'Adding...'",
+            "Button is disabled during submission"
+          ],
+          "selectors": {
+            "addingText": "text:Adding..."
+          }
+        }
+      ]
+    },
+    {
+      "id": "BOOKINGS",
+      "name": "Booking Flow",
+      "priority": "critical",
+      "tests": [
+        {
+          "id": "BOOKINGS-01",
+          "name": "Bookings page loads",
+          "purpose": "Verify Bookings page renders with list or empty state",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Bookings heading visible",
+            "New Booking button visible",
+            "All Appointments card visible",
+            "Appointments list OR empty state visible"
+          ],
+          "selectors": {
+            "bookingsHeading": "text:Bookings",
+            "newBookingBtn": "text:New Booking",
+            "allAppointmentsCard": "text:All Appointments",
+            "emptyState": "text:No bookings yet"
+          }
+        },
+        {
+          "id": "BOOKINGS-02",
+          "name": "Empty state when no bookings",
+          "purpose": "Verify 'No bookings yet' message displays correctly",
+          "preconditions": ["Authenticated employer with no bookings"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "If no bookings: 'No bookings yet' text visible within card"
+          ],
+          "selectors": {
+            "emptyState": "text:No bookings yet"
+          }
+        },
+        {
+          "id": "BOOKINGS-03",
+          "name": "Verification status check - button enabled when verified",
+          "purpose": "Verify New Booking button is enabled for verified employers",
+          "preconditions": ["Authenticated verified employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1500",
+            "snapshot",
+            "evaluate 'document.querySelector(\"button\")?.disabled === false'"
+          ],
+          "verify": [
+            "New Booking button is enabled",
+            "No 'Booking is disabled' warning visible"
+          ],
+          "selectors": {
+            "newBookingBtn": "text:New Booking"
+          }
+        },
+        {
+          "id": "BOOKINGS-04",
+          "name": "New Booking opens 3-step wizard",
+          "purpose": "Verify clicking New Booking opens dialog at Step 1",
+          "preconditions": ["Authenticated verified employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1000",
+            "snapshot",
+            "click \"text:New Booking\"",
+            "wait 500",
+            "snapshot"
+          ],
+          "verify": [
+            "Dialog modal opens",
+            "Title shows 'Book Appointment - Step 1 of 3'",
+            "Select Employee dropdown visible",
+            "Appointment Type dropdown visible",
+            "Next button visible (disabled until selections made)"
+          ],
+          "selectors": {
+            "dialogTitle": "text:Book Appointment - Step 1 of 3",
+            "employeeDropdown": "text:Select Employee",
+            "typeDropdown": "text:Appointment Type",
+            "nextBtn": "text:Next"
+          }
+        },
+        {
+          "id": "BOOKINGS-05",
+          "name": "Step 1 - Employee and type selection",
+          "purpose": "Verify employee and appointment type dropdowns work",
+          "preconditions": ["Booking wizard open at Step 1", "At least 1 employee exists"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1000",
+            "click \"text:New Booking\"",
+            "wait 500",
+            "snapshot",
+            "selectOption \"select:first-of-type\" \"patient_id\"",
+            "selectOption \"select:last-of-type\" \"type_id\"",
+            "snapshot",
+            "click \"text:Next\"",
+            "wait 500",
+            "snapshot"
+          ],
+          "verify": [
+            "Employee dropdown populates with employees",
+            "Type dropdown populates with appointment types",
+            "Next button enables after both selections",
+            "Clicking Next advances to Step 2"
+          ],
+          "selectors": {
+            "employeeSelect": "select:first-of-type",
+            "typeSelect": "select:last-of-type",
+            "nextBtn": "text:Next"
+          }
+        },
+        {
+          "id": "BOOKINGS-06",
+          "name": "Step 2 - Date and time slot selection",
+          "purpose": "Verify date picker and available slots display",
+          "preconditions": ["Booking wizard at Step 2"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1000",
+            "click \"text:New Booking\"",
+            "wait 500",
+            "selectOption \"select:first-of-type\" \"patient_id\"",
+            "selectOption \"select:last-of-type\" \"type_id\"",
+            "click \"text:Next\"",
+            "wait 500",
+            "snapshot",
+            "type \"input[type='date']\" \"2026-01-15\"",
+            "wait 1000",
+            "snapshot"
+          ],
+          "verify": [
+            "Title shows 'Book Appointment - Step 2 of 3'",
+            "Select Date input visible",
+            "Available Slots section visible",
+            "Slots load after date selection OR 'No slots available' message"
+          ],
+          "selectors": {
+            "dialogTitle": "text:Book Appointment - Step 2 of 3",
+            "dateInput": "input[type='date']",
+            "slotsLabel": "text:Available Slots",
+            "noSlotsMsg": "text:No slots available for this date",
+            "backBtn": "text:Back",
+            "nextBtn": "text:Next"
+          }
+        },
+        {
+          "id": "BOOKINGS-07",
+          "name": "Step 2 - Select time slot",
+          "purpose": "Verify selecting a time slot enables Next button",
+          "preconditions": ["Booking wizard at Step 2 with available slots"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1000",
+            "click \"text:New Booking\"",
+            "wait 500",
+            "selectOption \"select:first-of-type\" \"patient_id\"",
+            "selectOption \"select:last-of-type\" \"type_id\"",
+            "click \"text:Next\"",
+            "wait 500",
+            "type \"input[type='date']\" \"2026-01-20\"",
+            "wait 1000",
+            "snapshot"
+          ],
+          "verify": [
+            "Time slot buttons display start times (e.g., 09:00, 09:30)",
+            "Clicking a slot selects it (button becomes primary style)",
+            "Next button enables after slot selection"
+          ],
+          "selectors": {
+            "slotButton": ".grid-cols-3 button",
+            "nextBtn": "text:Next"
+          }
+        },
+        {
+          "id": "BOOKINGS-08",
+          "name": "Step 3 - Review and confirm",
+          "purpose": "Verify booking summary displays before confirmation",
+          "preconditions": ["Booking wizard at Step 3"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1000",
+            "click \"text:New Booking\"",
+            "wait 500",
+            "selectOption \"select:first-of-type\" \"patient_id\"",
+            "selectOption \"select:last-of-type\" \"type_id\"",
+            "click \"text:Next\"",
+            "wait 500",
+            "type \"input[type='date']\" \"2026-01-20\"",
+            "wait 1000",
+            "click \".grid-cols-3 button:first-of-type\"",
+            "click \"text:Next\"",
+            "wait 500",
+            "snapshot"
+          ],
+          "verify": [
+            "Title shows 'Book Appointment - Step 3 of 3'",
+            "Reason for Appointment input visible (optional)",
+            "Summary shows Employee name, Type, Date, Time",
+            "Back and Confirm Booking buttons visible"
+          ],
+          "selectors": {
+            "dialogTitle": "text:Book Appointment - Step 3 of 3",
+            "reasonInput": "text:Reason for Appointment",
+            "summaryEmployee": "text:Employee:",
+            "summaryType": "text:Type:",
+            "summaryDate": "text:Date:",
+            "summaryTime": "text:Time:",
+            "backBtn": "text:Back",
+            "confirmBtn": "text:Confirm Booking"
+          }
+        },
+        {
+          "id": "BOOKINGS-09",
+          "name": "Booking mutation success",
+          "purpose": "Verify complete booking flow triggers mutation and updates list",
+          "preconditions": ["Complete booking wizard flow"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1000",
+            "click \"text:New Booking\"",
+            "wait 500",
+            "selectOption \"select:first-of-type\" \"patient_id\"",
+            "selectOption \"select:last-of-type\" \"type_id\"",
+            "click \"text:Next\"",
+            "wait 500",
+            "type \"input[type='date']\" \"2026-01-20\"",
+            "wait 1000",
+            "click \".grid-cols-3 button:first-of-type\"",
+            "click \"text:Next\"",
+            "wait 500",
+            "type \"input[placeholder*='Annual']\" \"Annual health check\"",
+            "click \"text:Confirm Booking\"",
+            "wait 2000",
+            "snapshot",
+            "assertNetwork appointments:book",
+            "console"
+          ],
+          "verify": [
+            "appointments.book mutation fires",
+            "Dialog closes after success",
+            "New booking appears in list (real-time)",
+            "No console errors"
+          ],
+          "selectors": {
+            "confirmBtn": "text:Confirm Booking"
+          }
+        },
+        {
+          "id": "BOOKINGS-10",
+          "name": "Back button navigation in wizard",
+          "purpose": "Verify Back buttons navigate correctly between steps",
+          "preconditions": ["Booking wizard at Step 2 or 3"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1000",
+            "click \"text:New Booking\"",
+            "wait 500",
+            "selectOption \"select:first-of-type\" \"patient_id\"",
+            "selectOption \"select:last-of-type\" \"type_id\"",
+            "click \"text:Next\"",
+            "wait 500",
+            "snapshot",
+            "click \"text:Back\"",
+            "wait 300",
+            "snapshot"
+          ],
+          "verify": [
+            "Clicking Back returns to previous step",
+            "Previous selections are preserved",
+            "Title updates to reflect current step"
+          ],
+          "selectors": {
+            "backBtn": "text:Back"
+          }
+        },
+        {
+          "id": "BOOKINGS-11",
+          "name": "Appointment status badges display",
+          "purpose": "Verify appointment status badges show correct colors",
+          "preconditions": ["At least 1 appointment exists"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Scheduled appointments show blue badge",
+            "Completed appointments show green badge",
+            "Cancelled appointments show red badge",
+            "Patient name and date/time visible for each booking"
+          ],
+          "selectors": {
+            "scheduledBadge": ".bg-blue-100",
+            "completedBadge": ".bg-green-100",
+            "cancelledBadge": ".bg-red-100"
+          }
+        }
+      ]
+    },
+    {
+      "id": "REPORTS",
+      "name": "Reports Page",
+      "priority": "medium",
+      "tests": [
+        {
+          "id": "REPORTS-01",
+          "name": "Reports page loads",
+          "purpose": "Verify Reports page renders with list or empty state",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/reports",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Reports heading visible",
+            "Medical Reports card OR empty state visible"
+          ],
+          "selectors": {
+            "reportsHeading": "text:Reports",
+            "medicalReportsCard": "text:Medical Reports",
+            "emptyState": "text:No reports available"
+          }
+        },
+        {
+          "id": "REPORTS-02",
+          "name": "Empty state when no reports",
+          "purpose": "Verify 'No reports available' message displays correctly",
+          "preconditions": ["Authenticated employer with no reports"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/reports",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "If no reports: 'No reports available' text visible"
+          ],
+          "selectors": {
+            "emptyState": "text:No reports available"
+          }
+        },
+        {
+          "id": "REPORTS-03",
+          "name": "Fit-for-work status badges display",
+          "purpose": "Verify reports show correct status badge colors",
+          "preconditions": ["At least 1 report exists"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/reports",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "'fit' status shows green badge",
+            "'fit with restrictions' shows amber badge",
+            "'temporarily unfit' shows red badge",
+            "'needs further assessment' shows blue badge"
+          ],
+          "selectors": {
+            "fitBadge": ".bg-green-100",
+            "restrictionsBadge": ".bg-amber-100",
+            "unfitBadge": ".bg-red-100",
+            "assessmentBadge": ".bg-blue-100"
+          }
+        },
+        {
+          "id": "REPORTS-04",
+          "name": "Report summary text visible",
+          "purpose": "Verify report summary displays for each report",
+          "preconditions": ["At least 1 report exists"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/reports",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Patient name visible for each report",
+            "Date signed visible for each report",
+            "Summary text visible below status badge"
+          ],
+          "selectors": {
+            "reportItem": ".p-4.border.rounded-lg"
+          }
+        }
+      ]
+    },
+    {
+      "id": "SETTINGS",
+      "name": "Settings Page",
+      "priority": "low",
+      "tests": [
+        {
+          "id": "SETTINGS-01",
+          "name": "Settings page loads",
+          "purpose": "Verify Settings page renders with company info",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/settings",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Settings heading visible",
+            "Company Information card visible",
+            "Company Name field visible",
+            "Type field visible",
+            "Status field visible"
+          ],
+          "selectors": {
+            "settingsHeading": "text:Settings",
+            "companyInfoCard": "text:Company Information",
+            "companyNameLabel": "text:Company Name",
+            "typeLabel": "text:Type",
+            "statusLabel": "text:Status"
+          }
+        },
+        {
+          "id": "SETTINGS-02",
+          "name": "Company info displays correctly",
+          "purpose": "Verify employer data populates correctly",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/settings",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Company Name shows employer's companyName",
+            "Type shows 'employer' or 'insurer' capitalized",
+            "Status shows 'verified', 'pending', or 'rejected'"
+          ],
+          "selectors": {
+            "companyNameValue": ".font-medium:near(:text('Company Name'))",
+            "typeValue": ".font-medium.capitalize:near(:text('Type'))",
+            "statusValue": ".font-medium.capitalize:near(:text('Status'))"
+          }
+        },
+        {
+          "id": "SETTINGS-03",
+          "name": "Verification status badge color",
+          "purpose": "Verify status field shows correct color for status",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/settings",
+            "wait 1500",
+            "snapshot",
+            "evaluate 'document.querySelector(\".text-green-600, .text-amber-600, .text-red-600\")?.textContent'"
+          ],
+          "verify": [
+            "Verified status shows green text",
+            "Pending status shows amber text",
+            "Rejected status shows red text"
+          ],
+          "selectors": {
+            "verifiedStatus": ".text-green-600",
+            "pendingStatus": ".text-amber-600",
+            "rejectedStatus": ".text-red-600"
+          }
+        },
+        {
+          "id": "SETTINGS-04",
+          "name": "Read-only fields",
+          "purpose": "Verify settings fields are read-only (no edit capability)",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/settings",
+            "wait 1500",
+            "snapshot",
+            "evaluate 'document.querySelectorAll(\"input[readonly], input[disabled]\").length === 0'"
+          ],
+          "verify": [
+            "No editable input fields present",
+            "All fields display as static text",
+            "No Edit or Save buttons present"
+          ],
+          "selectors": {}
+        }
+      ]
+    },
+    {
+      "id": "VERIFICATION",
+      "name": "Pending Verification State",
+      "priority": "high",
+      "tests": [
+        {
+          "id": "VERIFICATION-01",
+          "name": "Warning banner visible when not verified",
+          "purpose": "Verify pending verification banner appears for unverified employers",
+          "preconditions": ["Authenticated employer with status='pending'"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "If status is pending: amber warning banner visible",
+            "'Account Pending Verification' text visible",
+            "'Some features are restricted' text visible"
+          ],
+          "selectors": {
+            "warningBanner": ".bg-amber-50",
+            "pendingTitle": "text:Account Pending Verification",
+            "restrictedText": "text:Some features are restricted"
+          }
+        },
+        {
+          "id": "VERIFICATION-02",
+          "name": "Banner text matches expected content",
+          "purpose": "Verify exact warning banner text content",
+          "preconditions": ["Authenticated pending employer"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Primary text: 'Account Pending Verification'",
+            "Secondary text: 'Some features are restricted until your account is verified.'"
+          ],
+          "selectors": {
+            "primaryText": "text:Account Pending Verification",
+            "secondaryText": "text:Some features are restricted until your account is verified"
+          }
+        },
+        {
+          "id": "VERIFICATION-03",
+          "name": "Booking button disabled when not verified",
+          "purpose": "Verify New Booking button is disabled for pending employers",
+          "preconditions": ["Authenticated pending employer"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1500",
+            "snapshot",
+            "evaluate 'document.querySelector(\"button\")?.disabled'"
+          ],
+          "verify": [
+            "New Booking button has disabled attribute",
+            "Button appears visually disabled (lower opacity)"
+          ],
+          "selectors": {
+            "disabledButton": "button[disabled]"
+          }
+        },
+        {
+          "id": "VERIFICATION-04",
+          "name": "Restriction message on bookings page",
+          "purpose": "Verify 'Booking is disabled' message appears for pending employers",
+          "preconditions": ["Authenticated pending employer"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "'Booking is disabled until your account is verified.' text visible",
+            "Text is amber/warning color"
+          ],
+          "selectors": {
+            "restrictionMsg": "text:Booking is disabled until your account is verified",
+            "amberText": ".text-amber-600"
+          }
+        },
+        {
+          "id": "VERIFICATION-05",
+          "name": "Banner hidden when verified",
+          "purpose": "Verify no warning banner for verified employers",
+          "preconditions": ["Authenticated verified employer"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "If status is verified: no amber banner visible",
+            "'Account Pending Verification' text NOT visible"
+          ],
+          "selectors": {
+            "warningBanner": ".bg-amber-50",
+            "pendingTitle": "text:Account Pending Verification"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ERROR",
+      "name": "Error Handling",
+      "priority": "medium",
+      "tests": [
+        {
+          "id": "ERROR-01",
+          "name": "Console errors check on Dashboard",
+          "purpose": "Verify no console errors on Dashboard page load",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "clearConsole",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 2000",
+            "assertConsole --level=error"
+          ],
+          "verify": [
+            "No console errors present",
+            "Page loads without JavaScript exceptions"
+          ],
+          "selectors": {}
+        },
+        {
+          "id": "ERROR-02",
+          "name": "Console errors check on Employees",
+          "purpose": "Verify no console errors on Employees page load",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "clearConsole",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 2000",
+            "assertConsole --level=error"
+          ],
+          "verify": [
+            "No console errors present",
+            "Page loads without JavaScript exceptions"
+          ],
+          "selectors": {}
+        },
+        {
+          "id": "ERROR-03",
+          "name": "Console errors check on Bookings",
+          "purpose": "Verify no console errors on Bookings page load",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "clearConsole",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 2000",
+            "assertConsole --level=error"
+          ],
+          "verify": [
+            "No console errors present",
+            "Page loads without JavaScript exceptions"
+          ],
+          "selectors": {}
+        },
+        {
+          "id": "ERROR-04",
+          "name": "Console errors check on Reports",
+          "purpose": "Verify no console errors on Reports page load",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "clearConsole",
+            "navigate http://localhost:5175/employer/reports",
+            "wait 2000",
+            "assertConsole --level=error"
+          ],
+          "verify": [
+            "No console errors present",
+            "Page loads without JavaScript exceptions"
+          ],
+          "selectors": {}
+        },
+        {
+          "id": "ERROR-05",
+          "name": "Console errors check on Settings",
+          "purpose": "Verify no console errors on Settings page load",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "clearConsole",
+            "navigate http://localhost:5175/employer/settings",
+            "wait 2000",
+            "assertConsole --level=error"
+          ],
+          "verify": [
+            "No console errors present",
+            "Page loads without JavaScript exceptions"
+          ],
+          "selectors": {}
+        },
+        {
+          "id": "ERROR-06",
+          "name": "Network connectivity verification",
+          "purpose": "Verify Convex websocket connection active",
+          "preconditions": ["Authenticated employer state"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 2000",
+            "network --filter=convex"
+          ],
+          "verify": [
+            "Convex websocket connection visible in network",
+            "No 4xx or 5xx status codes for Convex requests"
+          ],
+          "selectors": {}
+        },
+        {
+          "id": "ERROR-07",
+          "name": "Form submission error handling",
+          "purpose": "Verify error is logged when employee creation fails",
+          "preconditions": ["Add Employee form with invalid data"],
+          "steps": [
+            "restoreState authenticated-employer",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1000",
+            "click \"text:Add Employee\"",
+            "wait 500",
+            "type \"label:First Name\" \"Test\"",
+            "type \"label:Last Name\" \"User\"",
+            "type \"input[type='email']\" \"invalid-email\"",
+            "type \"input[type='date']\" \"1990-01-15\"",
+            "click \"button[type='submit']\"",
+            "wait 1000",
+            "console"
+          ],
+          "verify": [
+            "HTML5 validation prevents submission for invalid email",
+            "If submitted: error logged to console",
+            "Form remains open on error"
+          ],
+          "selectors": {}
+        }
+      ]
+    }
+  ]
+}

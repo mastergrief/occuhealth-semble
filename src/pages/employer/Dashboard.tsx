@@ -1,18 +1,12 @@
-import { useOutletContext } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { defaultPaginationOpts } from "../../../convex/helpers/pagination";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Calendar, FileText, Clock } from "lucide-react";
-import { Doc } from "../../../convex/_generated/dataModel";
-
-interface LayoutContext {
-  employer: Doc<"employers"> | null | undefined;
-  isVerified: boolean;
-}
+import { useEmployerContext } from "../EmployerLayout";
 
 export function EmployerDashboard() {
-  const { employer } = useOutletContext<LayoutContext>();
+  const { employer } = useEmployerContext();
   const employerId = employer?._id;
 
   const patientsResult = useQuery(api.patients.list, employerId ? { employerId, ...defaultPaginationOpts() } : "skip");

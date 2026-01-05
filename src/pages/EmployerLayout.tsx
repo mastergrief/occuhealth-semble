@@ -1,4 +1,5 @@
-import { Outlet, NavLink, Navigate } from "react-router-dom";
+import { NavLink, Navigate, Routes, Route } from "react-router-dom";
+import { lazy, Suspense, createContext, useContext } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useEmployerAuth } from "@/lib/workos-auth";
@@ -12,6 +13,37 @@ import {
   LogOut,
   AlertTriangle,
 } from "lucide-react";
+import { Doc } from "../../convex/_generated/dataModel";
+
+// Context for sharing employer data with child routes
+export interface EmployerContextType {
+  employer: Doc<"employers"> | null | undefined;
+  isVerified: boolean;
+}
+
+export const EmployerContext = createContext<EmployerContextType>({
+  employer: undefined,
+  isVerified: false,
+});
+
+export const useEmployerContext = () => useContext(EmployerContext);
+
+// Lazy load employer pages
+const EmployerDashboard = lazy(() =>
+  import("./employer/Dashboard").then(m => ({ default: m.EmployerDashboard }))
+);
+const EmployeesPage = lazy(() =>
+  import("./employer/Employees").then(m => ({ default: m.EmployeesPage }))
+);
+const BookingsPage = lazy(() =>
+  import("./employer/Bookings").then(m => ({ default: m.BookingsPage }))
+);
+const ReportsPage = lazy(() =>
+  import("./employer/Reports").then(m => ({ default: m.ReportsPage }))
+);
+const EmployerSettings = lazy(() =>
+  import("./employer/Settings").then(m => ({ default: m.EmployerSettings }))
+);
 
 export function EmployerLayout() {
   const { isAuthenticated, isLoading, workosUserId, logoutEmployer, sessionId } = useEmployerAuth();
@@ -134,7 +166,18 @@ export function EmployerLayout() {
         )}
 
         <div className="p-6">
-          <Outlet context={{ employer, isVerified }} />
+          <EmployerContext.Provider value={{ employer, isVerified }}>
+            <Suspense fallback={<div className="flex items-center justify-center h-full">Loading...</div>}>
+              <Routes>
+                <Route path="dashboard" element={<EmployerDashboard />} />
+                <Route path="employees" element={<EmployeesPage />} />
+                <Route path="bookings" element={<BookingsPage />} />
+                <Route path="reports" element={<ReportsPage />} />
+                <Route path="settings" element={<EmployerSettings />} />
+                <Route index element={<Navigate to="dashboard" replace />} />
+              </Routes>
+            </Suspense>
+          </EmployerContext.Provider>
         </div>
       </main>
     </div>

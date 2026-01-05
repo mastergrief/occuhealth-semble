@@ -1,14 +1,8 @@
-import { useOutletContext } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Doc } from "../../../convex/_generated/dataModel";
-
-interface LayoutContext {
-  employer: Doc<"employers"> | null | undefined;
-  isVerified: boolean;
-}
+import { useEmployerContext } from "../EmployerLayout";
 
 export function EmployerSettings() {
-  const { employer } = useOutletContext<LayoutContext>();
+  const { employer } = useEmployerContext();
 
   return (
     <div className="space-y-6">

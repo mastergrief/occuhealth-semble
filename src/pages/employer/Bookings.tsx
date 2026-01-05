@@ -1,4 +1,3 @@
-import { useOutletContext } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { defaultPaginationOpts } from "../../../convex/helpers/pagination";
@@ -7,15 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useState } from "react";
-import { Doc } from "../../../convex/_generated/dataModel";
-
-interface LayoutContext {
-  employer: Doc<"employers"> | null | undefined;
-  isVerified: boolean;
-}
+import { useEmployerContext } from "../EmployerLayout";
 
 export function BookingsPage() {
-  const { employer, isVerified } = useOutletContext<LayoutContext>();
+  const { employer, isVerified } = useEmployerContext();
   const [showBooking, setShowBooking] = useState(false);
 
   const appointmentsResult = useQuery(

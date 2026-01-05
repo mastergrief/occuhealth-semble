@@ -1,0 +1,162 @@
+{
+  "id": "plan-employer-routing-fix",
+  "created": "2026-01-05T12:00:00Z",
+  "title": "Add Routes Block to EmployerLayout.tsx",
+  "description": "Fix employer portal routing by adding <Routes> block to EmployerLayout, matching DoctorLayout pattern",
+  "status": "pending",
+  "confidence": "100%",
+  "totalFiles": 6,
+  "totalLinesChanged": 47,
+  "estimatedComplexity": "low",
+
+  "rootCause": {
+    "issue": "ROUTING-001",
+    "file": "src/pages/EmployerLayout.tsx",
+    "line": 137,
+    "problem": "Uses <Outlet /> without <Routes> block",
+    "impact": "All 5 employer pages render empty (42 tests blocked)"
+  },
+
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Add Context Infrastructure to EmployerLayout.tsx",
+      "description": "Update imports, add context definition, lazy imports, and Routes block",
+      "blocking": true,
+      "file": "src/pages/EmployerLayout.tsx",
+      "changes": [
+        {
+          "location": "line 1-15 (imports)",
+          "action": "Replace Outlet with Routes/Route, add lazy/Suspense/createContext/useContext, add Doc type"
+        },
+        {
+          "location": "after imports (new lines)",
+          "action": "Add EmployerContextType interface, EmployerContext, useEmployerContext hook"
+        },
+        {
+          "location": "after context (new lines)",
+          "action": "Add 5 lazy imports with .then() wrappers for named exports"
+        },
+        {
+          "location": "line 136-138 (main content)",
+          "action": "Replace <Outlet> with <EmployerContext.Provider> + <Suspense> + <Routes>"
+        }
+      ],
+      "linesAdded": 35,
+      "linesRemoved": 3
+    },
+    {
+      "id": "phase-2",
+      "name": "Migrate Employer Pages to useEmployerContext",
+      "description": "Update all 5 employer pages to use new context hook",
+      "blocking": false,
+      "parallelizable": true,
+      "files": [
+        {
+          "path": "src/pages/employer/Dashboard.tsx",
+          "changes": "Replace useOutletContext import + LayoutContext interface with useEmployerContext",
+          "linesAdded": 1,
+          "linesRemoved": 6
+        },
+        {
+          "path": "src/pages/employer/Employees.tsx",
+          "changes": "Replace useOutletContext import + LayoutContext interface with useEmployerContext",
+          "linesAdded": 1,
+          "linesRemoved": 6
+        },
+        {
+          "path": "src/pages/employer/Bookings.tsx",
+          "changes": "Replace useOutletContext import + LayoutContext interface with useEmployerContext (uses both employer and isVerified)",
+          "linesAdded": 1,
+          "linesRemoved": 6
+        },
+        {
+          "path": "src/pages/employer/Reports.tsx",
+          "changes": "Replace useOutletContext import + LayoutContext interface with useEmployerContext",
+          "linesAdded": 1,
+          "linesRemoved": 6
+        },
+        {
+          "path": "src/pages/employer/Settings.tsx",
+          "changes": "Replace useOutletContext import + LayoutContext interface with useEmployerContext",
+          "linesAdded": 1,
+          "linesRemoved": 6
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "Validation",
+      "description": "Run typecheck and browser tests",
+      "blocking": true,
+      "steps": [
+        "npm run typecheck",
+        "Browser test: /employer/dashboard",
+        "Browser test: /employer/employees",
+        "Browser test: /employer/bookings",
+        "Browser test: /employer/reports",
+        "Browser test: /employer/settings",
+        "Verify sidebar navigation",
+        "Verify pending verification banner"
+      ]
+    }
+  ],
+
+  "risks": [
+    {
+      "id": "risk-1",
+      "level": "LOW",
+      "description": "Type compatibility between context and pages",
+      "mitigation": "Same Doc<\"employers\"> type already used - direct 1:1 migration"
+    },
+    {
+      "id": "risk-2",
+      "level": "LOW",
+      "description": "Lazy load failures with named exports",
+      "mitigation": "All pages use named exports; .then() wrapper pattern proven in DoctorLayout"
+    },
+    {
+      "id": "risk-3",
+      "level": "MEDIUM",
+      "description": "Route path mismatch",
+      "mitigation": "Using relative paths (dashboard) matches NavLink absolute paths (/employer/dashboard)"
+    },
+    {
+      "id": "risk-4",
+      "level": "LOW",
+      "description": "Context default values before data loads",
+      "mitigation": "employer: undefined + conditional rendering in pages already handles this"
+    },
+    {
+      "id": "risk-5",
+      "level": "MEDIUM",
+      "description": "Typecheck failures during migration",
+      "mitigation": "Execute all changes in sequence, run typecheck immediately after"
+    }
+  ],
+
+  "referenceImplementation": {
+    "file": "src/pages/DoctorLayout.tsx",
+    "lines": 160,
+    "features": ["DoctorContext", "useDoctorContext", "lazy imports with .then()", "<Routes> in <Suspense>"]
+  },
+
+  "testingChecklist": [
+    "/employer redirects to /employer/dashboard",
+    "/employer/dashboard renders EmployerDashboard with stats",
+    "/employer/employees renders EmployeesPage with employee list",
+    "/employer/bookings renders BookingsPage with booking list",
+    "/employer/reports renders ReportsPage with reports list",
+    "/employer/settings renders EmployerSettings with company info",
+    "Sidebar navigation works for all links",
+    "Pending verification banner shows when isVerified === false",
+    "No console errors (React, TypeScript, Convex)",
+    "Lazy loading shows spinner during page transitions"
+  ],
+
+  "scouts": {
+    "ui": "EmployerLayout.tsx (142 lines) missing Routes; DoctorLayout.tsx (160 lines) has working pattern; 5 employer pages (322 lines) ready",
+    "api": "8 Convex modules used; Context shape: {employer, isVerified}; All pages use useOutletContext",
+    "db": "Tables: employers, patients, appointments, reports; Real-time subscriptions; GDPR-compliant soft-delete"
+  }
+}

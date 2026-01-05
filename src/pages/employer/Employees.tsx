@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useOutletContext } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { defaultPaginationOpts } from "../../../convex/helpers/pagination";
@@ -7,15 +6,10 @@ import { EmployeeList } from "@/components/employer/EmployeeList";
 import { EmployeeForm } from "@/components/employer/EmployeeForm";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { Doc } from "../../../convex/_generated/dataModel";
-
-interface LayoutContext {
-  employer: Doc<"employers"> | null | undefined;
-  isVerified: boolean;
-}
+import { useEmployerContext } from "../EmployerLayout";
 
 export function EmployeesPage() {
-  const { employer } = useOutletContext<LayoutContext>();
+  const { employer } = useEmployerContext();
   const [showForm, setShowForm] = useState(false);
 
   const patientsResult = useQuery(api.patients.list, employer?._id ? { employerId: employer._id, ...defaultPaginationOpts() } : "skip");

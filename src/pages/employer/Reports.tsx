@@ -1,17 +1,11 @@
-import { useOutletContext } from "react-router-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { defaultPaginationOpts } from "../../../convex/helpers/pagination";
 import { ReportsList } from "@/components/employer/ReportsList";
-import { Doc } from "../../../convex/_generated/dataModel";
-
-interface LayoutContext {
-  employer: Doc<"employers"> | null | undefined;
-  isVerified: boolean;
-}
+import { useEmployerContext } from "../EmployerLayout";
 
 export function ReportsPage() {
-  const { employer } = useOutletContext<LayoutContext>();
+  const { employer } = useEmployerContext();
 
   const reportsResult = useQuery(
     api.reports.listByEmployer,
