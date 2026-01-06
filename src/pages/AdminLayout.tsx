@@ -13,6 +13,7 @@ import { EmployerVerification } from "@/pages/admin/EmployerVerification";
 import { GDPRDashboard } from "@/pages/admin/GDPRDashboard";
 import { ErasureRequests } from "@/pages/admin/ErasureRequests";
 import { AuditLogs } from "@/pages/admin/AuditLogs";
+import { AppointmentTypes } from "@/pages/admin/AppointmentTypes";
 
 // Admin Dashboard Content (extracted for routing)
 function AdminDashboardContent({ adminUser }: { adminUser: { userId: string } | null }) {
@@ -35,6 +36,10 @@ function AdminDashboardContent({ adminUser }: { adminUser: { userId: string } | 
         <a href="/admin/gdpr/audit" className="bg-card border rounded-lg p-6 hover:border-primary transition-colors">
           <h2 className="font-semibold mb-2">Audit Logs</h2>
           <p className="text-sm text-muted-foreground">View system activity and compliance logs</p>
+        </a>
+        <a href="/admin/appointment-types" className="bg-card border rounded-lg p-6 hover:border-primary transition-colors">
+          <h2 className="font-semibold mb-2">Appointment Types</h2>
+          <p className="text-sm text-muted-foreground">Manage appointment type definitions</p>
         </a>
       </div>
     </>
@@ -115,6 +120,7 @@ export function AdminLayout() {
             <a href="/admin" className="text-sm hover:text-primary">Dashboard</a>
             <a href="/admin/employers" className="text-sm hover:text-primary">Employers</a>
             <a href="/admin/gdpr" className="text-sm hover:text-primary">GDPR</a>
+            <a href="/admin/appointment-types" className="text-sm hover:text-primary">Appointment Types</a>
           </nav>
           <Button variant="outline" size="sm" onClick={handleLogout}>
             Sign Out
@@ -129,6 +135,7 @@ export function AdminLayout() {
           <Route path="gdpr" element={<GDPRDashboard />} />
           <Route path="gdpr/erasure" element={<ErasureRequests />} />
           <Route path="gdpr/audit" element={<AuditLogs />} />
+          <Route path="appointment-types" element={<AppointmentTypes />} />
         </Routes>
       </main>
 
