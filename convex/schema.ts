@@ -109,8 +109,10 @@ export default defineSchema({
     durationMinutes: v.number(),
     price: v.number(),
     isActive: v.boolean(),
+    deletedAt: v.optional(v.number()),
   })
-    .index("by_active", ["isActive"]),
+    .index("by_active", ["isActive"])
+    .index("by_deleted", ["deletedAt"]),
 
   // ---------------------------------------------------------------------------
   // Available Slots
@@ -156,7 +158,8 @@ export default defineSchema({
     .index("by_employer", ["employerId"])
     .index("by_patient", ["patientId"])
     .index("by_date", ["scheduledDate"])
-    .index("by_status", ["status"]),
+    .index("by_status", ["status"])
+    .index("by_appointment_type", ["appointmentTypeId"]),
 
   // ---------------------------------------------------------------------------
   // Reports (Fit-for-Work)

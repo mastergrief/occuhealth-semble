@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query, internalMutation } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { Doc } from "./_generated/dataModel";
 
 // ---------------------------------------------------------------------------
@@ -168,11 +169,10 @@ export const listErasureRequests = query({
 export const processErasure = mutation({
   args: {
     requestId: v.id("erasureRequests"),
-    processedBy: v.string(),
   },
-  handler: async (ctx, { requestId, processedBy }) => {
+  handler: async (ctx, { requestId }) => {
     // Authorization: Only admins can process erasure requests
-    await requireAdmin(ctx);
+    const admin = await requireAdmin(ctx);
 
     const request = await ctx.db.get(requestId);
     if (!request) throw new Error("Request not found");
@@ -252,29 +252,69 @@ export const processErasure = mutation({
     await ctx.db.patch(requestId, {
       status: "completed",
       completedAt: Date.now(),
-      processedBy,
+      processedBy: admin.email,
+    });
+
+    // Audit log the erasure processing
+    await ctx.runMutation(internal.gdpr.logAction, {
+      action: "erasure_processed",
+      actorType: "admin",
+      actorId: admin._id,
+      resourceType: "erasureRequest",
+      resourceId: requestId,
+      details: { patientId: request.patientId },
     });
   },
-});
+});;
 
 // Get audit logs (admin)
 export const getAuditLogs = query({
   args: {
     limit: v.optional(v.number()),
+    action: v.optional(v.string()),
+    actorType: v.optional(
+      v.union(
+        v.literal("employer"),
+        v.literal("doctor"),
+        v.literal("admin"),
+        v.literal("system")
+      )
+    ),
+    resourceType: v.optional(v.string()),
+    startTime: v.optional(v.number()),
+    endTime: v.optional(v.number()),
   },
-  handler: async (ctx, { limit }) => {
+  handler: async (ctx, { limit, action, actorType, resourceType, startTime, endTime }) => {
     // Authorization: Only admins can view audit logs
     await requireAdmin(ctx);
 
-    const q = ctx.db
+    // Start with all logs ordered by timestamp desc
+    let results = await ctx.db
       .query("auditLogs")
       .withIndex("by_timestamp")
-      .order("desc");
+      .order("desc")
+      .collect();
 
-    if (limit) {
-      return q.take(limit);
+    // Apply filters
+    if (action) {
+      results = results.filter((log) => log.action === action);
     }
-    return q.collect();
+    if (actorType) {
+      results = results.filter((log) => log.actorType === actorType);
+    }
+    if (resourceType) {
+      results = results.filter((log) => log.resourceType === resourceType);
+    }
+    if (startTime) {
+      results = results.filter((log) => log.timestamp >= startTime);
+    }
+    if (endTime) {
+      results = results.filter((log) => log.timestamp <= endTime);
+    }
+
+    // Apply limit after filtering with max cap of 1000
+    const maxLimit = limit && limit > 0 ? Math.min(limit, 1000) : 100;
+    return results.slice(0, maxLimit);
   },
 });
 

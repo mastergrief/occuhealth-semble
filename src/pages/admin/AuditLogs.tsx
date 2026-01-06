@@ -1,17 +1,152 @@
+import { useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Filter, X } from "lucide-react";
+
+const ACTION_TYPES = [
+  "patient_created",
+  "appointment_booked",
+  "appointment_completed",
+  "report_created",
+  "report_sent_to_employer",
+  "consent_created",
+  "consent_withdrawn",
+  "employer_verified",
+  "employer_rejected",
+  "erasure_requested",
+  "erasure_processed",
+  "appointment_type_created",
+  "appointment_type_updated",
+  "appointment_type_deleted",
+  "appointment_type_soft_deleted",
+];
+
+const ACTOR_TYPES = ["employer", "doctor", "admin", "system"] as const;
+const RESOURCE_TYPES = ["patient", "appointment", "report", "consent", "employer", "appointmentType", "erasureRequest"];
 
 export function AuditLogs() {
-  const logs = useQuery(api.gdpr.getAuditLogs, { limit: 100 });
+  const [filters, setFilters] = useState({
+    action: "",
+    actorType: "" as "" | "employer" | "doctor" | "admin" | "system",
+    resourceType: "",
+    startDate: "",
+    endDate: "",
+  });
+
+  const logs = useQuery(api.gdpr.getAuditLogs, {
+    limit: 100,
+    action: filters.action || undefined,
+    actorType: filters.actorType || undefined,
+    resourceType: filters.resourceType || undefined,
+    startTime: filters.startDate ? new Date(filters.startDate).getTime() : undefined,
+    endTime: filters.endDate ? new Date(filters.endDate + "T23:59:59").getTime() : undefined,
+  });
+
+  const clearFilters = () => {
+    setFilters({ action: "", actorType: "", resourceType: "", startDate: "", endDate: "" });
+  };
+
+  const hasActiveFilters = Object.values(filters).some((v) => v !== "");
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Audit Logs</h1>
 
+      <Card className="mb-6">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              Filters
+            </CardTitle>
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                <X className="h-4 w-4 mr-1" /> Clear
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-5 gap-4">
+            <div className="space-y-2">
+              <Label>Action</Label>
+              <Select
+                value={filters.action}
+                onValueChange={(v) => setFilters((f) => ({ ...f, action: v === "all" ? "" : v }))}
+              >
+                <SelectTrigger><SelectValue placeholder="All actions" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {ACTION_TYPES.map((a) => (
+                    <SelectItem key={a} value={a}>{a.replace(/_/g, " ")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Actor Type</Label>
+              <Select
+                value={filters.actorType}
+                onValueChange={(v) => setFilters((f) => ({ ...f, actorType: v === "all" ? "" : v as typeof filters.actorType }))}
+              >
+                <SelectTrigger><SelectValue placeholder="All actors" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {ACTOR_TYPES.map((a) => (
+                    <SelectItem key={a} value={a}>{a}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Resource Type</Label>
+              <Select
+                value={filters.resourceType}
+                onValueChange={(v) => setFilters((f) => ({ ...f, resourceType: v === "all" ? "" : v }))}
+              >
+                <SelectTrigger><SelectValue placeholder="All resources" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  {RESOURCE_TYPES.map((r) => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Start Date</Label>
+              <Input
+                type="date"
+                value={filters.startDate}
+                onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>End Date</Label>
+              <Input
+                type="date"
+                value={filters.endDate}
+                onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value }))}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
-          <CardTitle>Recent Activity</CardTitle>
+          <CardTitle>Results ({logs?.length ?? 0})</CardTitle>
         </CardHeader>
         <CardContent>
           {logs && logs.length > 0 ? (

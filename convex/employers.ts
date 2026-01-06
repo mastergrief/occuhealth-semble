@@ -1,6 +1,8 @@
 import { v } from "convex/values";
 import { mutation, query, internalQuery, internalMutation } from "./_generated/server";
 import { Doc } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
+import { ConvexError } from "convex/values";
 
 // ---------------------------------------------------------------------------
 // Employers CRUD Operations
@@ -127,11 +129,33 @@ export const verify = mutation({
     // Admin-only: verify caller has admin privileges and get admin record
     const admin = await requireAdmin(ctx);
 
+    // Get employer for audit details
+    const employer = await ctx.db.get(employerId);
+    if (!employer) {
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Employer not found",
+      });
+    }
+
     await ctx.db.patch(employerId, {
       status: "verified",
       verifiedAt: Date.now(),
       verifiedBy: admin._id,
       updatedAt: Date.now(),
+    });
+
+    // Audit logging for GDPR compliance
+    await ctx.runMutation(internal.gdpr.logAction, {
+      action: "employer_verified",
+      actorType: "admin",
+      actorId: admin._id,
+      resourceType: "employer",
+      resourceId: employerId,
+      details: {
+        companyName: employer.companyName,
+        email: employer.email,
+      },
     });
   },
 });
@@ -143,16 +167,47 @@ export const reject = mutation({
     reason: v.string(),
   },
   handler: async (ctx, { employerId, reason }) => {
-    // Admin-only: verify caller has admin privileges
-    await requireAdmin(ctx);
+    // Admin-only: verify caller has admin privileges and get admin record
+    const admin = await requireAdmin(ctx);
+
+    // Input validation (VUL-007): Rejection reason must be meaningful
+    if (!reason || reason.trim().length < 10) {
+      throw new ConvexError({
+        code: "VALIDATION_ERROR",
+        message: "Rejection reason required (minimum 10 characters)",
+      });
+    }
+
+    // Get employer for audit details
+    const employer = await ctx.db.get(employerId);
+    if (!employer) {
+      throw new ConvexError({
+        code: "NOT_FOUND",
+        message: "Employer not found",
+      });
+    }
 
     await ctx.db.patch(employerId, {
       status: "rejected",
-      rejectionReason: reason,
+      rejectionReason: reason.trim(),
       updatedAt: Date.now(),
     });
+
+    // Audit logging for GDPR compliance (VUL-001)
+    await ctx.runMutation(internal.gdpr.logAction, {
+      action: "employer_rejected",
+      actorType: "admin",
+      actorId: admin._id,
+      resourceType: "employer",
+      resourceId: employerId,
+      details: {
+        companyName: employer.companyName,
+        email: employer.email,
+        rejectionReason: reason.trim(),
+      },
+    });
   },
-});
+});;
 
 
 // Internal mutation to fix workosUserId for existing employers

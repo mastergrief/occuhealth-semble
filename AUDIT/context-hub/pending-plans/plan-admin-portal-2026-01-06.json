@@ -1,0 +1,1542 @@
+{
+  "target": "Admin Portal",
+  "scope": "Full application (all authenticated admin areas and features)",
+  "approach": "Functional",
+  "template": "custom",
+  "generatedAt": "2026-01-06T12:00:00.000Z",
+  "credentials": {
+    "method": "workos_authkit",
+    "users": [
+      {
+        "role": "admin",
+        "email": "testadmin@occuhealth.com",
+        "passwordEnv": "TEST_ADMIN_PASSWORD",
+        "password": "(TestPass1234"
+      }
+    ]
+  },
+  "baseUrl": "http://localhost:5175",
+  "browserState": "authenticated-admin",
+  "storageKey": "workos_admin_auth",
+  "suites": [
+    {
+      "id": "auth",
+      "name": "Authentication",
+      "description": "Admin login flow, auth guards, session management, and logout",
+      "tests": [
+        {
+          "id": "AUTH-01",
+          "name": "Admin Login Flow via WorkOS",
+          "purpose": "Verify admin can authenticate through WorkOS AuthKit and access admin portal",
+          "preconditions": ["No active session", "Dev server running on localhost:5175"],
+          "steps": [
+            "navigate http://localhost:5175",
+            "wait 1000",
+            "snapshot",
+            "click \"text:Provider Login\"",
+            "wait 3000",
+            "snapshot"
+          ],
+          "verify": [
+            "WorkOS login page loads or redirect to admin dashboard",
+            "No console errors during redirect"
+          ],
+          "selectors": {
+            "providerLogin": "text:Provider Login",
+            "loginButton": "text:Login"
+          },
+          "notes": "Full WorkOS flow requires manual interaction; use saved state for subsequent tests"
+        },
+        {
+          "id": "AUTH-02",
+          "name": "Admin Auth State Restore",
+          "purpose": "Verify saved admin browser state can be restored and provides access",
+          "preconditions": ["authenticated-admin state file exists"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "URL is /admin (not redirected)",
+            "Admin badge visible in header (text:Admin)",
+            "Dashboard content displays",
+            "Welcome message shows user ID",
+            "No console errors"
+          ],
+          "selectors": {
+            "adminBadge": "text:Admin",
+            "dashboard": "text:Admin Dashboard",
+            "signOutButton": "button:has-text(\"Sign Out\")"
+          }
+        },
+        {
+          "id": "AUTH-03",
+          "name": "Admin Auth Guard - Unauthenticated Access Blocked",
+          "purpose": "Verify unauthenticated users cannot access admin routes",
+          "preconditions": ["No active session (clear localStorage)"],
+          "steps": [
+            "evaluate 'localStorage.clear(); sessionStorage.clear();'",
+            "navigate http://localhost:5175/admin",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Shows 'Admin Access Required' message",
+            "Shows 'Sign in as Admin' button",
+            "Does NOT show admin dashboard content",
+            "No console errors"
+          ],
+          "selectors": {
+            "accessRequired": "text:Admin Access Required",
+            "signInButton": "text:Sign in as Admin"
+          }
+        },
+        {
+          "id": "AUTH-04",
+          "name": "Admin Logout Flow",
+          "purpose": "Verify admin can log out and session is cleared",
+          "preconditions": ["authenticated-admin state restored"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin",
+            "wait 2000",
+            "snapshot",
+            "click \"button:has-text('Sign Out')\"",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Redirects to home page or WorkOS logout",
+            "localStorage cleared (workos_admin_auth key removed)",
+            "Cannot access /admin after logout (shows auth required)"
+          ],
+          "selectors": {
+            "signOutButton": "button:has-text(\"Sign Out\")"
+          }
+        },
+        {
+          "id": "AUTH-05",
+          "name": "Admin Loading State",
+          "purpose": "Verify loading spinner displays during auth verification",
+          "preconditions": ["Fresh page load with valid auth"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin",
+            "snapshot"
+          ],
+          "verify": [
+            "Loading spinner visible briefly (.animate-spin)",
+            "Dashboard content appears after loading"
+          ],
+          "selectors": {
+            "spinner": ".animate-spin"
+          }
+        }
+      ]
+    },
+    {
+      "id": "navigation",
+      "name": "Navigation",
+      "description": "Header nav, dashboard cards, route transitions, and deep links",
+      "tests": [
+        {
+          "id": "NAV-01",
+          "name": "Header Navigation Links",
+          "purpose": "Verify all header navigation links work correctly",
+          "preconditions": ["authenticated-admin state restored", "On /admin"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin",
+            "wait 1500",
+            "snapshot",
+            "click 'a[href=\"/admin/employers\"]'",
+            "wait 1000",
+            "snapshot",
+            "click 'a[href=\"/admin/gdpr\"]'",
+            "wait 1000",
+            "snapshot",
+            "click 'a[href=\"/admin/appointment-types\"]'",
+            "wait 1000",
+            "snapshot",
+            "click 'a[href=\"/admin\"]'",
+            "wait 1000",
+            "snapshot"
+          ],
+          "verify": [
+            "Each navigation click transitions to correct page",
+            "Page titles match expected: Employer Verification, GDPR Compliance Dashboard, Appointment Types, Admin Dashboard",
+            "No console errors during transitions",
+            "URL updates correctly for each route"
+          ],
+          "selectors": {
+            "navDashboard": "a[href=\"/admin\"]",
+            "navEmployers": "a[href=\"/admin/employers\"]",
+            "navGDPR": "a[href=\"/admin/gdpr\"]",
+            "navAppointmentTypes": "a[href=\"/admin/appointment-types\"]"
+          }
+        },
+        {
+          "id": "NAV-02",
+          "name": "Dashboard Card Navigation",
+          "purpose": "Verify dashboard cards navigate to correct pages",
+          "preconditions": ["authenticated-admin state restored", "On /admin"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin",
+            "wait 1500",
+            "snapshot",
+            "click 'a[href=\"/admin/employers\"]'",
+            "wait 1000",
+            "snapshot",
+            "navigate http://localhost:5175/admin",
+            "wait 1000",
+            "click 'a[href=\"/admin/gdpr\"]'",
+            "wait 1000",
+            "snapshot",
+            "navigate http://localhost:5175/admin",
+            "wait 1000",
+            "click 'a[href=\"/admin/gdpr/audit\"]'",
+            "wait 1000",
+            "snapshot",
+            "navigate http://localhost:5175/admin",
+            "wait 1000",
+            "click 'a[href=\"/admin/appointment-types\"]'",
+            "wait 1000",
+            "snapshot"
+          ],
+          "verify": [
+            "Employer Verification card leads to /admin/employers",
+            "GDPR Compliance card leads to /admin/gdpr",
+            "Audit Logs card leads to /admin/gdpr/audit",
+            "Appointment Types card leads to /admin/appointment-types",
+            "Each page renders correctly"
+          ],
+          "selectors": {
+            "employerCard": "a[href=\"/admin/employers\"].bg-card",
+            "gdprCard": "a[href=\"/admin/gdpr\"].bg-card",
+            "auditCard": "a[href=\"/admin/gdpr/audit\"].bg-card",
+            "appointmentTypesCard": "a[href=\"/admin/appointment-types\"].bg-card"
+          }
+        },
+        {
+          "id": "NAV-03",
+          "name": "Deep Link Access - All Admin Routes",
+          "purpose": "Verify all admin routes are accessible via direct URL",
+          "preconditions": ["authenticated-admin state restored"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin",
+            "wait 1500",
+            "snapshot",
+            "navigate http://localhost:5175/admin/employers",
+            "wait 1500",
+            "snapshot",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 1500",
+            "snapshot",
+            "navigate http://localhost:5175/admin/gdpr/erasure",
+            "wait 1500",
+            "snapshot",
+            "navigate http://localhost:5175/admin/gdpr/audit",
+            "wait 1500",
+            "snapshot",
+            "navigate http://localhost:5175/admin/appointment-types",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "/admin shows Admin Dashboard",
+            "/admin/employers shows Employer Verification",
+            "/admin/gdpr shows GDPR Compliance Dashboard",
+            "/admin/gdpr/erasure shows Erasure Requests",
+            "/admin/gdpr/audit shows Audit Logs",
+            "/admin/appointment-types shows Appointment Types",
+            "No console errors on any page",
+            "All pages render content (not blank)"
+          ],
+          "selectors": {
+            "dashboardTitle": "text:Admin Dashboard",
+            "employerTitle": "text:Employer Verification",
+            "gdprTitle": "text:GDPR Compliance Dashboard",
+            "erasureTitle": "text:Erasure Requests",
+            "auditTitle": "text:Audit Logs",
+            "appointmentTypesTitle": "text:Appointment Types"
+          }
+        },
+        {
+          "id": "NAV-04",
+          "name": "GDPR Dashboard Quick Actions Navigation",
+          "purpose": "Verify quick action links on GDPR dashboard navigate correctly",
+          "preconditions": ["authenticated-admin state restored", "On /admin/gdpr"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 1500",
+            "snapshot",
+            "click \"text:Process Erasure Requests\"",
+            "wait 1000",
+            "snapshot",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 1000",
+            "click \"text:View Audit Logs\"",
+            "wait 1000",
+            "snapshot",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 1000",
+            "click \"text:Employer Verification\"",
+            "wait 1000",
+            "snapshot"
+          ],
+          "verify": [
+            "Process Erasure Requests links to /admin/gdpr/erasure",
+            "View Audit Logs links to /admin/gdpr/audit",
+            "Employer Verification links to /admin/employers",
+            "All transitions work without error"
+          ],
+          "selectors": {
+            "processErasureLink": "text:Process Erasure Requests",
+            "viewAuditLink": "text:View Audit Logs",
+            "employerVerificationLink": "text:Employer Verification"
+          }
+        },
+        {
+          "id": "NAV-05",
+          "name": "Logo Navigation to Home",
+          "purpose": "Verify OccuHealth logo in header navigates to home page",
+          "preconditions": ["authenticated-admin state restored", "On any admin page"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin",
+            "wait 1500",
+            "snapshot",
+            "click 'a[href=\"/\"]'",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Clicking logo navigates to landing page (/)",
+            "Landing page renders correctly"
+          ],
+          "selectors": {
+            "logo": "a[href=\"/\"]"
+          }
+        }
+      ]
+    },
+    {
+      "id": "employer-verification",
+      "name": "Employer Verification",
+      "description": "List pending employers, verify/reject workflow, and empty state",
+      "tests": [
+        {
+          "id": "EMP-01",
+          "name": "Pending Employers List Display",
+          "purpose": "Verify pending employers are displayed correctly",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/employers"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/employers",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Page title shows 'Employer Verification'",
+            "Card header shows 'Pending Verification (N)' with count",
+            "Either employer cards are displayed OR empty state message shows",
+            "No console errors"
+          ],
+          "selectors": {
+            "pageTitle": "text:Employer Verification",
+            "pendingCount": "text:Pending Verification",
+            "emptyState": "text:No employers pending verification"
+          }
+        },
+        {
+          "id": "EMP-02",
+          "name": "Employer Card Details",
+          "purpose": "Verify employer card displays all required information",
+          "preconditions": ["authenticated-admin state restored", "At least one pending employer exists"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/employers",
+            "wait 2000",
+            "snapshot --full"
+          ],
+          "verify": [
+            "Employer card shows company name (font-medium)",
+            "Email address displayed",
+            "Contact name displayed (Contact: X)",
+            "Company type displayed (Type: X)",
+            "Company registration number if available (Reg: X)",
+            "Verify button visible (green)",
+            "Reject button visible (red/destructive)"
+          ],
+          "selectors": {
+            "verifyButton": "button:has-text(\"Verify\")",
+            "rejectButton": "button:has-text(\"Reject\")"
+          },
+          "dataDependent": true
+        },
+        {
+          "id": "EMP-03",
+          "name": "Verify Employer Action",
+          "purpose": "Verify clicking Verify button approves employer",
+          "preconditions": ["authenticated-admin state restored", "At least one pending employer exists"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/employers",
+            "wait 2000",
+            "snapshot",
+            "click \"button:has-text('Verify')\"",
+            "wait 2000",
+            "snapshot",
+            "console"
+          ],
+          "verify": [
+            "Mutation employers:verify is called",
+            "Employer is removed from pending list OR list count decreases",
+            "No console errors",
+            "Real-time update (no page refresh needed)"
+          ],
+          "selectors": {
+            "verifyButton": "button:has-text(\"Verify\")"
+          },
+          "networkAssert": "assertNetwork employers:verify",
+          "dataDependent": true,
+          "destructive": true
+        },
+        {
+          "id": "EMP-04",
+          "name": "Reject Employer Action",
+          "purpose": "Verify clicking Reject button rejects employer",
+          "preconditions": ["authenticated-admin state restored", "At least one pending employer exists"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/employers",
+            "wait 2000",
+            "snapshot",
+            "click \"button:has-text('Reject')\"",
+            "wait 2000",
+            "snapshot",
+            "console"
+          ],
+          "verify": [
+            "Mutation employers:reject is called",
+            "Employer is removed from pending list OR list count decreases",
+            "Rejection reason is sent (hardcoded: 'Did not meet verification requirements')",
+            "No console errors",
+            "Real-time update (no page refresh needed)"
+          ],
+          "selectors": {
+            "rejectButton": "button:has-text(\"Reject\")"
+          },
+          "networkAssert": "assertNetwork employers:reject",
+          "dataDependent": true,
+          "destructive": true
+        },
+        {
+          "id": "EMP-05",
+          "name": "Empty State Display",
+          "purpose": "Verify empty state displays when no pending employers",
+          "preconditions": ["authenticated-admin state restored", "No pending employers (all verified/rejected)"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/employers",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Shows 'No employers pending verification' message",
+            "No Verify/Reject buttons visible",
+            "Count in header shows (0)"
+          ],
+          "selectors": {
+            "emptyState": "text:No employers pending verification"
+          },
+          "dataDependent": true
+        }
+      ]
+    },
+    {
+      "id": "gdpr-dashboard",
+      "name": "GDPR Dashboard",
+      "description": "Stats cards, consent coverage, SLA tracking, audit activity, and quick actions",
+      "tests": [
+        {
+          "id": "GDPR-01",
+          "name": "GDPR Dashboard Stats Cards Display",
+          "purpose": "Verify all four stats cards display correctly",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/gdpr"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Page title shows 'GDPR Compliance Dashboard'",
+            "Total Patients card with count",
+            "Active Consents card with count",
+            "Pending Erasures card with count",
+            "Recent Activity card with count",
+            "Each card has appropriate icon (Users, Shield, AlertTriangle, Activity)",
+            "No console errors"
+          ],
+          "selectors": {
+            "pageTitle": "text:GDPR Compliance Dashboard",
+            "totalPatients": "text:Total Patients",
+            "activeConsents": "text:Active Consents",
+            "pendingErasures": "text:Pending Erasures",
+            "recentActivity": "text:Recent Activity"
+          }
+        },
+        {
+          "id": "GDPR-02",
+          "name": "Consent Coverage Progress Bar",
+          "purpose": "Verify consent coverage section displays correctly",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/gdpr"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 2000",
+            "snapshot --full"
+          ],
+          "verify": [
+            "Consent Coverage card is visible",
+            "Shows 'Patients with all required consents' label",
+            "Progress bar (green) displays percentage",
+            "Shows X / Y count of patients",
+            "Shows percentage text (N% of patients...)",
+            "Mentions three consent types (data processing, health data, employer sharing)"
+          ],
+          "selectors": {
+            "consentCoverageTitle": "text:Consent Coverage",
+            "consentDescription": "text:data processing, health data, employer sharing"
+          }
+        },
+        {
+          "id": "GDPR-03",
+          "name": "Erasure SLA Tracking Section",
+          "purpose": "Verify SLA tracking displays pending, approaching deadline, and overdue counts",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/gdpr"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 2000",
+            "snapshot --full"
+          ],
+          "verify": [
+            "Erasure Request SLA Tracking card is visible",
+            "Pending Requests count displayed (slate background)",
+            "Approaching Deadline count displayed (amber background)",
+            "Overdue count displayed (red background)",
+            "Warning badge appears if approaching deadline > 0",
+            "Critical badge appears if overdue > 0",
+            "Shows '30-day limit' reference text"
+          ],
+          "selectors": {
+            "slaTitle": "text:Erasure Request SLA Tracking",
+            "pendingRequests": "text:Pending Requests",
+            "approachingDeadline": "text:Approaching Deadline",
+            "overdue": "text:Overdue",
+            "warningBadge": "text:Warning",
+            "criticalBadge": "text:Critical"
+          }
+        },
+        {
+          "id": "GDPR-04",
+          "name": "Audit Log Activity Chart",
+          "purpose": "Verify audit activity breakdown displays last 7 days",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/gdpr"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Audit Log Activity card is visible",
+            "Shows 'Last 7 Days' in title",
+            "Either action items with counts OR 'No audit activity' message",
+            "Action items show action name and count badge"
+          ],
+          "selectors": {
+            "auditActivityTitle": "text:Audit Log Activity (Last 7 Days)",
+            "emptyAuditActivity": "text:No audit activity in the last 7 days"
+          }
+        },
+        {
+          "id": "GDPR-05",
+          "name": "Recent Audit Logs Section",
+          "purpose": "Verify recent audit logs display correctly",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/gdpr"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Recent Audit Logs card is visible",
+            "Either log entries OR 'No recent activity' message",
+            "Log entries show action name and resource type",
+            "Maximum 5 entries displayed"
+          ],
+          "selectors": {
+            "recentLogsTitle": "text:Recent Audit Logs",
+            "emptyRecentLogs": "text:No recent activity"
+          }
+        },
+        {
+          "id": "GDPR-06",
+          "name": "Quick Actions Section",
+          "purpose": "Verify quick action links are functional",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/gdpr"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Quick Actions card is visible",
+            "Process Erasure Requests link present",
+            "View Audit Logs link present",
+            "Employer Verification link present",
+            "Overdue badge shows count if > 0"
+          ],
+          "selectors": {
+            "quickActionsTitle": "text:Quick Actions",
+            "processErasureLink": "text:Process Erasure Requests",
+            "viewAuditLink": "text:View Audit Logs",
+            "employerVerificationLink": "text:Employer Verification"
+          }
+        },
+        {
+          "id": "GDPR-07",
+          "name": "GDPR Dashboard Data Loading",
+          "purpose": "Verify getGDPRStats query loads correctly",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/gdpr"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 2000",
+            "network --filter=gdpr",
+            "console"
+          ],
+          "verify": [
+            "Convex query gdpr:getGDPRStats is called",
+            "No console errors",
+            "Data renders in UI (not stuck on loading)"
+          ],
+          "networkAssert": "network --filter=gdpr:getGDPRStats"
+        }
+      ]
+    },
+    {
+      "id": "erasure-requests",
+      "name": "Erasure Requests",
+      "description": "List pending erasure requests, process erasure, and empty state",
+      "tests": [
+        {
+          "id": "ERAS-01",
+          "name": "Erasure Requests Page Display",
+          "purpose": "Verify erasure requests page loads correctly",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/gdpr/erasure"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr/erasure",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Page title shows 'Erasure Requests'",
+            "Pending Requests card is visible",
+            "Either request cards OR empty state message",
+            "No console errors"
+          ],
+          "selectors": {
+            "pageTitle": "text:Erasure Requests",
+            "pendingRequestsTitle": "text:Pending Requests",
+            "emptyState": "text:No pending erasure requests"
+          }
+        },
+        {
+          "id": "ERAS-02",
+          "name": "Erasure Request Card Details",
+          "purpose": "Verify erasure request cards display all required information",
+          "preconditions": ["authenticated-admin state restored", "At least one pending erasure request exists"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr/erasure",
+            "wait 2000",
+            "snapshot --full"
+          ],
+          "verify": [
+            "Requester email displayed (font-medium)",
+            "Requested date displayed",
+            "Reason displayed if provided",
+            "Process Erasure button visible"
+          ],
+          "selectors": {
+            "processErasureButton": "button:has-text(\"Process Erasure\")"
+          },
+          "dataDependent": true
+        },
+        {
+          "id": "ERAS-03",
+          "name": "Process Erasure Action",
+          "purpose": "Verify clicking Process Erasure executes GDPR erasure workflow",
+          "preconditions": ["authenticated-admin state restored", "At least one pending erasure request exists"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr/erasure",
+            "wait 2000",
+            "snapshot",
+            "click \"button:has-text('Process Erasure')\"",
+            "wait 3000",
+            "snapshot",
+            "console"
+          ],
+          "verify": [
+            "Mutation gdpr:processErasure is called",
+            "Request is removed from pending list OR status changes",
+            "No console errors",
+            "Real-time update (no page refresh needed)"
+          ],
+          "selectors": {
+            "processErasureButton": "button:has-text(\"Process Erasure\")"
+          },
+          "networkAssert": "assertNetwork gdpr:processErasure",
+          "dataDependent": true,
+          "destructive": true,
+          "notes": "CAUTION: This is a destructive action that will permanently redact patient data. Execute only in test environment."
+        },
+        {
+          "id": "ERAS-04",
+          "name": "Empty State Display",
+          "purpose": "Verify empty state displays when no pending erasure requests",
+          "preconditions": ["authenticated-admin state restored", "No pending erasure requests"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr/erasure",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Shows 'No pending erasure requests' message",
+            "No Process Erasure buttons visible"
+          ],
+          "selectors": {
+            "emptyState": "text:No pending erasure requests"
+          },
+          "dataDependent": true
+        }
+      ]
+    },
+    {
+      "id": "audit-logs",
+      "name": "Audit Logs",
+      "description": "Log entries display and empty state",
+      "tests": [
+        {
+          "id": "AUDIT-01",
+          "name": "Audit Logs Page Display",
+          "purpose": "Verify audit logs page loads correctly",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/gdpr/audit"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr/audit",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Page title shows 'Audit Logs'",
+            "Recent Activity card is visible",
+            "Either log entries OR empty state message",
+            "No console errors"
+          ],
+          "selectors": {
+            "pageTitle": "text:Audit Logs",
+            "recentActivityTitle": "text:Recent Activity",
+            "emptyState": "text:No audit logs"
+          }
+        },
+        {
+          "id": "AUDIT-02",
+          "name": "Audit Log Entry Details",
+          "purpose": "Verify audit log entries display all required information",
+          "preconditions": ["authenticated-admin state restored", "At least one audit log exists"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr/audit",
+            "wait 2000",
+            "snapshot --full"
+          ],
+          "verify": [
+            "Log entry shows action name (font-medium)",
+            "Timestamp displayed (toLocaleString format)",
+            "Actor type displayed (employer, doctor, admin, system)",
+            "Arrow separator between actor and resource",
+            "Resource type displayed",
+            "Resource ID displayed if available"
+          ],
+          "selectors": {
+            "logEntry": ".p-3.border.rounded-lg"
+          },
+          "dataDependent": true
+        },
+        {
+          "id": "AUDIT-03",
+          "name": "Audit Logs Data Loading",
+          "purpose": "Verify getAuditLogs query loads correctly with limit",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/gdpr/audit"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr/audit",
+            "wait 2000",
+            "network --filter=gdpr",
+            "console"
+          ],
+          "verify": [
+            "Convex query gdpr:getAuditLogs is called",
+            "Query includes limit parameter (100)",
+            "No console errors",
+            "Data renders in UI"
+          ],
+          "networkAssert": "network --filter=gdpr:getAuditLogs"
+        },
+        {
+          "id": "AUDIT-04",
+          "name": "Empty State Display",
+          "purpose": "Verify empty state displays when no audit logs",
+          "preconditions": ["authenticated-admin state restored", "No audit logs in database"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr/audit",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Shows 'No audit logs' message",
+            "No log entries visible"
+          ],
+          "selectors": {
+            "emptyState": "text:No audit logs"
+          },
+          "dataDependent": true
+        }
+      ]
+    },
+    {
+      "id": "appointment-types",
+      "name": "Appointment Types",
+      "description": "List types, add type dialog, toggle active/inactive, and empty state",
+      "tests": [
+        {
+          "id": "APPT-01",
+          "name": "Appointment Types Page Display",
+          "purpose": "Verify appointment types page loads correctly",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/appointment-types"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/appointment-types",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Page title shows 'Appointment Types'",
+            "Add Type button visible",
+            "All Appointment Types card is visible",
+            "Card header shows count (N)",
+            "Either type cards OR empty state message",
+            "No console errors"
+          ],
+          "selectors": {
+            "pageTitle": "text:Appointment Types",
+            "addTypeButton": "button:has-text(\"Add Type\")",
+            "allTypesTitle": "text:All Appointment Types",
+            "emptyState": "text:No appointment types configured"
+          }
+        },
+        {
+          "id": "APPT-02",
+          "name": "Appointment Type Card Details",
+          "purpose": "Verify appointment type cards display all required information",
+          "preconditions": ["authenticated-admin state restored", "At least one appointment type exists"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/appointment-types",
+            "wait 2000",
+            "snapshot --full"
+          ],
+          "verify": [
+            "Type name displayed (font-medium)",
+            "Status badge shows Active (green) or Inactive (gray)",
+            "Description displayed (text-muted-foreground)",
+            "Duration displayed with clock icon (N min)",
+            "Price displayed with banknote icon (£N.NN or Free)",
+            "Deactivate/Activate toggle button visible"
+          ],
+          "selectors": {
+            "activeBadge": "text:Active",
+            "inactiveBadge": "text:Inactive",
+            "deactivateButton": "button:has-text(\"Deactivate\")",
+            "activateButton": "button:has-text(\"Activate\")"
+          },
+          "dataDependent": true
+        },
+        {
+          "id": "APPT-03",
+          "name": "Add Type Dialog Opens",
+          "purpose": "Verify Add Type button opens the create dialog",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/appointment-types"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/appointment-types",
+            "wait 2000",
+            "snapshot",
+            "click \"button:has-text('Add Type')\"",
+            "wait 500",
+            "snapshot --forms"
+          ],
+          "verify": [
+            "Dialog opens with title 'Add Appointment Type'",
+            "Description text explains purpose",
+            "Name input field present (required)",
+            "Description input field present (required)",
+            "Duration input field present (number, min 15, step 15)",
+            "Price input field present (number, min 0, step 0.01)",
+            "Cancel button visible",
+            "Create Type button visible"
+          ],
+          "selectors": {
+            "dialogTitle": "text:Add Appointment Type",
+            "nameInput": "input#name",
+            "descriptionInput": "input#description",
+            "durationInput": "input#duration",
+            "priceInput": "input#price",
+            "cancelButton": "button:has-text(\"Cancel\")",
+            "createButton": "button:has-text(\"Create Type\")"
+          }
+        },
+        {
+          "id": "APPT-04",
+          "name": "Create Appointment Type",
+          "purpose": "Verify creating a new appointment type works correctly",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/appointment-types"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/appointment-types",
+            "wait 2000",
+            "snapshot",
+            "click \"button:has-text('Add Type')\"",
+            "wait 500",
+            "type 'input#name' 'Test Appointment Type'",
+            "type 'input#description' 'Test description for audit'",
+            "type 'input#duration' '45'",
+            "type 'input#price' '75.00'",
+            "snapshot",
+            "click \"button:has-text('Create Type')\"",
+            "wait 2000",
+            "snapshot",
+            "console"
+          ],
+          "verify": [
+            "Dialog closes after successful creation",
+            "Mutation appointmentTypes:create is called",
+            "New type appears in list (real-time update)",
+            "Form resets to default values",
+            "No console errors"
+          ],
+          "selectors": {
+            "createButton": "button:has-text(\"Create Type\")"
+          },
+          "networkAssert": "assertNetwork appointmentTypes:create",
+          "dataDependent": true,
+          "cleanup": "Delete 'Test Appointment Type' via Convex dashboard after test"
+        },
+        {
+          "id": "APPT-05",
+          "name": "Toggle Active/Inactive Status",
+          "purpose": "Verify toggling appointment type active status works",
+          "preconditions": ["authenticated-admin state restored", "At least one appointment type exists"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/appointment-types",
+            "wait 2000",
+            "snapshot",
+            "click \"button:has-text('Deactivate')\"",
+            "wait 1500",
+            "snapshot",
+            "click \"button:has-text('Activate')\"",
+            "wait 1500",
+            "snapshot",
+            "console"
+          ],
+          "verify": [
+            "Deactivate changes status badge to 'Inactive' (gray)",
+            "Button changes to 'Activate'",
+            "Activate changes status badge to 'Active' (green)",
+            "Button changes to 'Deactivate'",
+            "Mutation appointmentTypes:update is called",
+            "No console errors"
+          ],
+          "selectors": {
+            "deactivateButton": "button:has-text(\"Deactivate\")",
+            "activateButton": "button:has-text(\"Activate\")"
+          },
+          "networkAssert": "assertNetwork appointmentTypes:update",
+          "dataDependent": true
+        },
+        {
+          "id": "APPT-06",
+          "name": "Cancel Dialog Without Creating",
+          "purpose": "Verify Cancel button closes dialog without creating type",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/appointment-types"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/appointment-types",
+            "wait 2000",
+            "snapshot",
+            "click \"button:has-text('Add Type')\"",
+            "wait 500",
+            "type 'input#name' 'Should Not Create'",
+            "snapshot",
+            "click \"button:has-text('Cancel')\"",
+            "wait 500",
+            "snapshot"
+          ],
+          "verify": [
+            "Dialog closes",
+            "No mutation is called",
+            "No new type appears in list"
+          ],
+          "selectors": {
+            "cancelButton": "button:has-text(\"Cancel\")"
+          }
+        },
+        {
+          "id": "APPT-07",
+          "name": "Empty State Display",
+          "purpose": "Verify empty state displays when no appointment types",
+          "preconditions": ["authenticated-admin state restored", "No appointment types in database"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/appointment-types",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Shows 'No appointment types configured' message",
+            "Add Type button still visible",
+            "Count in header shows (0)"
+          ],
+          "selectors": {
+            "emptyState": "text:No appointment types configured"
+          },
+          "dataDependent": true
+        },
+        {
+          "id": "APPT-08",
+          "name": "Form Validation - Required Fields",
+          "purpose": "Verify form prevents submission with empty required fields",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/appointment-types"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/appointment-types",
+            "wait 2000",
+            "click \"button:has-text('Add Type')\"",
+            "wait 500",
+            "snapshot --forms",
+            "click \"button:has-text('Create Type')\"",
+            "wait 500",
+            "snapshot"
+          ],
+          "verify": [
+            "Form does not submit (HTML5 validation)",
+            "Name field shows required validation",
+            "Description field shows required validation",
+            "Dialog remains open"
+          ],
+          "selectors": {
+            "createButton": "button:has-text(\"Create Type\")"
+          }
+        },
+        {
+          "id": "APPT-09",
+          "name": "Creating State Button Disabled",
+          "purpose": "Verify submit button shows 'Creating...' and is disabled during mutation",
+          "preconditions": ["authenticated-admin state restored", "Navigate to /admin/appointment-types"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/appointment-types",
+            "wait 2000",
+            "click \"button:has-text('Add Type')\"",
+            "wait 500",
+            "type 'input#name' 'Quick Test Type'",
+            "type 'input#description' 'Quick test'",
+            "type 'input#duration' '30'",
+            "type 'input#price' '50'",
+            "click \"button:has-text('Create Type')\"",
+            "snapshot"
+          ],
+          "verify": [
+            "Button shows 'Creating...' text during mutation",
+            "Button is disabled during mutation",
+            "After completion, dialog closes"
+          ],
+          "selectors": {
+            "creatingButton": "text:Creating..."
+          },
+          "cleanup": "Delete 'Quick Test Type' via Convex dashboard after test"
+        }
+      ]
+    },
+    {
+      "id": "error-handling",
+      "name": "Error Handling",
+      "description": "Console errors, network failures, and loading states",
+      "tests": [
+        {
+          "id": "ERR-01",
+          "name": "No Console Errors on Page Load",
+          "purpose": "Verify no console errors on any admin page load",
+          "preconditions": ["authenticated-admin state restored"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "clearConsole",
+            "navigate http://localhost:5175/admin",
+            "wait 2000",
+            "console",
+            "navigate http://localhost:5175/admin/employers",
+            "wait 2000",
+            "console",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 2000",
+            "console",
+            "navigate http://localhost:5175/admin/gdpr/erasure",
+            "wait 2000",
+            "console",
+            "navigate http://localhost:5175/admin/gdpr/audit",
+            "wait 2000",
+            "console",
+            "navigate http://localhost:5175/admin/appointment-types",
+            "wait 2000",
+            "console"
+          ],
+          "verify": [
+            "No ERROR level console messages",
+            "No unhandled promise rejections",
+            "No React errors",
+            "Warnings are acceptable but should be reviewed"
+          ],
+          "consoleAssert": "assertConsole --level=error"
+        },
+        {
+          "id": "ERR-02",
+          "name": "Loading State Display",
+          "purpose": "Verify loading spinners display while data loads",
+          "preconditions": ["authenticated-admin state restored"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin",
+            "snapshot"
+          ],
+          "verify": [
+            "Loading spinner (.animate-spin) appears briefly",
+            "Content renders after loading completes",
+            "No stuck loading states"
+          ],
+          "selectors": {
+            "spinner": ".animate-spin"
+          }
+        },
+        {
+          "id": "ERR-03",
+          "name": "Network Error Handling",
+          "purpose": "Verify graceful handling when Convex queries fail",
+          "preconditions": ["authenticated-admin state restored"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin",
+            "wait 2000",
+            "network --status=400",
+            "network --status=500"
+          ],
+          "verify": [
+            "No 400 or 500 errors in network log",
+            "If errors occur, UI displays appropriate error message",
+            "Page does not crash"
+          ],
+          "notes": "This test validates normal operation; actual network failure testing requires mocking"
+        },
+        {
+          "id": "ERR-04",
+          "name": "Auth Token Expiry Handling",
+          "purpose": "Verify admin is redirected when auth token expires",
+          "preconditions": ["Expired/invalid token in localStorage"],
+          "steps": [
+            "evaluate 'localStorage.setItem(\"workos_admin_auth\", JSON.stringify({userId: \"invalid\", accessToken: \"expired\"}))'",
+            "navigate http://localhost:5175/admin",
+            "wait 3000",
+            "snapshot"
+          ],
+          "verify": [
+            "Shows 'Admin Access Required' message (DB verification fails)",
+            "Token cleared from localStorage",
+            "Sign in button available"
+          ],
+          "selectors": {
+            "accessRequired": "text:Admin Access Required"
+          }
+        }
+      ]
+    },
+    {
+      "id": "ux-completeness",
+      "name": "UX/Completeness",
+      "description": "Ease of use, visual consistency, responsiveness, and improvement opportunities",
+      "tests": [
+        {
+          "id": "UX-01",
+          "name": "Visual Consistency - Dark Mode Support",
+          "purpose": "Verify admin portal supports dark mode consistently",
+          "preconditions": ["authenticated-admin state restored"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin",
+            "wait 2000",
+            "evaluate 'document.documentElement.classList.add(\"dark\")'",
+            "wait 500",
+            "screenshot admin-dark-mode.png",
+            "snapshot",
+            "evaluate 'document.documentElement.classList.remove(\"dark\")'",
+            "wait 500",
+            "screenshot admin-light-mode.png"
+          ],
+          "verify": [
+            "Colors adapt to dark mode (bg-slate-800, text-slate-100)",
+            "Cards have dark backgrounds",
+            "Text remains readable",
+            "Status badges remain visible",
+            "No broken contrast issues"
+          ],
+          "qualitative": true
+        },
+        {
+          "id": "UX-02",
+          "name": "Responsive Design - Mobile View",
+          "purpose": "Verify admin portal is usable on mobile devices",
+          "preconditions": ["authenticated-admin state restored"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "resize 375 812",
+            "navigate http://localhost:5175/admin",
+            "wait 2000",
+            "screenshot admin-mobile-dashboard.png",
+            "snapshot",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 2000",
+            "screenshot admin-mobile-gdpr.png",
+            "snapshot",
+            "resize 1280 800"
+          ],
+          "verify": [
+            "Header navigation remains accessible",
+            "Cards stack vertically on mobile",
+            "Text remains readable",
+            "Buttons are tappable (min 44px touch target)",
+            "No horizontal overflow"
+          ],
+          "qualitative": true,
+          "notes": "Review screenshots for mobile usability issues"
+        },
+        {
+          "id": "UX-03",
+          "name": "Navigation Clarity",
+          "purpose": "Assess clarity of navigation structure",
+          "preconditions": ["authenticated-admin state restored"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin",
+            "wait 2000",
+            "screenshot admin-nav-clarity.png",
+            "snapshot"
+          ],
+          "verify": [
+            "Current page is identifiable",
+            "Navigation items are clearly labeled",
+            "Admin badge is visible",
+            "Dashboard cards have clear CTAs"
+          ],
+          "assessment": {
+            "easeOfUse": [
+              "Can users find GDPR features quickly?",
+              "Is the relationship between /admin/gdpr and /admin/gdpr/erasure clear?",
+              "Is the employer verification workflow intuitive?"
+            ],
+            "improvements": [
+              "Consider: Active nav state highlighting",
+              "Consider: Breadcrumb navigation for GDPR sub-pages",
+              "Consider: Dashboard stats clickable to drill-down"
+            ]
+          },
+          "qualitative": true
+        },
+        {
+          "id": "UX-04",
+          "name": "Feedback on Actions",
+          "purpose": "Verify users receive clear feedback on their actions",
+          "preconditions": ["authenticated-admin state restored", "Appointment type exists"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/appointment-types",
+            "wait 2000",
+            "snapshot",
+            "click \"button:has-text('Deactivate')\"",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "Button state changes immediately (optimistic UI)",
+            "Status badge updates after mutation",
+            "No page refresh required",
+            "Consider: Toast notification for confirmation"
+          ],
+          "assessment": {
+            "improvements": [
+              "Consider: Add toast notifications for successful actions",
+              "Consider: Add loading spinner on buttons during mutation",
+              "Consider: Confirmation dialog for destructive actions"
+            ]
+          },
+          "dataDependent": true,
+          "qualitative": true
+        },
+        {
+          "id": "UX-05",
+          "name": "Empty State Helpfulness",
+          "purpose": "Assess empty states provide guidance",
+          "preconditions": ["authenticated-admin state restored"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/appointment-types",
+            "wait 2000",
+            "snapshot"
+          ],
+          "verify": [
+            "Empty state message is clear",
+            "CTA to create first item is prominent",
+            "User understands what to do next"
+          ],
+          "assessment": {
+            "improvements": [
+              "Consider: Add illustration to empty states",
+              "Consider: Add 'Get Started' guidance text",
+              "Consider: Link to documentation for setup"
+            ]
+          },
+          "qualitative": true
+        },
+        {
+          "id": "UX-06",
+          "name": "GDPR SLA Urgency Indicators",
+          "purpose": "Assess urgency indicators are clear and actionable",
+          "preconditions": ["authenticated-admin state restored"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 2000",
+            "snapshot --full"
+          ],
+          "verify": [
+            "Overdue requests are prominently highlighted (red)",
+            "Approaching deadline requests are visible (amber)",
+            "Critical/Warning badges draw attention",
+            "Quick action to process erasures is easily accessible"
+          ],
+          "assessment": {
+            "completeness": [
+              "SLA countdown days remaining not shown on individual requests",
+              "No notification system for approaching deadlines",
+              "No export/report feature for compliance audits"
+            ],
+            "improvements": [
+              "Consider: Add days remaining to each erasure request",
+              "Consider: Email notifications for approaching SLA deadlines",
+              "Consider: GDPR compliance report export (CSV/PDF)"
+            ]
+          },
+          "qualitative": true
+        },
+        {
+          "id": "UX-07",
+          "name": "Form Usability - Add Appointment Type",
+          "purpose": "Assess appointment type form usability",
+          "preconditions": ["authenticated-admin state restored"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/appointment-types",
+            "wait 2000",
+            "click \"button:has-text('Add Type')\"",
+            "wait 500",
+            "snapshot --forms"
+          ],
+          "verify": [
+            "Form fields are clearly labeled",
+            "Required fields are indicated",
+            "Input types are appropriate (number for duration/price)",
+            "Default values are sensible (30 min, £0)"
+          ],
+          "assessment": {
+            "improvements": [
+              "Consider: Add helper text for each field",
+              "Consider: Show currency symbol in price input",
+              "Consider: Duration presets (15, 30, 45, 60 min buttons)",
+              "Consider: Preview card showing how type will appear"
+            ]
+          },
+          "qualitative": true
+        },
+        {
+          "id": "UX-08",
+          "name": "Audit Log Readability",
+          "purpose": "Assess audit logs are easily scannable and understandable",
+          "preconditions": ["authenticated-admin state restored", "Audit logs exist"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/gdpr/audit",
+            "wait 2000",
+            "snapshot --full"
+          ],
+          "verify": [
+            "Timestamps are human-readable",
+            "Actions are descriptive",
+            "Actor type is clear",
+            "Resource references are understandable"
+          ],
+          "assessment": {
+            "completeness": [
+              "No filtering by action type",
+              "No filtering by date range",
+              "No search functionality",
+              "No pagination controls visible"
+            ],
+            "improvements": [
+              "Consider: Add filter dropdown for action types",
+              "Consider: Add date range picker",
+              "Consider: Add search by actor/resource",
+              "Consider: Add pagination for large log volumes",
+              "Consider: Link resource IDs to resource details"
+            ]
+          },
+          "dataDependent": true,
+          "qualitative": true
+        },
+        {
+          "id": "UX-09",
+          "name": "Employer Verification Workflow",
+          "purpose": "Assess employer verification workflow completeness",
+          "preconditions": ["authenticated-admin state restored", "Pending employer exists"],
+          "steps": [
+            "restoreState authenticated-admin",
+            "navigate http://localhost:5175/admin/employers",
+            "wait 2000",
+            "snapshot --full"
+          ],
+          "verify": [
+            "Employer details are sufficient for verification decision",
+            "Verify/Reject buttons are clearly distinguishable",
+            "Actions are immediate (no confirmation)"
+          ],
+          "assessment": {
+            "completeness": [
+              "No confirmation dialog before Verify/Reject",
+              "No custom rejection reason input",
+              "No viewing verified/rejected history",
+              "No undo capability"
+            ],
+            "improvements": [
+              "Consider: Confirmation dialog for destructive actions",
+              "Consider: Custom rejection reason text input",
+              "Consider: Tab to view verified/rejected employers",
+              "Consider: Audit trail of who verified whom"
+            ]
+          },
+          "dataDependent": true,
+          "qualitative": true
+        }
+      ]
+    }
+  ],
+  "qualityMetrics": {
+    "completeness": {
+      "routes": [
+        "All 6 admin routes reachable (/admin, /admin/employers, /admin/gdpr, /admin/gdpr/erasure, /admin/gdpr/audit, /admin/appointment-types)",
+        "All routes render content without errors",
+        "All empty states implemented"
+      ],
+      "features": [
+        "Employer verification workflow complete (list, verify, reject)",
+        "GDPR dashboard shows all metrics (stats, consent coverage, SLA tracking, audit activity)",
+        "Erasure request processing implemented",
+        "Appointment type CRUD complete (list, create, toggle active)",
+        "Audit logs viewable"
+      ],
+      "gaps": [
+        "No edit functionality for appointment types (only create + toggle)",
+        "No delete functionality for appointment types",
+        "No custom rejection reason for employers",
+        "No verification history view",
+        "No audit log filtering/search",
+        "No pagination on erasure requests (only paginated query, no UI controls)",
+        "No notification system for SLA deadlines"
+      ]
+    },
+    "easeOfUse": {
+      "strengths": [
+        "Clear navigation header with all main sections",
+        "Dashboard provides quick overview with links",
+        "Real-time updates via Convex subscriptions",
+        "Consistent card-based layout",
+        "Dark mode support"
+      ],
+      "weaknesses": [
+        "No active state highlighting on current nav item",
+        "No breadcrumbs for GDPR sub-pages",
+        "No confirmation dialogs for destructive actions",
+        "No toast notifications for action feedback",
+        "Rejection uses hardcoded reason"
+      ]
+    },
+    "improvements": {
+      "highPriority": [
+        "Add confirmation dialog for Process Erasure (destructive, irreversible)",
+        "Add confirmation dialog for Reject Employer",
+        "Add custom rejection reason input field"
+      ],
+      "mediumPriority": [
+        "Add active nav state highlighting",
+        "Add toast notifications for successful actions",
+        "Add days remaining to erasure request cards",
+        "Add audit log filtering by action/date"
+      ],
+      "lowPriority": [
+        "Add breadcrumbs for GDPR sub-navigation",
+        "Add appointment type edit functionality",
+        "Add verified/rejected employer history tab",
+        "Add GDPR compliance report export"
+      ]
+    }
+  },
+  "executionNotes": {
+    "statePrerequisite": "Most tests require 'authenticated-admin' browser state",
+    "dataDependent": "Several tests require specific data (pending employers, erasure requests, audit logs, appointment types)",
+    "destructive": "Tests marked 'destructive' modify data - execute in test environment only",
+    "qualitative": "Tests marked 'qualitative' require manual review of screenshots/snapshots",
+    "cleanup": "Some tests create data that should be cleaned up after execution"
+  }
+}

@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
+import type { Id, Doc } from "../../../convex/_generated/dataModel";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -15,15 +16,29 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Clock, Banknote } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Plus, Clock, Banknote, Pencil, Trash2 } from "lucide-react";
 
 export function AppointmentTypes() {
-  const appointmentTypes = useQuery(api.appointmentTypes.listAll);
+  const appointmentTypes = useQuery(api.appointmentTypes.listAll, { includeDeleted: true });
   const createType = useMutation(api.appointmentTypes.create);
   const updateType = useMutation(api.appointmentTypes.update);
+  const removeType = useMutation(api.appointmentTypes.remove);
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingType, setEditingType] = useState<Doc<"appointmentTypes"> | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteTargetId, setDeleteTargetId] = useState<Id<"appointmentTypes"> | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -31,21 +46,61 @@ export function AppointmentTypes() {
     price: 0,
   });
 
-  const handleCreate = async (e: React.FormEvent) => {
+  // Reset form when dialog closes
+  useEffect(() => {
+    if (!isDialogOpen) {
+      setEditingType(null);
+      setFormData({ name: "", description: "", durationMinutes: 30, price: 0 });
+    }
+  }, [isDialogOpen]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await createType({
-        name: formData.name,
-        description: formData.description,
-        durationMinutes: formData.durationMinutes,
-        price: formData.price,
-      });
+      if (editingType) {
+        // Update existing type
+        await updateType({
+          typeId: editingType._id,
+          name: formData.name,
+          description: formData.description,
+          durationMinutes: formData.durationMinutes,
+          price: formData.price,
+        });
+      } else {
+        // Create new type
+        await createType({
+          name: formData.name,
+          description: formData.description,
+          durationMinutes: formData.durationMinutes,
+          price: formData.price,
+        });
+      }
       setFormData({ name: "", description: "", durationMinutes: 30, price: 0 });
+      setEditingType(null);
       setIsDialogOpen(false);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEdit = (type: Doc<"appointmentTypes">) => {
+    setEditingType(type);
+    setFormData({
+      name: type.name,
+      description: type.description,
+      durationMinutes: type.durationMinutes,
+      price: type.price,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (deleteTargetId) {
+      await removeType({ typeId: deleteTargetId });
+      setDeleteTargetId(null);
+    }
+    setIsDeleteDialogOpen(false);
   };
 
   const handleToggleActive = async (typeId: Id<"appointmentTypes">, currentStatus: boolean) => {
@@ -68,12 +123,16 @@ export function AppointmentTypes() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add Appointment Type</DialogTitle>
+              <DialogTitle>
+                {editingType ? "Edit Appointment Type" : "Add Appointment Type"}
+              </DialogTitle>
               <DialogDescription>
-                Create a new appointment type that employers can book.
+                {editingType
+                  ? "Update the appointment type details."
+                  : "Create a new appointment type that employers can book."}
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Name</Label>
                 <Input
@@ -125,7 +184,9 @@ export function AppointmentTypes() {
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Creating..." : "Create Type"}
+                  {isSubmitting
+                    ? editingType ? "Updating..." : "Creating..."
+                    : editingType ? "Update Type" : "Create Type"}
                 </Button>
               </DialogFooter>
             </form>
@@ -141,11 +202,17 @@ export function AppointmentTypes() {
           {appointmentTypes && appointmentTypes.length > 0 ? (
             <div className="space-y-4">
               {appointmentTypes.map((type) => (
-                <div key={type._id} className="p-4 border rounded-lg">
+                <div
+                  key={type._id}
+                  className={`p-4 border rounded-lg ${type.deletedAt ? "opacity-50" : ""}`}
+                >
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{type.name}</p>
+                        {type.deletedAt && (
+                          <Badge variant="secondary">Archived</Badge>
+                        )}
                         <span
                           className={`px-2 py-0.5 text-xs rounded-full ${
                             type.isActive
@@ -168,13 +235,38 @@ export function AppointmentTypes() {
                         </span>
                       </div>
                     </div>
-                    <Button
-                      size="sm"
-                      variant={type.isActive ? "outline" : "default"}
-                      onClick={() => handleToggleActive(type._id, type.isActive)}
-                    >
-                      {type.isActive ? "Deactivate" : "Activate"}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {!type.deletedAt && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleEdit(type)}
+                          >
+                            <Pencil className="h-4 w-4 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => {
+                              setDeleteTargetId(type._id);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={type.isActive ? "outline" : "default"}
+                            onClick={() => handleToggleActive(type._id, type.isActive)}
+                          >
+                            {type.isActive ? "Deactivate" : "Activate"}
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -184,6 +276,24 @@ export function AppointmentTypes() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Appointment Type?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. If appointments exist for this type,
+              it will be archived instead of permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

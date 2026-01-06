@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAdminAuth } from "@/lib/workos-auth";
 
 export function ErasureRequests() {
-  const { adminUser } = useAdminAuth();
+  useAdminAuth(); // Ensures admin is authenticated
   const requests = useQuery(api.gdpr.listErasureRequests, {
     status: "pending",
     ...defaultPaginationOpts(),
@@ -14,12 +14,9 @@ export function ErasureRequests() {
   const processErasure = useMutation(api.gdpr.processErasure);
 
   const handleProcess = async (requestId: string) => {
-    if (adminUser?.userId) {
-      await processErasure({
-        requestId: requestId as Parameters<typeof processErasure>[0]["requestId"],
-        processedBy: adminUser.userId,
-      });
-    }
+    await processErasure({
+      requestId: requestId as Parameters<typeof processErasure>[0]["requestId"],
+    });
   };
 
   return (

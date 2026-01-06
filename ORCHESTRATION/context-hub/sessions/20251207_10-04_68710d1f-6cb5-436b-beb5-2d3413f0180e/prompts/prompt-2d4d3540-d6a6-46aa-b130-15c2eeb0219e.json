@@ -1,0 +1,12 @@
+{
+  "id": "2d4d3540-d6a6-46aa-b130-15c2eeb0219e",
+  "type": "prompt",
+  "metadata": {
+    "sessionId": "20251207_10-04_68710d1f-6cb5-436b-beb5-2d3413f0180e",
+    "timestamp": "2026-01-06T09:17:51.955Z",
+    "version": "1.0.0"
+  },
+  "request": {
+    "description": "Booking Flow Fix - Empty Appointment Types Dropdown: Fix employer portal booking flow where Appointment Type dropdown shows NO OPTIONS due to empty appointmentTypes table. Includes data seeding, security hardening, and UX improvements."
+  }
+}

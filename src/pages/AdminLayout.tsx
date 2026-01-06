@@ -1,12 +1,21 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import { useAdminAuth } from "@/lib/workos-auth";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/layout";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { Menu } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 // Admin GDPR pages
 import { EmployerVerification } from "@/pages/admin/EmployerVerification";
@@ -49,6 +58,9 @@ function AdminDashboardContent({ adminUser }: { adminUser: { userId: string } | 
 // Admin layout (WorkOS authenticated)
 export function AdminLayout() {
   const { isAdminAuthenticated, isLoading, adminUser, logoutAdmin, sessionId } = useAdminAuth();
+
+  // IMPORTANT: All hooks must be called before any conditional returns
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Verify admin exists in database (defense-in-depth)
   // Uses verifyAdmin which checks ctx.auth internally - no need to pass workosUserId
@@ -112,19 +124,82 @@ export function AdminLayout() {
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
         <div className="container mx-auto px-4 flex h-16 items-center justify-between">
+          {/* Logo */}
           <div className="flex items-center gap-4">
             <a href="/" className="font-semibold text-xl">OccuHealth</a>
             <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Admin</span>
           </div>
-          <nav className="flex items-center gap-4">
-            <a href="/admin" className="text-sm hover:text-primary">Dashboard</a>
-            <a href="/admin/employers" className="text-sm hover:text-primary">Employers</a>
-            <a href="/admin/gdpr" className="text-sm hover:text-primary">GDPR</a>
-            <a href="/admin/appointment-types" className="text-sm hover:text-primary">Appointment Types</a>
+
+          {/* Desktop Navigation - Hidden on mobile */}
+          <nav className="hidden md:flex items-center gap-4">
+            <a href="/admin" className="text-sm hover:text-primary transition-colors">Dashboard</a>
+            <a href="/admin/employers" className="text-sm hover:text-primary transition-colors">Employers</a>
+            <a href="/admin/gdpr" className="text-sm hover:text-primary transition-colors">GDPR</a>
+            <a href="/admin/appointment-types" className="text-sm hover:text-primary transition-colors">Appointment Types</a>
+            <ThemeToggle />
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              Sign Out
+            </Button>
           </nav>
-          <Button variant="outline" size="sm" onClick={handleLogout}>
-            Sign Out
-          </Button>
+
+          {/* Mobile Menu - Visible on mobile only */}
+          <div className="md:hidden flex items-center gap-2">
+            <ThemeToggle />
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-11 w-11">
+                  <Menu className="h-6 w-6" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-64">
+                <SheetHeader>
+                  <SheetTitle>Admin Menu</SheetTitle>
+                </SheetHeader>
+                <nav className="flex flex-col gap-4 mt-8">
+                  <a
+                    href="/admin"
+                    className="text-lg py-3 px-2 hover:bg-accent rounded-md transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Dashboard
+                  </a>
+                  <a
+                    href="/admin/employers"
+                    className="text-lg py-3 px-2 hover:bg-accent rounded-md transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Employers
+                  </a>
+                  <a
+                    href="/admin/gdpr"
+                    className="text-lg py-3 px-2 hover:bg-accent rounded-md transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    GDPR
+                  </a>
+                  <a
+                    href="/admin/appointment-types"
+                    className="text-lg py-3 px-2 hover:bg-accent rounded-md transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Appointment Types
+                  </a>
+                  <hr className="my-4" />
+                  <Button
+                    variant="outline"
+                    className="w-full h-11"
+                    onClick={() => {
+                      handleLogout();
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    Sign Out
+                  </Button>
+                </nav>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </header>
 
