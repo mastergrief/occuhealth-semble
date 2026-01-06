@@ -1,0 +1,399 @@
+{
+  "id": "plan-2026-01-06-recurring-slots",
+  "created": "2026-01-06T12:00:00Z",
+  "feature": "Weekly Recurring Slots",
+  "description": "Enable doctors to create weekly recurring availability slots with day-of-week selection, time slot templates, multi-week application, and conflict detection",
+  "estimatedEffort": "12-17 hours",
+  "architectureScore": 8.5,
+  "riskLevel": "medium",
+
+  "phases": [
+    {
+      "id": "phase-0",
+      "name": "Pre-Flight Security Fixes",
+      "priority": "P0",
+      "effort": "1-2 hours",
+      "status": "pending",
+      "blocking": true,
+      "dependencies": [],
+      "agent": "developer",
+      "tasks": [
+        {
+          "id": "0.1",
+          "task": "Add audit logging to slot mutations",
+          "file": "convex/helpers/auditLogger.ts",
+          "changes": "+30 lines (logSlotAction helper)"
+        },
+        {
+          "id": "0.2",
+          "task": "Add backend date/time validation",
+          "file": "convex/lib/dateUtils.ts",
+          "changes": "NEW +80 lines (validation utilities)"
+        },
+        {
+          "id": "0.3",
+          "task": "Add validation calls to slot mutations",
+          "file": "convex/availableSlots.ts",
+          "changes": "+40 lines (validation, audit calls)"
+        },
+        {
+          "id": "0.4",
+          "task": "Add array size limit (100 max)",
+          "file": "convex/availableSlots.ts",
+          "changes": "Runtime check in createSlots"
+        },
+        {
+          "id": "0.5",
+          "task": "Implement unblockSlot UI",
+          "file": "src/pages/doctor/Schedule.tsx",
+          "changes": "+15 lines (Unblock button)"
+        }
+      ],
+      "acceptance": [
+        "Audit log entries created for all slot mutations",
+        "Invalid date/time formats rejected with ConvexError",
+        "Arrays > 100 items rejected",
+        "Unblock button visible on blocked slots"
+      ]
+    },
+    {
+      "id": "phase-1",
+      "name": "Backend Schema & Core Mutations",
+      "priority": "P0",
+      "effort": "2-3 hours",
+      "status": "pending",
+      "blocking": true,
+      "dependencies": ["phase-0"],
+      "agent": "developer",
+      "tasks": [
+        {
+          "id": "1.1",
+          "task": "Add recurringSlotTemplates table to schema",
+          "file": "convex/schema.ts",
+          "changes": "+15 lines (new table definition)"
+        },
+        {
+          "id": "1.2",
+          "task": "Add templateId field and by_template index to availableSlots",
+          "file": "convex/schema.ts",
+          "changes": "+5 lines (field + index)"
+        },
+        {
+          "id": "1.3",
+          "task": "Implement createRecurringSlots mutation",
+          "file": "convex/availableSlots.ts",
+          "changes": "+80 lines"
+        },
+        {
+          "id": "1.4",
+          "task": "Implement previewRecurringSlots query",
+          "file": "convex/availableSlots.ts",
+          "changes": "+50 lines"
+        },
+        {
+          "id": "1.5",
+          "task": "Implement deleteTemplateSlots mutation",
+          "file": "convex/availableSlots.ts",
+          "changes": "+50 lines"
+        },
+        {
+          "id": "1.6",
+          "task": "Implement getTemplates query",
+          "file": "convex/availableSlots.ts",
+          "changes": "+20 lines"
+        },
+        {
+          "id": "1.7",
+          "task": "Create TypeScript types for recurring slots",
+          "file": "src/types/scheduling.ts",
+          "changes": "NEW +50 lines"
+        },
+        {
+          "id": "1.8",
+          "task": "Add date calculation helpers",
+          "file": "convex/lib/dateUtils.ts",
+          "changes": "+60 lines (calculateDatesForDays, conflict helpers)"
+        }
+      ],
+      "acceptance": [
+        "npx convex dev deploys without errors",
+        "createRecurringSlots creates template + linked slots",
+        "previewRecurringSlots returns accurate conflict detection",
+        "deleteTemplateSlots respects delete modes",
+        "All validations throw ConvexError with proper codes"
+      ]
+    },
+    {
+      "id": "phase-2",
+      "name": "Frontend - Basic Recurring Form",
+      "priority": "P0",
+      "effort": "3-4 hours",
+      "status": "pending",
+      "blocking": false,
+      "dependencies": ["phase-1"],
+      "agent": "developer",
+      "tasks": [
+        {
+          "id": "2.1",
+          "task": "Create RecurringSlotForm container component",
+          "file": "src/components/doctor/recurring/RecurringSlotForm.tsx",
+          "changes": "NEW ~180 lines"
+        },
+        {
+          "id": "2.2",
+          "task": "Create DaySelector component",
+          "file": "src/components/doctor/recurring/DaySelector.tsx",
+          "changes": "NEW ~80 lines"
+        },
+        {
+          "id": "2.3",
+          "task": "Create TimeSlotList component",
+          "file": "src/components/doctor/recurring/TimeSlotList.tsx",
+          "changes": "NEW ~120 lines"
+        },
+        {
+          "id": "2.4",
+          "task": "Create WeekRangeSelector component",
+          "file": "src/components/doctor/recurring/WeekRangeSelector.tsx",
+          "changes": "NEW ~70 lines"
+        },
+        {
+          "id": "2.5",
+          "task": "Create index.ts exports",
+          "file": "src/components/doctor/recurring/index.ts",
+          "changes": "NEW ~10 lines"
+        },
+        {
+          "id": "2.6",
+          "task": "Integrate into Schedule.tsx",
+          "file": "src/pages/doctor/Schedule.tsx",
+          "changes": "+30 lines (button, dialog, imports)"
+        }
+      ],
+      "acceptance": [
+        "DaySelector toggles days correctly with Weekdays/All/Clear",
+        "TimeSlotList adds/removes slots with validation",
+        "WeekRangeSelector validates date range",
+        "Form calls mutation and closes on success",
+        "Error toast shows on failure"
+      ]
+    },
+    {
+      "id": "phase-3",
+      "name": "Frontend - Conflict Detection UX",
+      "priority": "P1",
+      "effort": "2-3 hours",
+      "status": "pending",
+      "blocking": false,
+      "dependencies": ["phase-2"],
+      "agent": "developer",
+      "tasks": [
+        {
+          "id": "3.1",
+          "task": "Create SlotPreview component",
+          "file": "src/components/doctor/recurring/SlotPreview.tsx",
+          "changes": "NEW ~100 lines"
+        },
+        {
+          "id": "3.2",
+          "task": "Create ConflictResolution component",
+          "file": "src/components/doctor/recurring/ConflictResolution.tsx",
+          "changes": "NEW ~60 lines"
+        },
+        {
+          "id": "3.3",
+          "task": "Create QuickFillBar component",
+          "file": "src/components/doctor/recurring/QuickFillBar.tsx",
+          "changes": "NEW ~90 lines"
+        },
+        {
+          "id": "3.4",
+          "task": "Integrate real-time preview into form",
+          "file": "src/components/doctor/recurring/RecurringSlotForm.tsx",
+          "changes": "+50 lines"
+        }
+      ],
+      "acceptance": [
+        "Preview shows real-time calculation",
+        "Conflicts highlighted with reason (booked/blocked/available)",
+        "Resolution options change form behavior",
+        "QuickFill generates correct slot array for duration"
+      ]
+    },
+    {
+      "id": "phase-4",
+      "name": "Week Calendar View Enhancement",
+      "priority": "P2",
+      "effort": "3-4 hours",
+      "status": "pending",
+      "blocking": false,
+      "dependencies": ["phase-2"],
+      "agent": "developer",
+      "tasks": [
+        {
+          "id": "4.1",
+          "task": "Create WeekCalendarView component",
+          "file": "src/components/doctor/WeekCalendarView.tsx",
+          "changes": "NEW ~200 lines"
+        },
+        {
+          "id": "4.2",
+          "task": "Add view mode toggle to Schedule.tsx",
+          "file": "src/pages/doctor/Schedule.tsx",
+          "changes": "+40 lines"
+        }
+      ],
+      "acceptance": [
+        "7-column grid displays Mon-Sun",
+        "Slot cards show status colors",
+        "Navigation arrows change week",
+        "Click slot to block/unblock"
+      ]
+    },
+    {
+      "id": "phase-5",
+      "name": "Template Management",
+      "priority": "P2",
+      "effort": "2-3 hours",
+      "status": "pending",
+      "blocking": false,
+      "dependencies": ["phase-1"],
+      "agent": "developer",
+      "tasks": [
+        {
+          "id": "5.1",
+          "task": "Add template list section to Schedule.tsx",
+          "file": "src/pages/doctor/Schedule.tsx",
+          "changes": "+50 lines"
+        },
+        {
+          "id": "5.2",
+          "task": "Add delete template functionality with confirmation",
+          "file": "src/pages/doctor/Schedule.tsx",
+          "changes": "+30 lines"
+        }
+      ],
+      "acceptance": [
+        "Template cards displayed with summary",
+        "Delete confirmation shows mode options",
+        "Delete completes and updates list"
+      ]
+    }
+  ],
+
+  "criticalFiles": [
+    {
+      "path": "convex/schema.ts",
+      "lines": 272,
+      "changes": "Add recurringSlotTemplates table, templateId field + index to availableSlots",
+      "phase": "phase-1"
+    },
+    {
+      "path": "convex/availableSlots.ts",
+      "lines": 187,
+      "changes": "Add 4 new mutations, audit logging, validation",
+      "phase": "phase-0, phase-1"
+    },
+    {
+      "path": "src/pages/doctor/Schedule.tsx",
+      "lines": 143,
+      "changes": "Integrate recurring form, unblock button, view toggle",
+      "phase": "phase-0, phase-2, phase-4"
+    },
+    {
+      "path": "convex/helpers/auditLogger.ts",
+      "lines": 130,
+      "changes": "Add logSlotAction helper",
+      "phase": "phase-0"
+    },
+    {
+      "path": "convex/lib/dateUtils.ts",
+      "lines": 0,
+      "changes": "NEW - validation and date calculation utilities",
+      "phase": "phase-0, phase-1"
+    },
+    {
+      "path": "src/components/doctor/recurring/RecurringSlotForm.tsx",
+      "lines": 0,
+      "changes": "NEW - main form container",
+      "phase": "phase-2"
+    }
+  ],
+
+  "risks": [
+    {
+      "level": "high",
+      "risk": "Schema migration fails",
+      "impact": "Blocks all work",
+      "mitigation": "Test in dev first, backup before deploy"
+    },
+    {
+      "level": "high",
+      "risk": "Conflict detection edge cases",
+      "impact": "Bad UX, double bookings",
+      "mitigation": "Comprehensive unit tests for date calculation"
+    },
+    {
+      "level": "medium",
+      "risk": "Performance with large slot batches",
+      "impact": "Slow creation",
+      "mitigation": "Limit to 100 slots, show progress"
+    },
+    {
+      "level": "medium",
+      "risk": "Real-time preview too slow",
+      "impact": "Bad UX",
+      "mitigation": "Debounce preview query"
+    },
+    {
+      "level": "low",
+      "risk": "UI complexity overwhelming",
+      "impact": "User confusion",
+      "mitigation": "Progressive disclosure, good defaults"
+    }
+  ],
+
+  "testing": {
+    "unit": {
+      "framework": "Vitest",
+      "targets": [
+        { "category": "Date calculation", "coverage": "100%", "critical": true },
+        { "category": "Time overlap detection", "coverage": "100%", "critical": true },
+        { "category": "Validation functions", "coverage": "100%", "critical": true },
+        { "category": "DaySelector component", "coverage": "90%", "critical": true },
+        { "category": "TimeSlotList component", "coverage": "85%", "critical": true }
+      ]
+    },
+    "e2e": {
+      "framework": "Browser-CLI",
+      "suites": [
+        "T1: Existing functionality sanity check",
+        "T2: Recurring form complete flow",
+        "T3: Week view navigation",
+        "T4: Backend verification (audit logs, templates)",
+        "T5: Error handling",
+        "T6: Edge cases (month boundary, max slots)"
+      ]
+    }
+  },
+
+  "dependencies": {
+    "graph": {
+      "phase-0": [],
+      "phase-1": ["phase-0"],
+      "phase-2": ["phase-1"],
+      "phase-3": ["phase-2"],
+      "phase-4": ["phase-2"],
+      "phase-5": ["phase-1"]
+    },
+    "parallel": [
+      ["phase-2", "phase-5"],
+      ["phase-3", "phase-4"]
+    ]
+  },
+
+  "agentDistribution": {
+    "developer": ["phase-0", "phase-1", "phase-2", "phase-3", "phase-4", "phase-5"],
+    "browser": ["e2e-testing-after-phase-2", "e2e-testing-after-phase-4"]
+  }
+}

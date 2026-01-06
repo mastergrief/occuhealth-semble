@@ -124,12 +124,35 @@ export default defineSchema({
     endTime: v.string(),
     status: v.union(v.literal("available"), v.literal("booked"), v.literal("blocked")),
     appointmentId: v.optional(v.id("appointments")),
+    templateId: v.optional(v.id("recurringSlotTemplates")),
   })
     .index("by_date", ["date"])
     .index("by_status", ["status"])
     .index("by_date_status", ["date", "status"])
     .index("by_doctor", ["doctorId"])
-    .index("by_doctor_date", ["doctorId", "date"]),
+    .index("by_doctor_date", ["doctorId", "date"])
+    .index("by_template", ["templateId"]),
+
+  // ---------------------------------------------------------------------------
+  // Recurring Slot Templates
+  // ---------------------------------------------------------------------------
+  recurringSlotTemplates: defineTable({
+    doctorId: v.id("doctorSettings"),
+    name: v.optional(v.string()),
+    daysOfWeek: v.array(v.number()),
+    timeSlots: v.array(
+      v.object({
+        startTime: v.string(),
+        endTime: v.string(),
+      })
+    ),
+    startDate: v.string(),
+    endDate: v.string(),
+    createdAt: v.number(),
+    status: v.union(v.literal("active"), v.literal("archived")),
+  })
+    .index("by_doctor", ["doctorId"])
+    .index("by_doctor_status", ["doctorId", "status"]),
 
   // ---------------------------------------------------------------------------
   // Appointments

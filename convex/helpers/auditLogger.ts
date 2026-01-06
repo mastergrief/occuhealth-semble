@@ -127,3 +127,34 @@ export async function logAppointmentAction(
     },
   });
 }
+
+
+/**
+ * Logs a slot-related action to the audit log.
+ * @param ctx - Mutation context
+ * @param action - Action name (e.g., 'slot_created', 'slot_blocked', 'slot_unblocked', 'recurring_slots_created')
+ * @param slotId - ID of the slot affected (or batch identifier string for batch operations)
+ * @param doctorId - ID of the doctor who owns the slot
+ * @param details - Optional additional details about the action
+ */
+export async function logSlotAction(
+  ctx: MutationCtx,
+  action: string,
+  slotId: Id<"availableSlots"> | string,
+  doctorId: Id<"doctorSettings">,
+  details?: Record<string, unknown>
+): Promise<void> {
+  const { actorType, actorId } = await getActorInfo(ctx);
+
+  await ctx.runMutation(internal.gdpr.logAction, {
+    action,
+    actorType,
+    actorId,
+    resourceType: "slot",
+    resourceId: slotId as string,
+    details: {
+      doctorId,
+      ...details,
+    },
+  });
+}
