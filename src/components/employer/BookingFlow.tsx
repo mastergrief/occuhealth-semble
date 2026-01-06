@@ -12,6 +12,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Id } from "../../../convex/_generated/dataModel";
+import { toast } from "sonner";
+import { AlertTriangle } from "lucide-react";
+import { ConvexError } from "convex/values";
 
 interface BookingFlowProps {
   employerId: Id<"employers">;
@@ -30,8 +33,13 @@ export function BookingFlow({ employerId, onClose }: BookingFlowProps) {
   const patientsResult = useQuery(api.patients.list, { employerId, ...defaultPaginationOpts() });
   const patients = patientsResult?.items;
   const appointmentTypes = useQuery(api.appointmentTypes.listActive);
-  const availableSlots = useQuery(api.availableSlots.getAvailable, { date: selectedDate });
+  const availableSlots = useQuery(
+    api.availableSlots.getAvailable,
+    step >= 2 ? { date: selectedDate } : "skip"
+  );
   const bookAppointment = useMutation(api.appointments.book);
+
+  const isLoading = patients === undefined || appointmentTypes === undefined;
 
   const handleSubmit = async () => {
     if (!selectedPatient || !selectedType || !selectedSlot) return;
@@ -45,9 +53,17 @@ export function BookingFlow({ employerId, onClose }: BookingFlowProps) {
         slotId: selectedSlot,
         reasonForAppointment: reason || undefined,
       });
+      toast.success("Booking confirmed", {
+        description: "Your appointment has been scheduled.",
+      });
       onClose();
     } catch (error) {
-      console.error("Booking failed:", error);
+      const message = error instanceof ConvexError
+        ? (error.data as string)
+        : error instanceof Error
+          ? error.message
+          : "An unexpected error occurred";
+      toast.error("Booking failed", { description: message });
     } finally {
       setIsSubmitting(false);
     }
@@ -62,43 +78,89 @@ export function BookingFlow({ employerId, onClose }: BookingFlowProps) {
 
         {step === 1 && (
           <div className="space-y-4">
-            <div>
-              <Label>Select Employee</Label>
-              <select
-                value={selectedPatient}
-                onChange={(e) => setSelectedPatient(e.target.value as Id<"patients">)}
-                className="w-full border rounded-md p-2 mt-1"
-              >
-                <option value="">Choose employee...</option>
-                {patients?.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.firstName} {p.lastName}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label>Appointment Type</Label>
-              <select
-                value={selectedType}
-                onChange={(e) => setSelectedType(e.target.value as Id<"appointmentTypes">)}
-                className="w-full border rounded-md p-2 mt-1"
-              >
-                <option value="">Choose type...</option>
-                {appointmentTypes?.map((t) => (
-                  <option key={t._id} value={t._id}>
-                    {t.name} ({t.durationMinutes} min)
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Button
-              className="w-full"
-              disabled={!selectedPatient || !selectedType}
-              onClick={() => setStep(2)}
-            >
-              Next
-            </Button>
+            {isLoading ? (
+              <div className="space-y-4">
+                <div>
+                  <div className="h-4 w-28 bg-slate-200 rounded animate-pulse mb-2" />
+                  <div className="h-10 w-full bg-slate-200 rounded animate-pulse" />
+                </div>
+                <div>
+                  <div className="h-4 w-32 bg-slate-200 rounded animate-pulse mb-2" />
+                  <div className="h-10 w-full bg-slate-200 rounded animate-pulse" />
+                </div>
+                <div className="h-10 w-full bg-slate-200 rounded animate-pulse" />
+              </div>
+            ) : appointmentTypes.length === 0 ? (
+              <>
+                <div>
+                  <Label>Select Employee</Label>
+                  <select
+                    value={selectedPatient}
+                    onChange={(e) => setSelectedPatient(e.target.value as Id<"patients">)}
+                    className="w-full border rounded-md p-2 mt-1"
+                  >
+                    <option value="">Choose employee...</option>
+                    {patients?.map((p) => (
+                      <option key={p._id} value={p._id}>
+                        {p.firstName} {p.lastName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-amber-600" />
+                    <p className="text-amber-800 font-medium">No appointment types available</p>
+                  </div>
+                  <p className="text-sm text-amber-600 mt-1">
+                    Contact your administrator to configure appointment types.
+                  </p>
+                </div>
+                <Button className="w-full" disabled>
+                  Next
+                </Button>
+              </>
+            ) : (
+              <>
+                <div>
+                  <Label>Select Employee</Label>
+                  <select
+                    value={selectedPatient}
+                    onChange={(e) => setSelectedPatient(e.target.value as Id<"patients">)}
+                    className="w-full border rounded-md p-2 mt-1"
+                  >
+                    <option value="">Choose employee...</option>
+                    {patients?.map((p) => (
+                      <option key={p._id} value={p._id}>
+                        {p.firstName} {p.lastName}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label>Appointment Type</Label>
+                  <select
+                    value={selectedType}
+                    onChange={(e) => setSelectedType(e.target.value as Id<"appointmentTypes">)}
+                    className="w-full border rounded-md p-2 mt-1"
+                  >
+                    <option value="">Choose type...</option>
+                    {appointmentTypes.map((t) => (
+                      <option key={t._id} value={t._id}>
+                        {t.name} ({t.durationMinutes} min)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Button
+                  className="w-full"
+                  disabled={!selectedPatient || !selectedType}
+                  onClick={() => setStep(2)}
+                >
+                  Next
+                </Button>
+              </>
+            )}
           </div>
         )}
 

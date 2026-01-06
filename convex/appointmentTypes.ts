@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { Doc } from "./_generated/dataModel";
+import { requireAdmin } from "./authModules";
 
 // ---------------------------------------------------------------------------
 // Appointment Types Management
@@ -9,6 +10,7 @@ import { Doc } from "./_generated/dataModel";
 // ---------------------------------------------------------------------------
 
 // List active appointment types
+
 export const listActive = query({
   args: {},
   handler: async (ctx): Promise<Doc<"appointmentTypes">[]> => {
@@ -23,6 +25,7 @@ export const listActive = query({
 export const listAll = query({
   args: {},
   handler: async (ctx): Promise<Doc<"appointmentTypes">[]> => {
+    await requireAdmin(ctx);
     return ctx.db.query("appointmentTypes").collect();
   },
 });
@@ -44,6 +47,7 @@ export const create = mutation({
     price: v.number(),
   },
   handler: async (ctx, args) => {
+    await requireAdmin(ctx);
     return ctx.db.insert("appointmentTypes", {
       ...args,
       isActive: true,
@@ -62,6 +66,7 @@ export const update = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, { typeId, ...updates }) => {
+    await requireAdmin(ctx);
     const filteredUpdates = Object.fromEntries(
       Object.entries(updates).filter(([_, v]) => v !== undefined)
     );

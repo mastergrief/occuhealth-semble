@@ -1,0 +1,232 @@
+{
+  "planId": "booking-flow-fix-2026-01-06",
+  "title": "Booking Flow Fix - Empty Appointment Types Dropdown",
+  "created": "2026-01-06T12:00:00.000Z",
+  "status": "pending",
+  "description": "Fix the employer portal booking flow where Appointment Type dropdown shows NO OPTIONS due to empty appointmentTypes table. Also addresses critical security vulnerabilities and UX gaps.",
+
+  "rootCause": {
+    "issue": "appointmentTypes database table is EMPTY (0 records)",
+    "impact": "CRITICAL - Booking flow completely blocked at Step 1",
+    "type": "data_availability"
+  },
+
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Data Seeding",
+      "priority": "P1-CRITICAL",
+      "effort": "5 min",
+      "description": "Seed appointment types via Convex CLI to unblock booking flow immediately",
+      "tasks": [
+        {
+          "task": "seed-appointment-types",
+          "description": "Run 5 CLI commands to populate appointmentTypes table",
+          "commands": [
+            "npx convex run appointmentTypes:create '{\"name\":\"Initial Assessment\",\"description\":\"Comprehensive occupational health assessment for new employees\",\"durationMinutes\":60,\"price\":0}'",
+            "npx convex run appointmentTypes:create '{\"name\":\"Follow-up Consultation\",\"description\":\"Follow-up appointment after initial assessment\",\"durationMinutes\":30,\"price\":0}'",
+            "npx convex run appointmentTypes:create '{\"name\":\"Health Screening\",\"description\":\"General occupational health screening\",\"durationMinutes\":45,\"price\":0}'",
+            "npx convex run appointmentTypes:create '{\"name\":\"Return-to-Work Assessment\",\"description\":\"Assessment for employees returning after extended absence\",\"durationMinutes\":45,\"price\":0}'",
+            "npx convex run appointmentTypes:create '{\"name\":\"Fitness Reassessment\",\"description\":\"Periodic fitness for work reassessment\",\"durationMinutes\":30,\"price\":0}'"
+          ],
+          "verification": "npx convex run appointmentTypes:listActive '{}'"
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Security Hardening",
+      "priority": "P1-CRITICAL",
+      "effort": "30 min",
+      "description": "Add requireAdmin() checks to appointmentTypes mutations to prevent unauthorized access",
+      "tasks": [
+        {
+          "task": "add-requireAdmin-import",
+          "file": "convex/appointmentTypes.ts",
+          "line": 2,
+          "change": "Add import { requireAdmin } from './authModules';"
+        },
+        {
+          "task": "secure-listAll-query",
+          "file": "convex/appointmentTypes.ts",
+          "lines": "22-28",
+          "change": "Add await requireAdmin(ctx); at line 25"
+        },
+        {
+          "task": "secure-create-mutation",
+          "file": "convex/appointmentTypes.ts",
+          "lines": "38-52",
+          "change": "Add await requireAdmin(ctx); at line 46"
+        },
+        {
+          "task": "secure-update-mutation",
+          "file": "convex/appointmentTypes.ts",
+          "lines": "54-70",
+          "change": "Add await requireAdmin(ctx); at line 64"
+        }
+      ],
+      "verification": "npm run typecheck"
+    },
+    {
+      "phase": 3,
+      "name": "UX Improvements",
+      "priority": "P2-HIGH",
+      "effort": "2 hours",
+      "description": "Add loading states, empty state feedback, and toast notifications to BookingFlow component",
+      "tasks": [
+        {
+          "task": "add-loading-skeleton",
+          "file": "src/components/employer/BookingFlow.tsx",
+          "description": "Add loading skeleton while queries are undefined"
+        },
+        {
+          "task": "add-empty-state-warning",
+          "file": "src/components/employer/BookingFlow.tsx",
+          "description": "Show warning banner when appointmentTypes.length === 0"
+        },
+        {
+          "task": "install-sonner",
+          "command": "npm install sonner",
+          "description": "Install toast notification library"
+        },
+        {
+          "task": "add-toaster-to-app",
+          "file": "src/App.tsx",
+          "description": "Add <Toaster /> component"
+        },
+        {
+          "task": "add-toast-notifications",
+          "file": "src/components/employer/BookingFlow.tsx",
+          "description": "Add success/error toasts to handleSubmit"
+        },
+        {
+          "task": "defer-slot-query",
+          "file": "src/components/employer/BookingFlow.tsx",
+          "description": "Use 'skip' parameter to defer slot query until Step 2"
+        }
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Admin UI",
+      "priority": "P3-OPTIONAL",
+      "effort": "4 hours",
+      "description": "Create admin page for managing appointment types",
+      "tasks": [
+        {
+          "task": "create-appointment-types-page",
+          "file": "src/pages/admin/AppointmentTypes.tsx",
+          "description": "New file - Admin page following EmployerVerification pattern"
+        },
+        {
+          "task": "add-admin-route",
+          "file": "src/pages/AdminLayout.tsx",
+          "line": 131,
+          "description": "Add <Route path='appointment-types' element={<AppointmentTypes />} />"
+        },
+        {
+          "task": "add-nav-link",
+          "file": "src/pages/AdminLayout.tsx",
+          "line": 117,
+          "description": "Add nav link for Appointment Types"
+        },
+        {
+          "task": "add-dashboard-card",
+          "file": "src/pages/AdminLayout.tsx",
+          "line": 38,
+          "description": "Optional: Add dashboard card link"
+        }
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "Seed Script",
+      "priority": "P3-OPTIONAL",
+      "effort": "1 hour",
+      "description": "Create reusable seed script for deployment automation",
+      "tasks": [
+        {
+          "task": "create-seed-script",
+          "file": "convex/seed/appointmentTypes.ts",
+          "description": "New file - Internal mutation for seeding"
+        }
+      ]
+    }
+  ],
+
+  "criticalFiles": [
+    {
+      "path": "convex/appointmentTypes.ts",
+      "lines": 71,
+      "changes": "Add requireAdmin to create, update, listAll (3 functions)"
+    },
+    {
+      "path": "src/components/employer/BookingFlow.tsx",
+      "lines": 188,
+      "changes": "Add loading skeleton, empty state, toast notifications"
+    },
+    {
+      "path": "src/pages/AdminLayout.tsx",
+      "lines": 186,
+      "changes": "Add route + nav link for admin UI"
+    },
+    {
+      "path": "src/App.tsx",
+      "lines": "~50",
+      "changes": "Add Toaster component"
+    }
+  ],
+
+  "dependencies": {
+    "phase1": [],
+    "phase2": ["phase1"],
+    "phase3": ["phase1"],
+    "phase4": ["phase2"],
+    "phase5": ["phase2"]
+  },
+
+  "risks": [
+    {
+      "risk": "Seeding fails",
+      "severity": "LOW",
+      "mitigation": "Verify with listActive, manual fallback"
+    },
+    {
+      "risk": "Security fix breaks auth",
+      "severity": "MEDIUM",
+      "mitigation": "Test with authenticated admin user after typecheck"
+    },
+    {
+      "risk": "Toast lib conflicts",
+      "severity": "LOW",
+      "mitigation": "Sonner is well-tested, fallback to console.error"
+    }
+  ],
+
+  "verification": {
+    "afterPhase1": [
+      "Navigate to /employer/bookings",
+      "Click 'New Booking'",
+      "Verify dropdown shows 5 appointment types"
+    ],
+    "afterPhase2": [
+      "npm run typecheck passes",
+      "Non-admin cannot call create/update mutations",
+      "Admin can manage appointment types"
+    ],
+    "afterPhase3": [
+      "Loading skeleton shows during fetch",
+      "Empty state shows warning if no types",
+      "Toast shows on successful booking",
+      "Toast shows on booking failure"
+    ]
+  },
+
+  "agentAssignments": {
+    "phase1": "bash-only",
+    "phase2": "developer",
+    "phase3": "developer",
+    "phase4": "shadcn",
+    "phase5": "developer"
+  }
+}

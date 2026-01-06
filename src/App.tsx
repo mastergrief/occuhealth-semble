@@ -21,6 +21,7 @@ import { SignOutButton, AdminAuthCallback } from "@/components/auth";
 import { useWorkOSAuth, EmployerAuthProvider, DoctorAuthProvider } from "@/lib/workos-auth";
 
 import { Button } from "@/components/ui/button";
+import { Toaster } from "sonner";
 
 // =============================================================================
 // Lazy-loaded route components for code splitting
@@ -64,8 +65,10 @@ const PageLoader = () => (
 
 export default function App() {
   return (
-    <Routes>
-      {/* Auth callback */}
+    <>
+      <Toaster position="top-right" />
+      <Routes>
+        {/* Auth callback */}
       <Route path="/auth/callback" element={<AdminAuthCallback />} />
 
       {/* Registration routes */}
@@ -118,7 +121,8 @@ export default function App() {
 
       {/* Main app routes */}
       <Route path="/*" element={<MainLayout />} />
-    </Routes>
+      </Routes>
+    </>
   );
 }
 
