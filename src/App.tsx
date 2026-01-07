@@ -49,6 +49,9 @@ const DoctorRegistrationForm = lazy(() =>
   import("./components/doctor/DoctorRegistrationForm").then(m => ({ default: m.DoctorRegistrationForm }))
 );
 
+// Lazy load patient pages
+const ViewAppointment = lazy(() => import("./pages/patient/ViewAppointment"));
+
 // =============================================================================
 // Loading fallback component
 // =============================================================================
@@ -118,6 +121,16 @@ export default function App() {
           </Suspense>
         </ErrorBoundary>
       } />
+
+      {/* Patient public routes (no auth required) */}
+      <Route
+        path="/view-appointment/:token"
+        element={
+          <Suspense fallback={<PageLoader />}>
+            <ViewAppointment />
+          </Suspense>
+        }
+      />
 
       {/* Main app routes */}
       <Route path="/*" element={<MainLayout />} />

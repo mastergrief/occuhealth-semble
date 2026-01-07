@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { WorkOS } from "@workos-inc/node";
+import { generateICS } from "./lib/icsGenerator";
 
 const http = httpRouter();
 
@@ -290,6 +291,56 @@ http.route({
   method: "OPTIONS",
   handler: httpAction(async () => {
     return new Response(null, { status: 204, headers: corsHeaders });
+  }),
+});
+
+// ---------------------------------------------------------------------------
+// Calendar Download Endpoint (ICS file for appointment)
+// ---------------------------------------------------------------------------
+http.route({
+  path: "/calendar/:token",
+  method: "GET",
+  handler: httpAction(async (ctx, request) => {
+    // Extract token from URL path
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split("/");
+    const token = pathParts[pathParts.length - 1];
+
+    // Validate token and get appointment
+    const result = await ctx.runQuery(
+      internal.appointmentTokens.validateAndGetAppointmentInternal,
+      { token }
+    );
+
+    // Handle invalid/expired token
+    if (!result.valid) {
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired appointment link" }),
+        {
+          status: 404,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Generate ICS file
+    const ics = generateICS({
+      title: result.appointmentType?.name || "Medical Appointment",
+      description: result.appointment.reason || "",
+      startDate: result.appointment.scheduledDate || "",
+      startTime: result.appointment.startTime || "",
+      endTime: result.appointment.endTime || "",
+      location: result.doctor?.zoomLink,
+      organizer: "noreply@occuhealth.com",
+    });
+
+    return new Response(ics, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/calendar; charset=utf-8",
+        "Content-Disposition": 'attachment; filename="appointment.ics"',
+      },
+    });
   }),
 });
 

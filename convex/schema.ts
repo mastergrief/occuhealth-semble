@@ -286,6 +286,22 @@ export default defineSchema({
     .index("by_email", ["requesterEmail"]),
 
   // ---------------------------------------------------------------------------
+  // Appointment Tokens (Patient Access Links)
+  // ---------------------------------------------------------------------------
+  appointmentTokens: defineTable({
+    tokenHash: v.string(),           // SHA-256 hash of token (never store raw)
+    appointmentId: v.id("appointments"),
+    patientId: v.id("patients"),
+    createdAt: v.number(),
+    expiresAt: v.number(),           // Date.now() + 48h TTL
+    viewedAt: v.optional(v.number()), // Analytics: first view timestamp
+    invalidated: v.optional(v.boolean()), // Cancellation support
+  })
+    .index("by_token", ["tokenHash"])
+    .index("by_appointment", ["appointmentId"])
+    .index("by_expiry", ["expiresAt"]),
+
+  // ---------------------------------------------------------------------------
   // Example Table (from starter)
   // ---------------------------------------------------------------------------
   numbers: defineTable({
