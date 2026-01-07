@@ -190,7 +190,15 @@ export const book = mutation({
   },
   handler: async (ctx, args) => {
     // Verify caller owns this employer
-    await requireEmployerOwnership(ctx, args.employerId);
+    const employer = await requireEmployerOwnership(ctx, args.employerId);
+
+    // Verify employer is approved before allowing booking
+    if (employer.status !== "verified") {
+      throw new ConvexError({
+        code: "EMPLOYER_NOT_VERIFIED" as const,
+        message: "Only verified employers can book appointments. Please wait for admin approval.",
+      });
+    }
 
     // Verify slot is available
     const slot = await ctx.db.get(args.slotId);
@@ -240,7 +248,7 @@ export const book = mutation({
 
     return appointmentId;
   },
-});
+});;
 
 /**
  * Mark an appointment as completed.
