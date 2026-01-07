@@ -24,8 +24,13 @@ import { logAppointmentAction } from "./helpers/auditLogger";
 // Authorization: Employers see their own appointments, doctors see by date
 // ---------------------------------------------------------------------------
 
-// Get appointment by ID with related data
-// Authorization: Employer can see their own appointments
+/**
+ * Get an appointment by ID with related patient, employer, and type data.
+ *
+ * @param appointmentId - The appointment document ID to retrieve
+ * @returns Appointment with patient, employer, and appointmentType relations, or null if not found
+ * @throws ConvexError if caller does not own the employer associated with this appointment
+ */
 export const getById = query({
   args: { appointmentId: v.id("appointments") },
   handler: async (ctx, { appointmentId }) => {
@@ -43,10 +48,19 @@ export const getById = query({
   },
 });
 
-// List appointments by employer
-// Authorization: Caller must own the employer
+/**
+ * List appointments for a specific employer with pagination.
+ *
+ * Filters out appointments for soft-deleted patients (GDPR compliance).
+ * Uses batch fetching to avoid N+1 query patterns.
+ *
+ * @param employerId - The employer document ID to list appointments for
+ * @param paginationOpts - Pagination options (cursor, numItems)
+ * @returns Paginated list of appointments enriched with patient data
+ * @throws ConvexError if caller does not own the specified employer
+ */
 export const listByEmployer = query({
-  args: { 
+  args: {
     employerId: v.id("employers"),
     ...paginatedQueryArgs,
   },
@@ -79,21 +93,18 @@ export const listByEmployer = query({
 
     return toPaginatedResult({ ...paginatedResult, page: enrichedItems });
   },
-});;
+});
 
-// List appointments by date (for doctor)
-// Authorization: Only doctors can view all appointments by date
 /**
- * List appointments by date with patient and employer info.
+ * List appointments by date with patient, employer, and type info.
  *
- * Used by doctor Appointments page to browse appointments by date.
- * Returns paginated results with enriched patient, employer, and type data.
+ * Used by doctor Appointments page to browse appointments for a specific date.
+ * Uses batch fetching to efficiently load related entities.
  *
- * @auth doctor - Requires doctor authentication
- * @param ctx - Convex query context
- * @param args.date - Date in YYYY-MM-DD format
- * @param args.paginationOpts - Pagination options (cursor, numItems)
- * @returns Paginated list of appointments with related entities
+ * @param date - Date in YYYY-MM-DD format to filter appointments
+ * @param paginationOpts - Pagination options (cursor, numItems)
+ * @returns Paginated list of appointments with patient, employer, and appointmentType relations
+ * @throws ConvexError if caller is not authenticated as a doctor
  */
 export const listByDate = query({
   args: { date: v.string(), ...paginatedQueryArgs },
@@ -129,16 +140,13 @@ export const listByDate = query({
   },
 });
 
-// Get today's appointments (for doctor dashboard)
-// Authorization: Only doctors can view today's appointments
 /**
  * Get all appointments scheduled for today.
  *
- * Used by doctor Dashboard to show today's schedule.
+ * Used by doctor Dashboard to display today's schedule overview.
  *
- * @auth doctor - Requires doctor authentication
- * @param ctx - Convex query context
- * @returns Array of appointment documents for today
+ * @returns Array of appointment documents scheduled for the current date
+ * @throws ConvexError if caller is not authenticated as a doctor
  */
 export const getTodaysAppointments = query({
   args: {},
@@ -154,8 +162,23 @@ export const getTodaysAppointments = query({
   },
 });
 
-// Book appointment
-// Authorization: Caller must own the employer booking the appointment
+/**
+ * Book a new appointment for a patient.
+ *
+ * Creates an appointment, marks the selected slot as booked, and logs
+ * the action for audit trail compliance.
+ *
+ * @param patientId - The patient document ID to book the appointment for
+ * @param employerId - The employer document ID booking the appointment
+ * @param appointmentTypeId - The appointment type document ID
+ * @param slotId - The available slot document ID to reserve
+ * @param reasonForAppointment - Optional reason for the appointment
+ * @param preAppointmentNotes - Optional notes to include before the appointment
+ * @returns The newly created appointment document ID
+ * @throws ConvexError if caller does not own the employer
+ * @throws ConvexError if the slot is not available (SLOT_UNAVAILABLE)
+ * @throws ConvexError if patient does not belong to employer (UNAUTHORIZED)
+ */
 export const book = mutation({
   args: {
     patientId: v.id("patients"),
@@ -217,20 +240,18 @@ export const book = mutation({
 
     return appointmentId;
   },
-});;
+});
 
-// Mark appointment complete
-// Authorization: Only doctors can mark appointments as completed
 /**
  * Mark an appointment as completed.
  *
  * Used by doctors after completing a patient consultation.
- * Creates an audit log entry for compliance tracking.
+ * Records completion timestamp and creates an audit log entry.
  *
- * @auth doctor - Requires doctor authentication
- * @throws {ConvexError} NOT_FOUND - Appointment not found
- * @param ctx - Convex mutation context
- * @param args.appointmentId - The appointment document ID to mark complete
+ * @param appointmentId - The appointment document ID to mark as completed
+ * @returns void
+ * @throws ConvexError if caller is not authenticated as a doctor
+ * @throws ConvexError if appointment not found (NOT_FOUND)
  */
 export const markCompleted = mutation({
   args: { appointmentId: v.id("appointments") },
@@ -256,10 +277,19 @@ export const markCompleted = mutation({
       employerId: appointment.employerId,
     });
   },
-});;
+});
 
-// Cancel appointment
-// Authorization: Caller must own the employer who booked the appointment
+/**
+ * Cancel an appointment and free up the associated slot.
+ *
+ * Releases the booked slot back to available status and marks
+ * the appointment as cancelled with a timestamp.
+ *
+ * @param appointmentId - The appointment document ID to cancel
+ * @returns void
+ * @throws ConvexError if appointment not found (NOT_FOUND)
+ * @throws ConvexError if caller does not own the employer who booked the appointment
+ */
 export const cancel = mutation({
   args: { appointmentId: v.id("appointments") },
   handler: async (ctx, { appointmentId }) => {
@@ -287,8 +317,17 @@ export const cancel = mutation({
   },
 });
 
-// Update appointment status
-// Authorization: Caller must own the employer who booked the appointment
+/**
+ * Update the status of an appointment.
+ *
+ * Allows employers to change appointment status (e.g., confirm, mark no-show).
+ *
+ * @param appointmentId - The appointment document ID to update
+ * @param status - New status: "scheduled" | "confirmed" | "completed" | "cancelled" | "no_show"
+ * @returns void
+ * @throws ConvexError if appointment not found (NOT_FOUND)
+ * @throws ConvexError if caller does not own the employer who booked the appointment
+ */
 export const updateStatus = mutation({
   args: {
     appointmentId: v.id("appointments"),

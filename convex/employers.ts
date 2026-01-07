@@ -160,6 +160,77 @@ export const verify = mutation({
   },
 });
 
+
+/**
+ * Get aggregated dashboard statistics for an employer.
+ *
+ * Combines employee, appointment, and report counts in a single query
+ * to reduce client-side round trips from 3 to 1.
+ *
+ * @param employerId - The employer to get stats for
+ * @returns Dashboard statistics object
+ */
+export const getDashboardStats = query({
+  args: { employerId: v.id("employers") },
+  handler: async (ctx, { employerId }) => {
+    // Verify employer ownership
+    await requireEmployerOwnership(ctx, employerId);
+
+    // Parallel database queries (server-side, efficient)
+    const [patients, appointments, reports] = await Promise.all([
+      ctx.db
+        .query("patients")
+        .withIndex("by_employer", (q) => q.eq("employerId", employerId))
+        .filter((q) => q.eq(q.field("deletedAt"), undefined))
+        .collect(),
+      ctx.db
+        .query("appointments")
+        .withIndex("by_employer", (q) => q.eq("employerId", employerId))
+        .collect(),
+      ctx.db
+        .query("reports")
+        .withIndex("by_employer", (q) => q.eq("employerId", employerId))
+        .collect(),
+    ]);
+
+    // Sort appointments by date for recent list
+    const sortedAppointments = appointments.sort(
+      (a, b) => (b._creationTime || 0) - (a._creationTime || 0)
+    );
+
+    // Get patient data for recent appointments
+    const recentAppointments = sortedAppointments.slice(0, 5);
+    const patientIds = [...new Set(recentAppointments.map((apt) => apt.patientId))];
+    const patientDocs = await Promise.all(
+      patientIds.map((id) => ctx.db.get(id))
+    );
+    const patientMap = new Map(
+      patientDocs.filter((p) => p !== null).map((p) => [p!._id, p])
+    );
+
+    return {
+      employeeCount: patients.length,
+      appointmentCount: appointments.length,
+      reportCount: reports.length,
+      pendingCount: appointments.filter((a) => a.status === "scheduled").length,
+      completedCount: appointments.filter((a) => a.status === "completed").length,
+      recentAppointments: recentAppointments.map((apt) => {
+        const patient = patientMap.get(apt.patientId);
+        return {
+          _id: apt._id,
+          patientId: apt.patientId,
+          scheduledDate: apt.scheduledDate,
+          scheduledTime: apt.scheduledTime,
+          status: apt.status,
+          patient: patient
+            ? { firstName: patient.firstName, lastName: patient.lastName }
+            : null,
+        };
+      }),
+    };
+  },
+});;
+
 // Admin: reject employer
 export const reject = mutation({
   args: {

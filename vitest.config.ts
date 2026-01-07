@@ -11,8 +11,23 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}", "tests/unit/**/*.test.{ts,tsx}", "convex/__tests__/**/*.test.ts"],
     coverage: {
       provider: "v8",
-      include: ["src/pages/doctor/**", "src/lib/workos-auth.tsx"],
+      include: [
+        "src/**/*.{ts,tsx}",
+      ],
+      exclude: [
+        "src/**/*.test.{ts,tsx}",
+        "src/**/__tests__/**",
+        "src/main.tsx",
+        "src/vite-env.d.ts",
+        "src/components/ui/**",  // shadcn UI components (external)
+      ],
       reporter: ["text", "json", "html"],
+      thresholds: {
+        lines: 60,
+        functions: 60,
+        branches: 50,
+        statements: 60,
+      },
     },
   },
   resolve: {

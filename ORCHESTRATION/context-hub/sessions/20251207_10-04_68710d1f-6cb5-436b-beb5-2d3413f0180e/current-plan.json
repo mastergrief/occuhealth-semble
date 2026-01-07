@@ -1,22 +1,22 @@
 {
-  "id": "9480fdf2-bca8-4d6b-a24a-f40ba574358c",
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "type": "plan",
   "metadata": {
-    "promptId": "d6088bc2-7aa9-4228-b4e2-0df95dd8baeb",
-    "sessionId": "20260106_15-28_9480fdf2-bca8-4d6b-a24a-f40ba574358c",
-    "timestamp": "2026-01-06T15:30:00.000Z",
+    "promptId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "sessionId": "20260107_12-05_28eacf8a-c561-4c16-a724-a25c7fe6a0f8",
+    "timestamp": "2026-01-07T12:15:00Z",
     "version": "1.0.0"
   },
-  "summary": "Admin Portal Gaps Implementation: 4-phase plan covering Security/GDPR fixes (VUL-001-007), Schema migration (deletedAt, indexes), CRUD implementation (edit/delete appointment types, rejection dialog, audit filters), and UX (dark mode, mobile menu). Total effort: 35.5h across 22 subtasks.",
+  "summary": "Complete GDPR compliance fixes, expand test coverage to employer/admin portals, modularize availableSlots backend, and add performance optimizations including aggregated queries and bundle splitting",
   "phases": [
     {
-      "id": "phase-1",
-      "name": "Security & GDPR Compliance",
-      "description": "Fix critical security vulnerabilities (VUL-001 to VUL-007). Adds audit logging to employer verify/reject, appointment type CRUD, fixes processedBy vulnerability, adds input validation.",
+      "id": "phase-1-gdpr-fixes",
+      "name": "Sprint 7: Critical GDPR Compliance Fixes",
+      "description": "Add missing audit logging to consent operations, CSP headers, and error handling",
       "subtasks": [
         {
-          "id": "task-1.1",
-          "description": "Fix VUL-004: Remove processedBy from args in gdpr.processErasure, use authenticated admin from requireAdmin() context instead. Add audit logging for erasure_processed action.",
+          "id": "task-7.1",
+          "description": "Add audit logging to createConsent mutation in convex/gdpr.ts. Must call internal.gdpr.logAction with action='consent_created', actorType='employer', resourceType='consent'. Reference existing logAction pattern in processErasure.",
           "agentType": "developer",
           "priority": "critical",
           "dependencies": [],
@@ -26,245 +26,520 @@
               "convex/gdpr.ts"
             ],
             "memories": [
-              "ADMIN_GAPS_SPRINT_02_SECURITY"
+              "14_DB_SCHEMA_DISCOVERY_SPRINTS_7_10",
+              "CODEBASE_ANALYSIS_SPRINT_03_SECURITY"
             ]
           },
           "acceptanceCriteria": [
-            "processedBy arg removed from mutation args",
-            "processedBy field populated from admin.email via requireAdmin()",
-            "internal.gdpr.logAction called with erasure_processed action",
-            "Typecheck passes"
+            "createConsent calls ctx.runMutation(internal.gdpr.logAction, {...})",
+            "Audit log includes consentType, granted, patientEmail in details",
+            "Typecheck passes (npm run typecheck)"
           ]
         },
         {
-          "id": "task-1.2",
-          "description": "Fix VUL-001: Add audit logging to employers.verify mutation. Call internal.gdpr.logAction with employer_verified action after patch.",
+          "id": "task-7.2",
+          "description": "Add audit logging to withdrawConsent mutation in convex/gdpr.ts. Must call internal.gdpr.logAction with action='consent_withdrawn', actorType='employer', resourceType='consent'.",
           "agentType": "developer",
-          "priority": "high",
+          "priority": "critical",
           "dependencies": [
-            "task-1.1"
-          ],
-          "estimatedTokens": 5000,
-          "context": {
-            "files": [
-              "convex/employers.ts"
-            ],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_02_SECURITY"
-            ]
-          },
-          "acceptanceCriteria": [
-            "internal.gdpr.logAction called after successful verify",
-            "Action logged as employer_verified with companyName in details",
-            "Typecheck passes"
-          ]
-        },
-        {
-          "id": "task-1.3",
-          "description": "Fix VUL-001 part 2: Add audit logging to employers.reject mutation. Add VUL-007 fix: Require rejection reason (min 10 chars).",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [
-            "task-1.2"
+            "task-7.1"
           ],
           "estimatedTokens": 6000,
           "context": {
             "files": [
-              "convex/employers.ts"
+              "convex/gdpr.ts"
             ],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_02_SECURITY"
-            ]
+            "memories": []
           },
           "acceptanceCriteria": [
-            "Validation throws ConvexError if reason < 10 chars",
-            "internal.gdpr.logAction called with employer_rejected action",
-            "Rejection reason included in audit details",
+            "withdrawConsent calls ctx.runMutation(internal.gdpr.logAction, {...})",
+            "Audit log includes consentId, patientId in details",
             "Typecheck passes"
           ]
         },
         {
-          "id": "task-1.4",
-          "description": "Fix VUL-002: Add audit logging to appointmentTypes.create and update mutations.",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [
-            "task-1.3"
-          ],
-          "estimatedTokens": 6000,
-          "context": {
-            "files": [
-              "convex/appointmentTypes.ts"
-            ],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_02_SECURITY"
-            ]
-          },
-          "acceptanceCriteria": [
-            "create logs appointment_type_created action",
-            "update logs appointment_type_updated action with changed fields",
-            "Both log resourceType: appointmentType",
-            "Typecheck passes"
-          ]
-        },
-        {
-          "id": "task-1.5",
-          "description": "Fix VUL-005/VUL-006: Add input validation to appointmentTypes.create - name length (1-100), description length, duration (15-480 min), price (0-99999).",
-          "agentType": "developer",
-          "priority": "medium",
-          "dependencies": [
-            "task-1.4"
-          ],
-          "estimatedTokens": 5000,
-          "context": {
-            "files": [
-              "convex/appointmentTypes.ts"
-            ],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_02_SECURITY"
-            ]
-          },
-          "acceptanceCriteria": [
-            "ConvexError thrown for empty/too-long name",
-            "ConvexError for duration outside 15-480 range",
-            "ConvexError for price outside 0-99999 range",
-            "Same validation applied to update mutation",
-            "Typecheck passes"
-          ]
-        }
-      ],
-      "parallelizable": false,
-      "gateCondition": "All 5 security tasks complete with passing typecheck. Run: npm run typecheck"
-    },
-    {
-      "id": "phase-2",
-      "name": "Database Schema Migration",
-      "description": "Add deletedAt field to appointmentTypes table for soft delete support. Add by_deleted index. Add by_appointment_type index to appointments for FK integrity checks.",
-      "subtasks": [
-        {
-          "id": "task-2.1",
-          "description": "Add deletedAt optional field to appointmentTypes table schema. Add by_deleted index.",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [],
-          "estimatedTokens": 4000,
-          "context": {
-            "files": [
-              "convex/schema.ts"
-            ],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_03_CRUD_IMPLEMENTATION"
-            ]
-          },
-          "acceptanceCriteria": [
-            "deletedAt: v.optional(v.number()) added to appointmentTypes",
-            "by_deleted index added",
-            "Schema compiles without error"
-          ]
-        },
-        {
-          "id": "task-2.2",
-          "description": "Add by_appointment_type index to appointments table for FK integrity check during delete.",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [
-            "task-2.1"
-          ],
-          "estimatedTokens": 3000,
-          "context": {
-            "files": [
-              "convex/schema.ts"
-            ],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_03_CRUD_IMPLEMENTATION"
-            ]
-          },
-          "acceptanceCriteria": [
-            "by_appointment_type index added to appointments table",
-            "Index on appointmentTypeId field",
-            "npx convex dev shows schema pushed successfully"
-          ]
-        },
-        {
-          "id": "task-2.3",
-          "description": "Push schema changes to Convex and verify migration completes.",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [
-            "task-2.2"
-          ],
-          "estimatedTokens": 2000,
-          "context": {
-            "files": [
-              "convex/schema.ts"
-            ]
-          },
-          "acceptanceCriteria": [
-            "npx convex dev completes without errors",
-            "Schema changes visible in Convex dashboard",
-            "Existing data unaffected"
-          ]
-        }
-      ],
-      "parallelizable": false,
-      "gateCondition": "Schema deployed successfully. Verify with: npx tsx CONVEX-CLI/SCRIPTS/convex-tables.ts --json"
-    },
-    {
-      "id": "phase-3",
-      "name": "CRUD Implementation",
-      "description": "Implement missing CRUD operations: appointment type remove mutation with soft/hard delete, listAll with includeDeleted param, custom rejection reason dialog, audit log filter UI.",
-      "subtasks": [
-        {
-          "id": "task-3.1",
-          "description": "Add appointmentTypes.remove mutation with soft/hard delete logic. Check FK integrity via by_appointment_type index - soft delete if in use, hard delete if safe.",
+          "id": "task-7.3",
+          "description": "Add Content-Security-Policy headers to HTTP routes in convex/http.ts. Add CSP middleware that sets default-src 'self', script-src 'self' 'unsafe-inline', style-src 'self' 'unsafe-inline', img-src 'self' data: https:, connect-src 'self' https://*.convex.cloud https://api.workos.com",
           "agentType": "developer",
           "priority": "high",
           "dependencies": [],
           "estimatedTokens": 10000,
           "context": {
             "files": [
-              "convex/appointmentTypes.ts"
+              "convex/http.ts"
             ],
             "memories": [
-              "ADMIN_GAPS_SPRINT_03_CRUD_IMPLEMENTATION"
+              "CODEBASE_ANALYSIS_SPRINT_03_SECURITY"
             ]
           },
           "acceptanceCriteria": [
-            "remove mutation exported with typeId arg",
-            "Checks appointments.by_appointment_type for usage",
-            "Soft delete (set deletedAt, isActive=false) if used",
-            "Hard delete (ctx.db.delete) if unused",
-            "Audit logs both soft and hard deletes",
-            "Returns { softDeleted: true, reason: string } or { deleted: true }"
-          ]
-        },
-        {
-          "id": "task-3.2",
-          "description": "Update appointmentTypes.listAll query to accept includeDeleted param. Filter out soft-deleted by default.",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [
-            "task-3.1"
-          ],
-          "estimatedTokens": 4000,
-          "context": {
-            "files": [
-              "convex/appointmentTypes.ts"
-            ],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_03_CRUD_IMPLEMENTATION"
-            ]
-          },
-          "acceptanceCriteria": [
-            "includeDeleted arg added as optional boolean",
-            "Default behavior filters where deletedAt === undefined",
-            "includeDeleted=true returns all records",
+            "CSP header added to corsHeaders constant or as separate securityHeaders",
+            "All existing HTTP routes continue to work",
             "Typecheck passes"
           ]
         },
         {
-          "id": "task-3.3",
-          "description": "Extend gdpr.getAuditLogs query with filter params: action, actorType, resourceType, startTime, endTime.",
+          "id": "task-7.4",
+          "description": "Add error toast notification to EmployeeForm.tsx when mutation fails. Currently only shows success path. Use existing toast pattern from codebase (likely sonner or shadcn toast).",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [
+              "src/components/employer/EmployeeForm.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "try/catch wraps mutation call",
+            "Error caught shows toast with error message",
+            "isSubmitting state properly reset on error",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-7.5",
+          "description": "Browser-CLI E2E verification of GDPR fixes. Test consent creation flow triggers audit log, verify CSP headers in network response, test error toast appears on simulated failure.",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": [
+            "task-7.1",
+            "task-7.2",
+            "task-7.3",
+            "task-7.4"
+          ],
+          "estimatedTokens": 15000,
+          "context": {
+            "files": [],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Navigate to employer portal, add employee, verify audit log entry via Convex CLI",
+            "Check network response headers include Content-Security-Policy",
+            "Screenshot evidence saved to BROWSER-CLI/screenshots/"
+          ]
+        }
+      ],
+      "parallelizable": false,
+      "gateCondition": "All GDPR fixes implemented and verified via Browser-CLI. Typecheck passes. No console errors."
+    },
+    {
+      "id": "phase-2-test-coverage",
+      "name": "Sprint 8: Test Coverage Expansion",
+      "description": "Create comprehensive unit tests for employer and admin portals, expand vitest coverage config",
+      "subtasks": [
+        {
+          "id": "task-8.1",
+          "description": "Create src/pages/employer/__tests__/Dashboard.test.tsx. Test EmployerDashboard component with mocked Convex queries. Verify stats cards render, recent activity section, empty states.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [
+              "src/pages/employer/Dashboard.tsx",
+              "src/pages/doctor/__tests__/Dashboard.test.tsx"
+            ],
+            "memories": [
+              "CODEBASE_ANALYSIS_SPRINT_04_TESTING"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Test file created at correct path",
+            "Tests mock useQuery from convex/react",
+            "At least 5 test cases covering loading, data, empty states",
+            "Tests pass: npm test -- Dashboard"
+          ]
+        },
+        {
+          "id": "task-8.2",
+          "description": "Create src/pages/employer/__tests__/Employees.test.tsx. Test employee list rendering, pagination, add employee button, search/filter if present.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [
+              "src/pages/employer/Employees.tsx",
+              "src/pages/doctor/__tests__/Appointments.test.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created at correct path",
+            "At least 5 test cases",
+            "Tests cover empty state, list rendering, interaction",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.3",
+          "description": "Create src/pages/employer/__tests__/Bookings.test.tsx. Test booking list, status filters, new booking button state (disabled when pending verification).",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [
+              "src/pages/employer/Bookings.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "Tests cover verified vs pending employer states",
+            "At least 5 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.4",
+          "description": "Create src/pages/employer/__tests__/Reports.test.tsx. Test reports list, empty state, report card rendering with fit-for-work status badges.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 10000,
+          "context": {
+            "files": [
+              "src/pages/employer/Reports.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "At least 4 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.5",
+          "description": "Create src/pages/employer/__tests__/Settings.test.tsx. Test settings form rendering, form validation, save button state.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [
+              "src/pages/employer/Settings.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "At least 3 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.6",
+          "description": "Create src/pages/admin/__tests__/Dashboard.test.tsx. Test admin dashboard stats cards (pending employers, erasure requests, audit activity).",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [
+              "src/pages/admin/Dashboard.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "Tests cover stats rendering, navigation cards",
+            "At least 4 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.7",
+          "description": "Create src/pages/admin/__tests__/EmployerVerification.test.tsx. Test pending employer list, verify/reject button actions, empty state.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [
+              "src/pages/admin/EmployerVerification.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "Tests cover verify/reject mutations",
+            "At least 5 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.8",
+          "description": "Create src/pages/admin/__tests__/GDPRDashboard.test.tsx. Test GDPR stats rendering, approaching deadline alerts, recent activity.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 10000,
+          "context": {
+            "files": [
+              "src/pages/admin/GDPRDashboard.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "At least 4 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.9",
+          "description": "Create src/pages/admin/__tests__/ErasureRequests.test.tsx. Test erasure request list, process erasure button, status badges.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 10000,
+          "context": {
+            "files": [
+              "src/pages/admin/ErasureRequests.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "At least 4 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.10",
+          "description": "Create src/pages/admin/__tests__/AuditLogs.test.tsx. Test audit log table, filtering, pagination.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [
+              "src/pages/admin/AuditLogs.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "At least 3 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.11",
+          "description": "Update vitest.config.ts to expand coverage to all portals. Add src/pages/employer/**, src/pages/admin/**, src/components/** to coverage.include. Add coverage thresholds: statements 60%, branches 50%, functions 60%, lines 60%.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-8.1",
+            "task-8.2",
+            "task-8.3",
+            "task-8.4",
+            "task-8.5",
+            "task-8.6",
+            "task-8.7",
+            "task-8.8",
+            "task-8.9",
+            "task-8.10"
+          ],
+          "estimatedTokens": 4000,
+          "context": {
+            "files": [
+              "vitest.config.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Coverage includes all portal pages",
+            "Thresholds configured",
+            "npm run test:coverage passes threshold"
+          ]
+        },
+        {
+          "id": "task-8.12",
+          "description": "Browser-CLI verification of test infrastructure. Run npm test, capture output, verify all new tests pass. Run coverage report and capture metrics.",
+          "agentType": "browser",
+          "priority": "medium",
+          "dependencies": [
+            "task-8.11"
+          ],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "All tests pass (npm test)",
+            "Coverage report generated",
+            "Screenshot of coverage summary"
+          ]
+        }
+      ],
+      "parallelizable": true,
+      "gateCondition": "All 10 new test files created. Tests pass. Coverage thresholds met (60%+ statements)."
+    },
+    {
+      "id": "phase-3-code-quality",
+      "name": "Sprint 9: Code Quality - Modularization",
+      "description": "Split availableSlots.ts (659 lines) into modular structure following facade pattern, add JSDoc to core backend files",
+      "subtasks": [
+        {
+          "id": "task-9.1",
+          "description": "Create convex/availableSlotsModules/types.ts. Extract interfaces ProposedSlot, SlotConflict and add type definitions for slot status, validation results.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [
+              "convex/availableSlots.ts",
+              "convex/calendarWorkoutsModules/types.ts"
+            ],
+            "memories": [
+              "04_ARCHITECTURE"
+            ]
+          },
+          "acceptanceCriteria": [
+            "File created with all interfaces",
+            "Exports ProposedSlot, SlotConflict",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-9.2",
+          "description": "Create convex/availableSlotsModules/queries.ts. Move getAvailable, getByDateRange, getByMonth, getTemplates query implementations.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-9.1"
+          ],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [
+              "convex/availableSlots.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "All 4 queries moved to module",
+            "Internal query exports for facade",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-9.3",
+          "description": "Create convex/availableSlotsModules/mutations.ts. Move createSlots, blockSlot, unblockSlot, deleteTemplateSlots mutation implementations.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-9.1"
+          ],
+          "estimatedTokens": 15000,
+          "context": {
+            "files": [
+              "convex/availableSlots.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "All 4 mutations moved to module",
+            "Internal mutation exports",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-9.4",
+          "description": "Create convex/availableSlotsModules/recurring.ts. Move previewRecurringSlots, createRecurringSlots implementations and helper functions for slot generation.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-9.1"
+          ],
+          "estimatedTokens": 15000,
+          "context": {
+            "files": [
+              "convex/availableSlots.ts"
+            ],
+            "memories": [
+              "RECURRING_SLOTS_IMPLEMENTATION_COMPLETE_2026-01-06"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Recurring slot logic isolated",
+            "Helper functions extracted",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-9.5",
+          "description": "Create convex/availableSlotsModules/index.ts. Re-export all module contents for clean imports.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [
+            "task-9.2",
+            "task-9.3",
+            "task-9.4"
+          ],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": [
+              "convex/calendarWorkoutsModules/index.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Barrel exports all modules",
+            "Clean import path: from './availableSlotsModules'"
+          ]
+        },
+        {
+          "id": "task-9.6",
+          "description": "Transform convex/availableSlots.ts to facade pattern. Replace implementations with re-exports from modules. Keep <100 lines. Maintain api.availableSlots.* compatibility.",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": [
+            "task-9.5"
+          ],
+          "estimatedTokens": 10000,
+          "context": {
+            "files": [
+              "convex/availableSlots.ts",
+              "convex/calendarWorkouts.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Facade file <100 lines",
+            "All public API unchanged (api.availableSlots.*)",
+            "Typecheck passes",
+            "No frontend changes required"
+          ]
+        },
+        {
+          "id": "task-9.7",
+          "description": "Add comprehensive JSDoc comments to convex/appointments.ts. Document all exported queries/mutations with @param, @returns, @throws, @example.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [
+              "convex/appointments.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "All exports have JSDoc",
+            "Parameters documented",
+            "Return types described"
+          ]
+        },
+        {
+          "id": "task-9.8",
+          "description": "Add comprehensive JSDoc comments to convex/gdpr.ts. Focus on GDPR compliance context, data retention notes, audit logging behavior.",
           "agentType": "developer",
           "priority": "medium",
           "dependencies": [],
@@ -273,345 +548,222 @@
             "files": [
               "convex/gdpr.ts"
             ],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_03_CRUD_IMPLEMENTATION"
-            ]
+            "memories": []
           },
           "acceptanceCriteria": [
-            "All 5 filter params added as optional args",
-            "Filters applied after initial query",
-            "Limit applied after filtering (max 1000)",
-            "Typecheck passes"
+            "All exports have JSDoc",
+            "GDPR context documented",
+            "Audit log behavior noted"
           ]
         },
         {
-          "id": "task-3.4",
-          "description": "Add Edit/Delete UI to AppointmentTypes.tsx. Edit button opens pre-populated dialog. Delete button shows AlertDialog confirmation. Wire to update and remove mutations.",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [
-            "task-3.1",
-            "task-3.2"
-          ],
-          "estimatedTokens": 15000,
-          "context": {
-            "files": [
-              "src/pages/admin/AppointmentTypes.tsx"
-            ],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_03_CRUD_IMPLEMENTATION"
-            ]
-          },
-          "acceptanceCriteria": [
-            "Edit button on each type card opens dialog in edit mode",
-            "Dialog title changes to Edit Appointment Type",
-            "Form pre-populated with existing values",
-            "Delete button shows AlertDialog confirmation",
-            "AlertDialog explains soft vs hard delete behavior",
-            "Both actions trigger correct mutations",
-            "UI updates in real-time after mutations"
-          ]
-        },
-        {
-          "id": "task-3.5",
-          "description": "Add custom rejection reason dialog to EmployerVerification.tsx. Reject button opens Dialog with Textarea (min 10 chars). Pass reason to reject mutation.",
+          "id": "task-9.9",
+          "description": "Add comprehensive JSDoc comments to convex/patients.ts. Document soft-delete behavior, GDPR redaction, employer ownership.",
           "agentType": "developer",
           "priority": "medium",
           "dependencies": [],
-          "estimatedTokens": 10000,
+          "estimatedTokens": 6000,
           "context": {
             "files": [
-              "src/pages/admin/EmployerVerification.tsx"
+              "convex/patients.ts"
             ],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_03_CRUD_IMPLEMENTATION"
-            ]
+            "memories": []
           },
           "acceptanceCriteria": [
-            "Reject button opens Dialog instead of direct mutation",
-            "Dialog shows employer company name",
-            "Textarea for rejection reason (min 10 chars validation)",
-            "Character count displayed",
-            "Submit disabled until 10+ chars",
-            "Custom reason passed to mutation",
-            "Dialog closes on success"
+            "All exports have JSDoc",
+            "Soft-delete documented",
+            "Ownership checks noted"
           ]
         },
         {
-          "id": "task-3.6",
-          "description": "Add filter UI to AuditLogs.tsx. Implement 5 filter dropdowns (action, actorType, resourceType, startDate, endDate). Wire to getAuditLogs query params.",
-          "agentType": "developer",
-          "priority": "medium",
+          "id": "task-9.10",
+          "description": "Browser-CLI verification of modularization. Test doctor schedule page still works (createSlots, recurring slots, blocking). Verify no UI regressions.",
+          "agentType": "browser",
+          "priority": "high",
           "dependencies": [
-            "task-3.3"
+            "task-9.6"
           ],
           "estimatedTokens": 12000,
           "context": {
-            "files": [
-              "src/pages/admin/AuditLogs.tsx"
-            ],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_04_UX_IMPLEMENTATION"
-            ]
-          },
-          "acceptanceCriteria": [
-            "Filter card with 5 inputs (3 Selects, 2 date inputs)",
-            "Action type dropdown with 12 predefined actions",
-            "Actor type dropdown (employer, doctor, admin, system)",
-            "Resource type dropdown (patient, appointment, report, consent, employer)",
-            "Date range inputs",
-            "Clear button resets all filters",
-            "Filters passed to useQuery args",
-            "Results count shown"
-          ]
-        }
-      ],
-      "parallelizable": true,
-      "gateCondition": "All backend mutations tested via Convex CLI. Frontend compiles. Run: npm run typecheck && npm run build"
-    },
-    {
-      "id": "phase-4",
-      "name": "UX Implementation",
-      "description": "Implement dark mode toggle (useTheme hook + ThemeToggle component) and mobile hamburger menu (Sheet-based slide-out nav). Both integrate into AdminLayout header.",
-      "subtasks": [
-        {
-          "id": "task-4.1",
-          "description": "Create useTheme hook in src/hooks/useTheme.ts. Support light/dark/system modes. Persist to localStorage. Listen for system preference changes.",
-          "agentType": "developer",
-          "priority": "medium",
-          "dependencies": [],
-          "estimatedTokens": 5000,
-          "context": {
             "files": [],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_04_UX_IMPLEMENTATION"
-            ]
+            "memories": []
           },
           "acceptanceCriteria": [
-            "Export useTheme() hook returning { theme, setTheme }",
-            "Theme type: light or dark or system",
-            "Toggles .dark class on document.documentElement",
-            "Persists preference to localStorage",
-            "Listens for prefers-color-scheme media query changes",
-            "Works with existing CSS variables in index.css"
-          ]
-        },
-        {
-          "id": "task-4.2",
-          "description": "Create ThemeToggle component in src/components/ThemeToggle.tsx. Dropdown menu with Light/Dark/System options. Use Sun/Moon/Monitor icons.",
-          "agentType": "developer",
-          "priority": "medium",
-          "dependencies": [
-            "task-4.1"
-          ],
-          "estimatedTokens": 6000,
-          "context": {
-            "files": [],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_04_UX_IMPLEMENTATION"
-            ]
-          },
-          "acceptanceCriteria": [
-            "DropdownMenu with ghost variant button trigger",
-            "Sun icon visible in light mode, Moon in dark (animated transition)",
-            "Three menu items: Light, Dark, System",
-            "Each item has icon prefix",
-            "Calls setTheme on selection"
-          ]
-        },
-        {
-          "id": "task-4.3",
-          "description": "Add mobile hamburger menu to AdminLayout.tsx using Sheet component. Hamburger visible on mobile (<768px), desktop nav hidden. 44px touch targets.",
-          "agentType": "developer",
-          "priority": "medium",
-          "dependencies": [],
-          "estimatedTokens": 10000,
-          "context": {
-            "files": [
-              "src/pages/AdminLayout.tsx"
-            ],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_04_UX_IMPLEMENTATION"
-            ]
-          },
-          "acceptanceCriteria": [
-            "Desktop nav hidden on mobile (md:flex hidden)",
-            "Hamburger icon visible on mobile (md:hidden)",
-            "Hamburger button 44x44px (h-11 w-11)",
-            "Sheet slides from right with nav links",
-            "Nav links have 44px touch targets (py-3)",
-            "Links close Sheet on click",
-            "Sign Out button in Sheet"
-          ]
-        },
-        {
-          "id": "task-4.4",
-          "description": "Integrate ThemeToggle into AdminLayout header. Add to both desktop nav and mobile header (before hamburger).",
-          "agentType": "developer",
-          "priority": "low",
-          "dependencies": [
-            "task-4.2",
-            "task-4.3"
-          ],
-          "estimatedTokens": 4000,
-          "context": {
-            "files": [
-              "src/pages/AdminLayout.tsx"
-            ]
-          },
-          "acceptanceCriteria": [
-            "ThemeToggle imported and rendered",
-            "Positioned before Sign Out in desktop nav",
-            "Positioned before hamburger in mobile header",
-            "Theme persists across page navigations",
-            "All admin pages respect theme"
-          ]
-        }
-      ],
-      "parallelizable": true,
-      "gateCondition": "Visual verification via Browser-CLI. Dark mode toggles correctly. Mobile menu opens and navigates."
-    },
-    {
-      "id": "phase-5",
-      "name": "Browser Testing & Validation",
-      "description": "Execute Browser-CLI manual tests for all new features. Collect evidence. Update NAV-MAP.md with new selectors.",
-      "subtasks": [
-        {
-          "id": "task-5.1",
-          "description": "Test appointment types Edit/Delete flow via Browser-CLI. Verify soft delete for types with appointments, hard delete for unused types.",
-          "agentType": "browser",
-          "priority": "high",
-          "dependencies": [],
-          "estimatedTokens": 8000,
-          "context": {
-            "files": [
-              ".claude/rules/BROWSER-CLI/NAV-MAP.md"
-            ],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_05_MANUAL_TESTING"
-            ]
-          },
-          "acceptanceCriteria": [
-            "Edit button opens pre-populated dialog",
-            "Changes persist after update",
-            "Delete shows confirmation dialog",
-            "Soft delete message shown for types in use",
-            "Hard delete removes type from list",
-            "Audit logs created for both"
-          ]
-        },
-        {
-          "id": "task-5.2",
-          "description": "Test custom rejection reason dialog via Browser-CLI. Verify min length validation, reason appears in mutation payload.",
-          "agentType": "browser",
-          "priority": "medium",
-          "dependencies": [],
-          "estimatedTokens": 6000,
-          "context": {
-            "files": [],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_05_MANUAL_TESTING"
-            ]
-          },
-          "acceptanceCriteria": [
-            "Reject button opens dialog",
-            "Submit disabled until 10+ chars",
-            "Character count updates",
-            "Mutation receives custom reason",
-            "Dialog closes on success"
-          ]
-        },
-        {
-          "id": "task-5.3",
-          "description": "Test audit log filters via Browser-CLI. Apply each filter type, verify results update correctly.",
-          "agentType": "browser",
-          "priority": "medium",
-          "dependencies": [],
-          "estimatedTokens": 8000,
-          "context": {
-            "files": [],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_05_MANUAL_TESTING"
-            ]
-          },
-          "acceptanceCriteria": [
-            "Action filter reduces results to matching action",
-            "Actor type filter works",
-            "Resource type filter works",
-            "Date range filter works",
-            "Clear button resets all",
-            "Results count updates"
-          ]
-        },
-        {
-          "id": "task-5.4",
-          "description": "Test dark mode toggle via Browser-CLI. Verify theme persists, all pages render correctly in dark mode.",
-          "agentType": "browser",
-          "priority": "low",
-          "dependencies": [],
-          "estimatedTokens": 6000,
-          "context": {
-            "files": [],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_05_MANUAL_TESTING"
-            ]
-          },
-          "acceptanceCriteria": [
-            "Theme toggle visible in header",
-            "Light/Dark/System options work",
-            "Theme persists after navigation",
-            "Theme persists after page refresh",
-            "All cards have correct dark backgrounds",
-            "Text remains readable"
-          ]
-        },
-        {
-          "id": "task-5.5",
-          "description": "Test mobile hamburger menu via Browser-CLI. Resize to mobile, verify menu opens/closes, navigation works.",
-          "agentType": "browser",
-          "priority": "low",
-          "dependencies": [],
-          "estimatedTokens": 6000,
-          "context": {
-            "files": [],
-            "memories": [
-              "ADMIN_GAPS_SPRINT_05_MANUAL_TESTING"
-            ]
-          },
-          "acceptanceCriteria": [
-            "Hamburger visible on mobile (375px width)",
-            "Desktop nav hidden on mobile",
-            "Sheet opens from right",
-            "All nav links present",
-            "Navigation closes sheet",
-            "Touch targets are 44px+"
+            "Doctor can create individual slots",
+            "Doctor can create recurring slots",
+            "Doctor can block/unblock slots",
+            "No console errors",
+            "Screenshot evidence"
           ]
         }
       ],
       "parallelizable": false,
-      "gateCondition": "All browser tests pass. Screenshots collected as evidence."
-    }
-  ],
-  "totalEstimatedTokens": 157000,
-  "risks": [
-    {
-      "description": "Schema migration may require Convex redeploy",
-      "mitigation": "Run npx convex dev after schema changes",
-      "severity": "low"
+      "gateCondition": "availableSlots.ts refactored to <100 lines facade. All slot operations work via Browser-CLI test. JSDoc added to 3 core files."
     },
     {
-      "description": "Soft delete logic complexity for FK integrity",
-      "mitigation": "Query by_appointment_type index to check usage before delete",
+      "id": "phase-4-performance",
+      "name": "Sprint 10: Performance Optimizations",
+      "description": "Add aggregated dashboard query, data retention scheduler, and Vite bundle splitting",
+      "subtasks": [
+        {
+          "id": "task-10.1",
+          "description": "Create getDashboardStats query in convex/employers.ts (or new convex/dashboard.ts). Single query that returns: employeeCount, upcomingAppointments, recentReports, pendingActions. Replaces 4 separate queries on employer dashboard.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [
+              "convex/employers.ts",
+              "src/pages/employer/Dashboard.tsx"
+            ],
+            "memories": [
+              "14_DB_SCHEMA_DISCOVERY_SPRINTS_7_10"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Single aggregated query created",
+            "Returns all dashboard stats in one response",
+            "Indexed queries used for performance",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-10.2",
+          "description": "Update src/pages/employer/Dashboard.tsx to use aggregated getDashboardStats query. Replace multiple useQuery calls with single query. Update component to handle new data shape.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-10.1"
+          ],
+          "estimatedTokens": 10000,
+          "context": {
+            "files": [
+              "src/pages/employer/Dashboard.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Single useQuery call",
+            "Dashboard renders same data",
+            "Reduced network requests (verify via network tab)",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-10.3",
+          "description": "Create convex/crons/dataRetention.ts. Implement scheduled function to: 1) Delete audit logs > 90 days, 2) Archive completed erasure requests > 30 days, 3) Clean expired OAuth states (already handled but verify).",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 15000,
+          "context": {
+            "files": [
+              "convex/crons.ts"
+            ],
+            "memories": [
+              "CODEBASE_ANALYSIS_SPRINT_03_SECURITY"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Scheduled function created",
+            "Batch deletion with limits (100 per run)",
+            "Logging for audit",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-10.4",
+          "description": "Register data retention cron job in convex/crons.ts. Schedule weekly run (Sunday 2am UTC). Import and configure the retention function.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [
+            "task-10.3"
+          ],
+          "estimatedTokens": 4000,
+          "context": {
+            "files": [
+              "convex/crons.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Cron registered in crons.ts",
+            "Weekly schedule configured",
+            "npx convex deploy succeeds"
+          ]
+        },
+        {
+          "id": "task-10.5",
+          "description": "Add manualChunks configuration to vite.config.ts for bundle splitting. Create chunks for: vendor (react, react-dom), ui (shadcn components), convex (convex client), workos (auth).",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [
+              "vite.config.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "manualChunks configured in build.rollupOptions",
+            "npm run build succeeds",
+            "Bundle analysis shows separate chunks",
+            "Initial load reduced (verify with npm run build)"
+          ]
+        },
+        {
+          "id": "task-10.6",
+          "description": "Browser-CLI performance verification. Navigate to employer dashboard, measure load time, verify single network request for dashboard data, check bundle sizes in network tab.",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": [
+            "task-10.2",
+            "task-10.5"
+          ],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Dashboard loads with single aggregated query",
+            "LCP < 2.5s measured via capturePerformanceMetrics",
+            "Bundle chunks visible in network tab",
+            "Screenshot evidence with metrics"
+          ]
+        }
+      ],
+      "parallelizable": false,
+      "gateCondition": "Aggregated dashboard query working. Data retention cron registered. Bundle splitting configured. Performance verified via Browser-CLI."
+    }
+  ],
+  "totalEstimatedTokens": 310000,
+  "risks": [
+    {
+      "description": "Facade refactoring breaks API paths",
+      "mitigation": "Verify api.availableSlots.* paths unchanged via typecheck before testing",
+      "severity": "high"
+    },
+    {
+      "description": "Test mocking complexity for Convex queries",
+      "mitigation": "Reference existing doctor/__tests__/ patterns which already solve mocking",
       "severity": "medium"
     },
     {
-      "description": "UI components may need Radix primitives not yet installed",
-      "mitigation": "Install @radix-ui/react-alert-dialog, @radix-ui/react-select, @radix-ui/react-dropdown-menu",
+      "description": "CSP headers break WorkOS OAuth flow",
+      "mitigation": "Include https://api.workos.com and https://authkit.workos.com in connect-src",
+      "severity": "medium"
+    },
+    {
+      "description": "Data retention cron deletes needed audit logs",
+      "mitigation": "90-day retention exceeds GDPR requirements, batch limits prevent mass deletion",
       "severity": "low"
     },
     {
-      "description": "Mobile responsiveness may need iterative testing",
-      "mitigation": "Use Browser-CLI resize command to test at 375px width",
+      "description": "Bundle splitting increases total download size",
+      "mitigation": "Measure before/after bundle sizes, revert if total increases >10%",
       "severity": "low"
     }
   ]

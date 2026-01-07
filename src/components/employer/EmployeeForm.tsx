@@ -12,6 +12,9 @@ import {
 } from "@/components/ui/dialog";
 import { Id } from "../../../convex/_generated/dataModel";
 
+import { toast } from "sonner";
+import { ConvexError } from "convex/values";
+
 interface EmployeeFormProps {
   employerId: Id<"employers">;
   onClose: () => void;
@@ -62,7 +65,11 @@ export function EmployeeForm({ employerId, onClose }: EmployeeFormProps) {
 
       onClose();
     } catch (error) {
-      console.error("Failed to add employee:", error);
+      toast.error("Failed to add employee", {
+        description: error instanceof ConvexError
+          ? (error.data as string)
+          : "An unexpected error occurred. Please try again.",
+      });
     } finally {
       setIsSubmitting(false);
     }

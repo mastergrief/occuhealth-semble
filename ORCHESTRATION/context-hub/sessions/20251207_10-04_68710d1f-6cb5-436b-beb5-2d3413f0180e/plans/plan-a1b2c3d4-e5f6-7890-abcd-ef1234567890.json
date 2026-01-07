@@ -2,784 +2,769 @@
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "type": "plan",
   "metadata": {
-    "promptId": "00000000-0000-0000-0000-000000000001",
-    "sessionId": "20260103_16-24_62970f3d-79a2-49c5-afa2-b9c65b32ae15",
-    "timestamp": "2026-01-03T16:24:00.000Z",
+    "promptId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "sessionId": "20260107_12-05_28eacf8a-c561-4c16-a724-a25c7fe6a0f8",
+    "timestamp": "2026-01-07T12:15:00Z",
     "version": "1.0.0"
   },
-  "summary": "WorkOS Auth Migration - Replace Convex Auth with WorkOS AuthKit across 6 sprints: Security hardening (CSRF, token handling), landing page migration, context unification, Playwright E2E testing, and cleanup of deprecated code. Total ~473 LOC removed.",
+  "summary": "Complete GDPR compliance fixes, expand test coverage to employer/admin portals, modularize availableSlots backend, and add performance optimizations including aggregated queries and bundle splitting",
   "phases": [
     {
-      "id": "phase-1-parallel",
-      "name": "Foundation (Parallel: Sprint 02 + Sprint 03)",
-      "description": "Security hardening and landing page migration can execute in parallel as they have no dependencies on each other",
+      "id": "phase-1-gdpr-fixes",
+      "name": "Sprint 7: Critical GDPR Compliance Fixes",
+      "description": "Add missing audit logging to consent operations, CSP headers, and error handling",
       "subtasks": [
         {
-          "id": "task-2.1",
-          "description": "Add oauthStates table to convex/schema.ts with state string field, expiresAt number field, and by_state index",
+          "id": "task-7.1",
+          "description": "Add audit logging to createConsent mutation in convex/gdpr.ts. Must call internal.gdpr.logAction with action='consent_created', actorType='employer', resourceType='consent'. Reference existing logAction pattern in processErasure.",
           "agentType": "developer",
           "priority": "critical",
           "dependencies": [],
-          "estimatedTokens": 2000,
+          "estimatedTokens": 8000,
           "context": {
             "files": [
-              "convex/schema.ts"
+              "convex/gdpr.ts"
             ],
             "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY",
-              "DB_SCHEMA_CONTEXT_FOR_WORKOS_MIGRATION"
-            ],
-            "prompt": "Add oauthStates table to schema: defineTable({ state: v.string(), expiresAt: v.number() }).index('by_state', ['state'])"
+              "14_DB_SCHEMA_DISCOVERY_SPRINTS_7_10",
+              "CODEBASE_ANALYSIS_SPRINT_03_SECURITY"
+            ]
           },
           "acceptanceCriteria": [
-            "oauthStates table defined in schema.ts",
-            "by_state index created for state field",
-            "npm run typecheck passes"
+            "createConsent calls ctx.runMutation(internal.gdpr.logAction, {...})",
+            "Audit log includes consentType, granted, patientEmail in details",
+            "Typecheck passes (npm run typecheck)"
           ]
         },
         {
-          "id": "task-2.2",
-          "description": "Create convex/oauthState.ts with internal mutations: create (state, expiresAt), validate (query by state, check expiry), delete (remove used state)",
+          "id": "task-7.2",
+          "description": "Add audit logging to withdrawConsent mutation in convex/gdpr.ts. Must call internal.gdpr.logAction with action='consent_withdrawn', actorType='employer', resourceType='consent'.",
           "agentType": "developer",
           "priority": "critical",
           "dependencies": [
-            "task-2.1"
+            "task-7.1"
           ],
-          "estimatedTokens": 3000,
+          "estimatedTokens": 6000,
           "context": {
             "files": [
-              "convex/oauthState.ts"
+              "convex/gdpr.ts"
             ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
-            ],
-            "prompt": "Create oauthState.ts with: internalMutation create(state, expiresAt), internalQuery validate(state) returns null if expired, internalMutation delete_(state)"
+            "memories": []
           },
           "acceptanceCriteria": [
-            "convex/oauthState.ts created with 3 internal functions",
-            "Proper Convex types and validators used",
-            "npm run typecheck passes"
+            "withdrawConsent calls ctx.runMutation(internal.gdpr.logAction, {...})",
+            "Audit log includes consentId, patientId in details",
+            "Typecheck passes"
           ]
         },
         {
-          "id": "task-2.3",
-          "description": "Fix /auth/login route in convex/http.ts - add state parameter generation using crypto.randomUUID(), store in oauthStates table with 5-minute TTL",
+          "id": "task-7.3",
+          "description": "Add Content-Security-Policy headers to HTTP routes in convex/http.ts. Add CSP middleware that sets default-src 'self', script-src 'self' 'unsafe-inline', style-src 'self' 'unsafe-inline', img-src 'self' data: https:, connect-src 'self' https://*.convex.cloud https://api.workos.com",
           "agentType": "developer",
-          "priority": "critical",
-          "dependencies": [
-            "task-2.2"
-          ],
-          "estimatedTokens": 3500,
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 10000,
           "context": {
             "files": [
               "convex/http.ts"
             ],
             "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
-            ],
-            "prompt": "Update /auth/login handler: generate state = crypto.randomUUID(), call ctx.runMutation(internal.oauthState.create, { state, expiresAt: Date.now() + 5*60*1000 }), add state to getAuthorizationUrl params"
+              "CODEBASE_ANALYSIS_SPRINT_03_SECURITY"
+            ]
           },
           "acceptanceCriteria": [
-            "State parameter generated in /auth/login",
-            "State stored in oauthStates table",
-            "State passed to WorkOS authorization URL",
-            "npm run typecheck passes"
+            "CSP header added to corsHeaders constant or as separate securityHeaders",
+            "All existing HTTP routes continue to work",
+            "Typecheck passes"
           ]
         },
         {
-          "id": "task-2.4",
-          "description": "Fix /auth/callback route - validate state parameter, delete used state, replace URL redirect with POST form auto-submit for tokens (SEC-001 + SEC-002)",
-          "agentType": "developer",
-          "priority": "critical",
-          "dependencies": [
-            "task-2.3"
-          ],
-          "estimatedTokens": 4500,
-          "context": {
-            "files": [
-              "convex/http.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
-            ],
-            "prompt": "In /auth/callback: 1) Extract state from URL params, 2) Validate via ctx.runQuery(internal.oauthState.validate), 3) Return error if invalid, 4) Delete used state, 5) Replace Response.redirect with HTML form POST auto-submit"
-          },
-          "acceptanceCriteria": [
-            "State parameter validated before token exchange",
-            "Invalid/expired state returns error redirect",
-            "Used state deleted from database",
-            "Tokens sent via POST form instead of URL params",
-            "npm run typecheck passes"
-          ]
-        },
-        {
-          "id": "task-2.5",
-          "description": "Add token expiration validation to auth contexts (admin-auth.tsx, employer-auth.tsx, doctor-auth.tsx) - check JWT exp claim on load, clear if expired",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [],
-          "estimatedTokens": 3000,
-          "context": {
-            "files": [
-              "src/lib/admin-auth.tsx",
-              "src/lib/employer-auth.tsx",
-              "src/lib/doctor-auth.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
-            ],
-            "prompt": "Add isTokenExpired(token) function that decodes JWT, checks exp * 1000 < Date.now(). In useEffect that loads localStorage, check expiration and clear if expired."
-          },
-          "acceptanceCriteria": [
-            "isTokenExpired helper function added",
-            "All 3 auth contexts check token expiration on load",
-            "Expired tokens cleared from localStorage",
-            "npm run typecheck passes"
-          ]
-        },
-        {
-          "id": "task-2.6",
-          "description": "Update AdminAuthCallback.tsx to handle POST form submission instead of URL params - extract tokens from form data or dedicated endpoint",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [
-            "task-2.4"
-          ],
-          "estimatedTokens": 2500,
-          "context": {
-            "files": [
-              "src/components/auth/AdminAuthCallback.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_02_SECURITY"
-            ],
-            "prompt": "Update callback component to receive tokens via POST. Consider using a React Router action or parsing form submission data."
-          },
-          "acceptanceCriteria": [
-            "Callback handles POST form submission",
-            "Tokens extracted correctly",
-            "Auth state set after successful callback",
-            "npm run typecheck passes"
-          ]
-        },
-        {
-          "id": "task-3.1",
-          "description": "Replace AuthModal in NavigationBar.tsx with WorkOS direct links - desktop login button (lines 43-50) and mobile login button (lines 73-80)",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [],
-          "estimatedTokens": 2500,
-          "context": {
-            "files": [
-              "src/components/layout/NavigationBar.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"
-            ],
-            "prompt": "Replace AuthModal with Button asChild wrapping <a href> to /auth/login. Use import.meta.env.VITE_CONVEX_URL.replace('.cloud', '.site')/auth/login pattern. Remove AuthModal import."
-          },
-          "acceptanceCriteria": [
-            "Desktop login button links to /auth/login",
-            "Mobile login button links to /auth/login",
-            "AuthModal import removed",
-            "No dialog/modal on login click",
-            "npm run typecheck passes"
-          ]
-        },
-        {
-          "id": "task-3.2",
-          "description": "Update HeroSection.tsx CTA button - replace onDemoClick handler with direct WorkOS login link",
+          "id": "task-7.4",
+          "description": "Add error toast notification to EmployeeForm.tsx when mutation fails. Currently only shows success path. Use existing toast pattern from codebase (likely sonner or shadcn toast).",
           "agentType": "developer",
           "priority": "medium",
           "dependencies": [],
-          "estimatedTokens": 1500,
+          "estimatedTokens": 6000,
           "context": {
             "files": [
-              "src/components/landing/HeroSection.tsx"
+              "src/components/employer/EmployeeForm.tsx"
             ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"
-            ],
-            "prompt": "Change Get Started button to use asChild with <a href> to /auth/login. Remove onDemoClick prop if unused."
+            "memories": []
           },
           "acceptanceCriteria": [
-            "CTA button links directly to WorkOS login",
-            "Unused props removed",
-            "npm run typecheck passes"
+            "try/catch wraps mutation call",
+            "Error caught shows toast with error message",
+            "isSubmitting state properly reset on error",
+            "Typecheck passes"
           ]
         },
         {
-          "id": "task-3.3",
-          "description": "Remove floating Provider Login button from App.tsx (lines 234-245) - login now in nav bar",
-          "agentType": "developer",
-          "priority": "low",
-          "dependencies": [],
-          "estimatedTokens": 1000,
-          "context": {
-            "files": [
-              "src/App.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"
-            ],
-            "prompt": "Delete the fixed bottom-6 right-6 Provider Login button block. Login is now available in NavigationBar."
-          },
-          "acceptanceCriteria": [
-            "Floating button removed from App.tsx",
-            "No duplicate login entry points",
-            "npm run typecheck passes"
-          ]
-        },
-        {
-          "id": "task-3.4",
-          "description": "Update src/components/auth/index.ts exports - prepare for future removal of SignInForm and AuthModal",
-          "agentType": "developer",
-          "priority": "low",
-          "dependencies": [
-            "task-3.1"
-          ],
-          "estimatedTokens": 500,
-          "context": {
-            "files": [
-              "src/components/auth/index.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_03_LANDING"
-            ],
-            "prompt": "Comment out or mark deprecated: SignInForm, AuthModal exports. Keep SignOutButton and AdminAuthCallback."
-          },
-          "acceptanceCriteria": [
-            "Exports updated to reflect deprecation",
-            "No import errors in codebase",
-            "npm run typecheck passes"
-          ]
-        }
-      ],
-      "parallelizable": true,
-      "gateCondition": "All tasks complete, npm run typecheck passes, security fixes verifiable via manual test"
-    },
-    {
-      "id": "phase-2-context",
-      "name": "Context Unification (Sprint 04)",
-      "description": "Create unified WorkOSAuthProvider to replace 3 separate auth contexts. Optional but recommended for maintainability.",
-      "subtasks": [
-        {
-          "id": "task-4.1",
-          "description": "Create src/lib/workos-auth.tsx with unified WorkOSAuthProvider - single context handling all 3 roles (admin, employer, doctor)",
-          "agentType": "developer",
-          "priority": "medium",
-          "dependencies": [],
-          "estimatedTokens": 5000,
-          "context": {
-            "files": [
-              "src/lib/workos-auth.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"
-            ],
-            "prompt": "Create WorkOSAuthProvider with: UserRole type, AuthTokens interface, storage keys map, isTokenExpired check, multi-tab sync, memoized context value. Export useWorkOSAuth hook and backward-compatible useAdminAuth, useEmployerAuth, useDoctorAuth hooks."
-          },
-          "acceptanceCriteria": [
-            "WorkOSAuthProvider created with generic role handling",
-            "Token expiration validation included",
-            "Multi-tab logout sync implemented",
-            "Backward-compatible hooks exported",
-            "npm run typecheck passes"
-          ]
-        },
-        {
-          "id": "task-4.2",
-          "description": "Update main.tsx provider hierarchy - replace AdminAuthProvider with WorkOSAuthProvider",
-          "agentType": "developer",
-          "priority": "medium",
-          "dependencies": [
-            "task-4.1"
-          ],
-          "estimatedTokens": 1500,
-          "context": {
-            "files": [
-              "src/main.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"
-            ],
-            "prompt": "Replace AdminAuthProvider import with WorkOSAuthProvider. Update JSX to use single WorkOSAuthProvider wrapping App."
-          },
-          "acceptanceCriteria": [
-            "WorkOSAuthProvider wraps entire app",
-            "Old provider imports removed",
-            "npm run typecheck passes"
-          ]
-        },
-        {
-          "id": "task-4.3",
-          "description": "Update App.tsx routes - remove EmployerAuthProvider and DoctorAuthProvider wrappers from route elements",
-          "agentType": "developer",
-          "priority": "medium",
-          "dependencies": [
-            "task-4.1"
-          ],
-          "estimatedTokens": 2000,
-          "context": {
-            "files": [
-              "src/App.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"
-            ],
-            "prompt": "Remove EmployerAuthProvider and DoctorAuthProvider from route element wrappers. Routes now use unified provider from main.tsx."
-          },
-          "acceptanceCriteria": [
-            "No route-level auth provider wrappers",
-            "Provider imports removed",
-            "npm run typecheck passes"
-          ]
-        },
-        {
-          "id": "task-4.4",
-          "description": "Update all hook imports across components - change from individual auth files to workos-auth.tsx",
-          "agentType": "developer",
-          "priority": "medium",
-          "dependencies": [
-            "task-4.1"
-          ],
-          "estimatedTokens": 3000,
-          "context": {
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_04_CONTEXT"
-            ],
-            "prompt": "Find all imports of useAdminAuth, useEmployerAuth, useDoctorAuth and update source from @/lib/admin-auth, employer-auth, doctor-auth to @/lib/workos-auth."
-          },
-          "acceptanceCriteria": [
-            "All auth hook imports updated",
-            "No remaining imports from old auth files",
-            "npm run typecheck passes"
-          ]
-        }
-      ],
-      "parallelizable": false,
-      "gateCondition": "All context tasks complete, npm run typecheck passes, login/logout works for all 3 roles"
-    },
-    {
-      "id": "phase-3-e2e",
-      "name": "Playwright E2E Testing (Sprint 05)",
-      "description": "Create comprehensive E2E tests for WorkOS authentication flows before cleanup phase",
-      "subtasks": [
-        {
-          "id": "task-5.1",
-          "description": "Setup Playwright configuration - create playwright.config.ts with projects for chromium, firefox, webkit and webServer config",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [],
-          "estimatedTokens": 2000,
-          "context": {
-            "files": [
-              "playwright.config.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
-            ],
-            "prompt": "Create playwright.config.ts with baseURL localhost:5175, 30s timeout, html reporter, 3 browser projects, webServer running npm run dev."
-          },
-          "acceptanceCriteria": [
-            "playwright.config.ts created",
-            "All 3 browser projects configured",
-            "webServer config points to dev server"
-          ]
-        },
-        {
-          "id": "task-5.2",
-          "description": "Create tests/e2e/auth/login.spec.ts - test login button redirects, hero CTA, mobile nav, no modal appears",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [
-            "task-5.1"
-          ],
-          "estimatedTokens": 4000,
-          "context": {
-            "files": [
-              "tests/e2e/auth/login.spec.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
-            ],
-            "prompt": "Create login.spec.ts with tests: desktop login redirects to WorkOS, hero CTA redirects, mobile nav login works, no AuthModal appears on click."
-          },
-          "acceptanceCriteria": [
-            "Login flow tests created",
-            "Tests verify redirect to WorkOS",
-            "Tests verify no modal opens"
-          ]
-        },
-        {
-          "id": "task-5.3",
-          "description": "Create tests/e2e/auth/role-routing.spec.ts - test role-based routing for admin, employer, doctor, and unauthenticated users",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [
-            "task-5.1"
-          ],
-          "estimatedTokens": 4000,
-          "context": {
-            "files": [
-              "tests/e2e/auth/role-routing.spec.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
-            ],
-            "prompt": "Create role-routing.spec.ts with tests: admin token routes to /admin, employer token routes to /employer, doctor token routes to /doctor, unauthenticated redirected from protected routes, expired token cleared."
-          },
-          "acceptanceCriteria": [
-            "Role routing tests for all 3 roles",
-            "Unauthenticated access test",
-            "Token expiration test"
-          ]
-        },
-        {
-          "id": "task-5.4",
-          "description": "Create tests/e2e/auth/logout.spec.ts - test logout clears storage, redirects, and multi-tab sync",
-          "agentType": "developer",
-          "priority": "medium",
-          "dependencies": [
-            "task-5.1"
-          ],
-          "estimatedTokens": 3000,
-          "context": {
-            "files": [
-              "tests/e2e/auth/logout.spec.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
-            ],
-            "prompt": "Create logout.spec.ts with tests: admin logout clears storage and redirects, multi-tab logout sync (logout in tab1 reflects in tab2)."
-          },
-          "acceptanceCriteria": [
-            "Logout tests created",
-            "Storage clearing verified",
-            "Multi-tab sync test included"
-          ]
-        },
-        {
-          "id": "task-5.5",
-          "description": "Create tests/e2e/fixtures/auth.fixture.ts - reusable fixtures for authenticated pages (admin, employer, doctor)",
-          "agentType": "developer",
-          "priority": "medium",
-          "dependencies": [
-            "task-5.1"
-          ],
-          "estimatedTokens": 2500,
-          "context": {
-            "files": [
-              "tests/e2e/fixtures/auth.fixture.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
-            ],
-            "prompt": "Create auth.fixture.ts with Playwright test.extend: authenticatedAdminPage, authenticatedEmployerPage, authenticatedDoctorPage fixtures that inject localStorage tokens."
-          },
-          "acceptanceCriteria": [
-            "Auth fixtures created",
-            "All 3 role fixtures working",
-            "Fixtures usable in other tests"
-          ]
-        },
-        {
-          "id": "task-5.6",
-          "description": "Add E2E test scripts to package.json and verify all tests pass",
-          "agentType": "developer",
-          "priority": "high",
-          "dependencies": [
-            "task-5.2",
-            "task-5.3",
-            "task-5.4",
-            "task-5.5"
-          ],
-          "estimatedTokens": 1500,
-          "context": {
-            "files": [
-              "package.json"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
-            ],
-            "prompt": "Add scripts: test:e2e, test:e2e:ui, test:e2e:auth, test:e2e:headed. Add @playwright/test devDependency if missing."
-          },
-          "acceptanceCriteria": [
-            "E2E scripts added to package.json",
-            "Playwright dependency present",
-            "npm run test:e2e:auth passes"
-          ]
-        },
-        {
-          "id": "task-5.7",
-          "description": "Run E2E test suite with browser-cli and verify all auth flows work",
+          "id": "task-7.5",
+          "description": "Browser-CLI E2E verification of GDPR fixes. Test consent creation flow triggers audit log, verify CSP headers in network response, test error toast appears on simulated failure.",
           "agentType": "browser",
           "priority": "high",
           "dependencies": [
-            "task-5.6"
+            "task-7.1",
+            "task-7.2",
+            "task-7.3",
+            "task-7.4"
           ],
-          "estimatedTokens": 5000,
+          "estimatedTokens": 15000,
           "context": {
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_05_E2E"
-            ],
-            "prompt": "Use browser-cli to manually verify: 1) Landing page login button redirects, 2) No modal appears, 3) Each role can access their portal with injected localStorage tokens, 4) Logout clears state."
+            "files": [],
+            "memories": []
           },
           "acceptanceCriteria": [
-            "All E2E tests pass",
-            "Manual browser verification complete",
-            "Screenshots captured as evidence"
-          ]
-        }
-      ],
-      "parallelizable": true,
-      "gateCondition": "All E2E tests pass (npm run test:e2e:auth), browser verification complete"
-    },
-    {
-      "id": "phase-4-cleanup",
-      "name": "Cleanup & Documentation (Sprint 06)",
-      "description": "Delete deprecated Convex Auth code after E2E tests confirm migration success. DESTRUCTIVE - requires E2E gate pass.",
-      "subtasks": [
-        {
-          "id": "task-6.1",
-          "description": "Delete src/components/auth/AuthModal.tsx (42 LOC)",
-          "agentType": "developer",
-          "priority": "low",
-          "dependencies": [],
-          "estimatedTokens": 500,
-          "context": {
-            "files": [
-              "src/components/auth/AuthModal.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
-            "prompt": "Delete AuthModal.tsx file. Verify no remaining imports."
-          },
-          "acceptanceCriteria": [
-            "AuthModal.tsx deleted",
-            "No broken imports",
-            "npm run typecheck passes"
-          ]
-        },
-        {
-          "id": "task-6.2",
-          "description": "Delete src/components/auth/SignInForm.tsx (115 LOC)",
-          "agentType": "developer",
-          "priority": "low",
-          "dependencies": [],
-          "estimatedTokens": 500,
-          "context": {
-            "files": [
-              "src/components/auth/SignInForm.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
-            "prompt": "Delete SignInForm.tsx file. Verify no remaining imports."
-          },
-          "acceptanceCriteria": [
-            "SignInForm.tsx deleted",
-            "No broken imports",
-            "npm run typecheck passes"
-          ]
-        },
-        {
-          "id": "task-6.3",
-          "description": "Delete convex/auth.ts (6 LOC) and convex/auth.config.ts (8 LOC)",
-          "agentType": "developer",
-          "priority": "low",
-          "dependencies": [],
-          "estimatedTokens": 500,
-          "context": {
-            "files": [
-              "convex/auth.ts",
-              "convex/auth.config.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
-            "prompt": "Delete both auth backend files. Remove auth.addHttpRoutes(http) from http.ts if present."
-          },
-          "acceptanceCriteria": [
-            "auth.ts and auth.config.ts deleted",
-            "auth.addHttpRoutes removed from http.ts",
-            "npm run typecheck passes"
-          ]
-        },
-        {
-          "id": "task-6.4",
-          "description": "Delete legacy auth contexts: src/lib/admin-auth.tsx (83 LOC), employer-auth.tsx (112 LOC), doctor-auth.tsx (107 LOC) - only if Sprint 04 completed",
-          "agentType": "developer",
-          "priority": "low",
-          "dependencies": [],
-          "estimatedTokens": 500,
-          "context": {
-            "files": [
-              "src/lib/admin-auth.tsx",
-              "src/lib/employer-auth.tsx",
-              "src/lib/doctor-auth.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
-            "prompt": "Delete all 3 legacy auth context files. Only execute if Sprint 04 (context unification) was completed. Verify no remaining imports."
-          },
-          "acceptanceCriteria": [
-            "Legacy auth files deleted (if Sprint 04 done)",
-            "All imports updated to workos-auth.tsx",
-            "npm run typecheck passes"
-          ]
-        },
-        {
-          "id": "task-6.5",
-          "description": "Update src/components/auth/index.ts - remove deleted exports (SignInForm, AuthModal)",
-          "agentType": "developer",
-          "priority": "low",
-          "dependencies": [
-            "task-6.1",
-            "task-6.2"
-          ],
-          "estimatedTokens": 500,
-          "context": {
-            "files": [
-              "src/components/auth/index.ts"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
-            "prompt": "Remove SignInForm and AuthModal exports. Keep SignOutButton and AdminAuthCallback."
-          },
-          "acceptanceCriteria": [
-            "Exports cleaned up",
-            "Only active components exported",
-            "npm run typecheck passes"
-          ]
-        },
-        {
-          "id": "task-6.6",
-          "description": "Update SignOutButton.tsx to use WorkOS auth instead of Convex Auth",
-          "agentType": "developer",
-          "priority": "medium",
-          "dependencies": [],
-          "estimatedTokens": 1500,
-          "context": {
-            "files": [
-              "src/components/auth/SignOutButton.tsx"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
-            "prompt": "Replace useConvexAuth and useAuthActions with useWorkOSAuth. Update onClick to call logout from WorkOS context."
-          },
-          "acceptanceCriteria": [
-            "SignOutButton uses WorkOS auth",
-            "No Convex Auth imports remain",
-            "npm run typecheck passes"
-          ]
-        },
-        {
-          "id": "task-6.7",
-          "description": "Update README.md - replace Convex Auth documentation with WorkOS AuthKit info",
-          "agentType": "developer",
-          "priority": "low",
-          "dependencies": [],
-          "estimatedTokens": 1500,
-          "context": {
-            "files": [
-              "README.md"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
-            "prompt": "Update README authentication section to document WorkOS AuthKit, 3 user roles, OAuth flow, environment variables."
-          },
-          "acceptanceCriteria": [
-            "README reflects WorkOS auth",
-            "Environment variables documented",
-            "OAuth flow explained"
-          ]
-        },
-        {
-          "id": "task-6.8",
-          "description": "Create DOCUMENTS/AUTH.md with comprehensive authentication architecture documentation",
-          "agentType": "developer",
-          "priority": "low",
-          "dependencies": [],
-          "estimatedTokens": 2000,
-          "context": {
-            "files": [
-              "DOCUMENTS/AUTH.md"
-            ],
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
-            "prompt": "Create AUTH.md documenting: role table, OAuth flow diagram, token management, security considerations, troubleshooting guide."
-          },
-          "acceptanceCriteria": [
-            "AUTH.md created",
-            "Flow diagram included",
-            "Troubleshooting section complete"
-          ]
-        },
-        {
-          "id": "task-6.9",
-          "description": "Final verification - run typecheck, verify no @convex-dev/auth references, run E2E tests",
-          "agentType": "analyst",
-          "priority": "high",
-          "dependencies": [
-            "task-6.1",
-            "task-6.2",
-            "task-6.3",
-            "task-6.4",
-            "task-6.5",
-            "task-6.6"
-          ],
-          "estimatedTokens": 2000,
-          "context": {
-            "memories": [
-              "WORKOS_AUTH_MIGRATION_SPRINT_06_CLEANUP"
-            ],
-            "prompt": "Run: npm run typecheck, grep -r '@convex-dev/auth' src/ convex/, grep -r 'AuthModal' src/, npm run test:e2e:auth. Verify all pass/return empty."
-          },
-          "acceptanceCriteria": [
-            "Typecheck passes",
-            "No Convex Auth references remain",
-            "E2E tests still pass",
-            "~473 LOC removed verified"
+            "Navigate to employer portal, add employee, verify audit log entry via Convex CLI",
+            "Check network response headers include Content-Security-Policy",
+            "Screenshot evidence saved to BROWSER-CLI/screenshots/"
           ]
         }
       ],
       "parallelizable": false,
-      "gateCondition": "All cleanup tasks complete, final verification passes, no broken imports, E2E tests pass"
+      "gateCondition": "All GDPR fixes implemented and verified via Browser-CLI. Typecheck passes. No console errors."
+    },
+    {
+      "id": "phase-2-test-coverage",
+      "name": "Sprint 8: Test Coverage Expansion",
+      "description": "Create comprehensive unit tests for employer and admin portals, expand vitest coverage config",
+      "subtasks": [
+        {
+          "id": "task-8.1",
+          "description": "Create src/pages/employer/__tests__/Dashboard.test.tsx. Test EmployerDashboard component with mocked Convex queries. Verify stats cards render, recent activity section, empty states.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [
+              "src/pages/employer/Dashboard.tsx",
+              "src/pages/doctor/__tests__/Dashboard.test.tsx"
+            ],
+            "memories": [
+              "CODEBASE_ANALYSIS_SPRINT_04_TESTING"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Test file created at correct path",
+            "Tests mock useQuery from convex/react",
+            "At least 5 test cases covering loading, data, empty states",
+            "Tests pass: npm test -- Dashboard"
+          ]
+        },
+        {
+          "id": "task-8.2",
+          "description": "Create src/pages/employer/__tests__/Employees.test.tsx. Test employee list rendering, pagination, add employee button, search/filter if present.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [
+              "src/pages/employer/Employees.tsx",
+              "src/pages/doctor/__tests__/Appointments.test.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created at correct path",
+            "At least 5 test cases",
+            "Tests cover empty state, list rendering, interaction",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.3",
+          "description": "Create src/pages/employer/__tests__/Bookings.test.tsx. Test booking list, status filters, new booking button state (disabled when pending verification).",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [
+              "src/pages/employer/Bookings.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "Tests cover verified vs pending employer states",
+            "At least 5 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.4",
+          "description": "Create src/pages/employer/__tests__/Reports.test.tsx. Test reports list, empty state, report card rendering with fit-for-work status badges.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 10000,
+          "context": {
+            "files": [
+              "src/pages/employer/Reports.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "At least 4 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.5",
+          "description": "Create src/pages/employer/__tests__/Settings.test.tsx. Test settings form rendering, form validation, save button state.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [
+              "src/pages/employer/Settings.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "At least 3 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.6",
+          "description": "Create src/pages/admin/__tests__/Dashboard.test.tsx. Test admin dashboard stats cards (pending employers, erasure requests, audit activity).",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [
+              "src/pages/admin/Dashboard.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "Tests cover stats rendering, navigation cards",
+            "At least 4 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.7",
+          "description": "Create src/pages/admin/__tests__/EmployerVerification.test.tsx. Test pending employer list, verify/reject button actions, empty state.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [
+              "src/pages/admin/EmployerVerification.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "Tests cover verify/reject mutations",
+            "At least 5 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.8",
+          "description": "Create src/pages/admin/__tests__/GDPRDashboard.test.tsx. Test GDPR stats rendering, approaching deadline alerts, recent activity.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 10000,
+          "context": {
+            "files": [
+              "src/pages/admin/GDPRDashboard.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "At least 4 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.9",
+          "description": "Create src/pages/admin/__tests__/ErasureRequests.test.tsx. Test erasure request list, process erasure button, status badges.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 10000,
+          "context": {
+            "files": [
+              "src/pages/admin/ErasureRequests.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "At least 4 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.10",
+          "description": "Create src/pages/admin/__tests__/AuditLogs.test.tsx. Test audit log table, filtering, pagination.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [
+              "src/pages/admin/AuditLogs.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Test file created",
+            "At least 3 test cases",
+            "Tests pass"
+          ]
+        },
+        {
+          "id": "task-8.11",
+          "description": "Update vitest.config.ts to expand coverage to all portals. Add src/pages/employer/**, src/pages/admin/**, src/components/** to coverage.include. Add coverage thresholds: statements 60%, branches 50%, functions 60%, lines 60%.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-8.1",
+            "task-8.2",
+            "task-8.3",
+            "task-8.4",
+            "task-8.5",
+            "task-8.6",
+            "task-8.7",
+            "task-8.8",
+            "task-8.9",
+            "task-8.10"
+          ],
+          "estimatedTokens": 4000,
+          "context": {
+            "files": [
+              "vitest.config.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Coverage includes all portal pages",
+            "Thresholds configured",
+            "npm run test:coverage passes threshold"
+          ]
+        },
+        {
+          "id": "task-8.12",
+          "description": "Browser-CLI verification of test infrastructure. Run npm test, capture output, verify all new tests pass. Run coverage report and capture metrics.",
+          "agentType": "browser",
+          "priority": "medium",
+          "dependencies": [
+            "task-8.11"
+          ],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "All tests pass (npm test)",
+            "Coverage report generated",
+            "Screenshot of coverage summary"
+          ]
+        }
+      ],
+      "parallelizable": true,
+      "gateCondition": "All 10 new test files created. Tests pass. Coverage thresholds met (60%+ statements)."
+    },
+    {
+      "id": "phase-3-code-quality",
+      "name": "Sprint 9: Code Quality - Modularization",
+      "description": "Split availableSlots.ts (659 lines) into modular structure following facade pattern, add JSDoc to core backend files",
+      "subtasks": [
+        {
+          "id": "task-9.1",
+          "description": "Create convex/availableSlotsModules/types.ts. Extract interfaces ProposedSlot, SlotConflict and add type definitions for slot status, validation results.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [
+              "convex/availableSlots.ts",
+              "convex/calendarWorkoutsModules/types.ts"
+            ],
+            "memories": [
+              "04_ARCHITECTURE"
+            ]
+          },
+          "acceptanceCriteria": [
+            "File created with all interfaces",
+            "Exports ProposedSlot, SlotConflict",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-9.2",
+          "description": "Create convex/availableSlotsModules/queries.ts. Move getAvailable, getByDateRange, getByMonth, getTemplates query implementations.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-9.1"
+          ],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [
+              "convex/availableSlots.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "All 4 queries moved to module",
+            "Internal query exports for facade",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-9.3",
+          "description": "Create convex/availableSlotsModules/mutations.ts. Move createSlots, blockSlot, unblockSlot, deleteTemplateSlots mutation implementations.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-9.1"
+          ],
+          "estimatedTokens": 15000,
+          "context": {
+            "files": [
+              "convex/availableSlots.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "All 4 mutations moved to module",
+            "Internal mutation exports",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-9.4",
+          "description": "Create convex/availableSlotsModules/recurring.ts. Move previewRecurringSlots, createRecurringSlots implementations and helper functions for slot generation.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-9.1"
+          ],
+          "estimatedTokens": 15000,
+          "context": {
+            "files": [
+              "convex/availableSlots.ts"
+            ],
+            "memories": [
+              "RECURRING_SLOTS_IMPLEMENTATION_COMPLETE_2026-01-06"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Recurring slot logic isolated",
+            "Helper functions extracted",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-9.5",
+          "description": "Create convex/availableSlotsModules/index.ts. Re-export all module contents for clean imports.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [
+            "task-9.2",
+            "task-9.3",
+            "task-9.4"
+          ],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": [
+              "convex/calendarWorkoutsModules/index.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Barrel exports all modules",
+            "Clean import path: from './availableSlotsModules'"
+          ]
+        },
+        {
+          "id": "task-9.6",
+          "description": "Transform convex/availableSlots.ts to facade pattern. Replace implementations with re-exports from modules. Keep <100 lines. Maintain api.availableSlots.* compatibility.",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": [
+            "task-9.5"
+          ],
+          "estimatedTokens": 10000,
+          "context": {
+            "files": [
+              "convex/availableSlots.ts",
+              "convex/calendarWorkouts.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Facade file <100 lines",
+            "All public API unchanged (api.availableSlots.*)",
+            "Typecheck passes",
+            "No frontend changes required"
+          ]
+        },
+        {
+          "id": "task-9.7",
+          "description": "Add comprehensive JSDoc comments to convex/appointments.ts. Document all exported queries/mutations with @param, @returns, @throws, @example.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [
+              "convex/appointments.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "All exports have JSDoc",
+            "Parameters documented",
+            "Return types described"
+          ]
+        },
+        {
+          "id": "task-9.8",
+          "description": "Add comprehensive JSDoc comments to convex/gdpr.ts. Focus on GDPR compliance context, data retention notes, audit logging behavior.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [
+              "convex/gdpr.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "All exports have JSDoc",
+            "GDPR context documented",
+            "Audit log behavior noted"
+          ]
+        },
+        {
+          "id": "task-9.9",
+          "description": "Add comprehensive JSDoc comments to convex/patients.ts. Document soft-delete behavior, GDPR redaction, employer ownership.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [
+              "convex/patients.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "All exports have JSDoc",
+            "Soft-delete documented",
+            "Ownership checks noted"
+          ]
+        },
+        {
+          "id": "task-9.10",
+          "description": "Browser-CLI verification of modularization. Test doctor schedule page still works (createSlots, recurring slots, blocking). Verify no UI regressions.",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": [
+            "task-9.6"
+          ],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Doctor can create individual slots",
+            "Doctor can create recurring slots",
+            "Doctor can block/unblock slots",
+            "No console errors",
+            "Screenshot evidence"
+          ]
+        }
+      ],
+      "parallelizable": false,
+      "gateCondition": "availableSlots.ts refactored to <100 lines facade. All slot operations work via Browser-CLI test. JSDoc added to 3 core files."
+    },
+    {
+      "id": "phase-4-performance",
+      "name": "Sprint 10: Performance Optimizations",
+      "description": "Add aggregated dashboard query, data retention scheduler, and Vite bundle splitting",
+      "subtasks": [
+        {
+          "id": "task-10.1",
+          "description": "Create getDashboardStats query in convex/employers.ts (or new convex/dashboard.ts). Single query that returns: employeeCount, upcomingAppointments, recentReports, pendingActions. Replaces 4 separate queries on employer dashboard.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [
+              "convex/employers.ts",
+              "src/pages/employer/Dashboard.tsx"
+            ],
+            "memories": [
+              "14_DB_SCHEMA_DISCOVERY_SPRINTS_7_10"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Single aggregated query created",
+            "Returns all dashboard stats in one response",
+            "Indexed queries used for performance",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-10.2",
+          "description": "Update src/pages/employer/Dashboard.tsx to use aggregated getDashboardStats query. Replace multiple useQuery calls with single query. Update component to handle new data shape.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [
+            "task-10.1"
+          ],
+          "estimatedTokens": 10000,
+          "context": {
+            "files": [
+              "src/pages/employer/Dashboard.tsx"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Single useQuery call",
+            "Dashboard renders same data",
+            "Reduced network requests (verify via network tab)",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-10.3",
+          "description": "Create convex/crons/dataRetention.ts. Implement scheduled function to: 1) Delete audit logs > 90 days, 2) Archive completed erasure requests > 30 days, 3) Clean expired OAuth states (already handled but verify).",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 15000,
+          "context": {
+            "files": [
+              "convex/crons.ts"
+            ],
+            "memories": [
+              "CODEBASE_ANALYSIS_SPRINT_03_SECURITY"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Scheduled function created",
+            "Batch deletion with limits (100 per run)",
+            "Logging for audit",
+            "Typecheck passes"
+          ]
+        },
+        {
+          "id": "task-10.4",
+          "description": "Register data retention cron job in convex/crons.ts. Schedule weekly run (Sunday 2am UTC). Import and configure the retention function.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [
+            "task-10.3"
+          ],
+          "estimatedTokens": 4000,
+          "context": {
+            "files": [
+              "convex/crons.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Cron registered in crons.ts",
+            "Weekly schedule configured",
+            "npx convex deploy succeeds"
+          ]
+        },
+        {
+          "id": "task-10.5",
+          "description": "Add manualChunks configuration to vite.config.ts for bundle splitting. Create chunks for: vendor (react, react-dom), ui (shadcn components), convex (convex client), workos (auth).",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": [],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [
+              "vite.config.ts"
+            ],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "manualChunks configured in build.rollupOptions",
+            "npm run build succeeds",
+            "Bundle analysis shows separate chunks",
+            "Initial load reduced (verify with npm run build)"
+          ]
+        },
+        {
+          "id": "task-10.6",
+          "description": "Browser-CLI performance verification. Navigate to employer dashboard, measure load time, verify single network request for dashboard data, check bundle sizes in network tab.",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": [
+            "task-10.2",
+            "task-10.5"
+          ],
+          "estimatedTokens": 12000,
+          "context": {
+            "files": [],
+            "memories": []
+          },
+          "acceptanceCriteria": [
+            "Dashboard loads with single aggregated query",
+            "LCP < 2.5s measured via capturePerformanceMetrics",
+            "Bundle chunks visible in network tab",
+            "Screenshot evidence with metrics"
+          ]
+        }
+      ],
+      "parallelizable": false,
+      "gateCondition": "Aggregated dashboard query working. Data retention cron registered. Bundle splitting configured. Performance verified via Browser-CLI."
     }
   ],
-  "totalEstimatedTokens": 59000,
+  "totalEstimatedTokens": 310000,
   "risks": [
     {
-      "description": "SEC-001/SEC-002 fixes may break existing OAuth flow if not tested incrementally",
-      "mitigation": "Test each security fix independently before proceeding. Keep Convex Auth routes active until Sprint 06.",
-      "severity": "critical"
-    },
-    {
-      "description": "POST form token submission requires frontend callback component changes",
-      "mitigation": "Task 2.6 explicitly handles AdminAuthCallback update. Consider adding loading state during form auto-submit.",
+      "description": "Facade refactoring breaks API paths",
+      "mitigation": "Verify api.availableSlots.* paths unchanged via typecheck before testing",
       "severity": "high"
     },
     {
-      "description": "Context unification (Sprint 04) may introduce subtle auth state bugs",
-      "mitigation": "Sprint 04 is marked optional. Legacy contexts remain functional until E2E tests pass.",
+      "description": "Test mocking complexity for Convex queries",
+      "mitigation": "Reference existing doctor/__tests__/ patterns which already solve mocking",
       "severity": "medium"
     },
     {
-      "description": "E2E tests may be flaky due to WorkOS external redirect",
-      "mitigation": "Tests inject localStorage tokens directly rather than going through full OAuth flow. Real OAuth tested manually.",
+      "description": "CSP headers break WorkOS OAuth flow",
+      "mitigation": "Include https://api.workos.com and https://authkit.workos.com in connect-src",
       "severity": "medium"
     },
     {
-      "description": "Cleanup phase (Sprint 06) is destructive and irreversible without git",
-      "mitigation": "E2E gate must pass before cleanup. Rollback procedure documented in sprint memory.",
-      "severity": "high"
+      "description": "Data retention cron deletes needed audit logs",
+      "mitigation": "90-day retention exceeds GDPR requirements, batch limits prevent mass deletion",
+      "severity": "low"
+    },
+    {
+      "description": "Bundle splitting increases total download size",
+      "mitigation": "Measure before/after bundle sizes, revert if total increases >10%",
+      "severity": "low"
     }
   ]
 }

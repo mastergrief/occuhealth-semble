@@ -1,0 +1,1026 @@
+{
+  "planId": "audit-sprints-7-10-comprehensive-2026-01-07",
+  "target": "Sprints 7-10 Implementation Verification",
+  "scope": "comprehensive",
+  "approach": "functional + edge cases + error handling",
+  "generatedAt": "2026-01-07T15:00:00.000Z",
+  "baseUrl": "http://localhost:5175",
+  "credentials": {
+    "doctor": {
+      "email": "testdoc@occuhealth.com",
+      "password": "(TestPass1234",
+      "savedState": "authenticated-doctor-fixed"
+    },
+    "employer": {
+      "email": "testemployee@occuhealth.com",
+      "password": "(TestPass1234",
+      "savedState": "authenticated-employer-fixed"
+    },
+    "admin": {
+      "email": "testadmin@occuhealth.com",
+      "password": "(TestPass1234",
+      "savedState": null,
+      "note": "Manual login required via WorkOS portal"
+    }
+  },
+  "suites": [
+    {
+      "id": "sprint7-audit-logging",
+      "name": "Sprint 7: GDPR Audit Logging",
+      "priority": "CRITICAL",
+      "description": "Verify consent creation triggers audit logs and GDPR accountability principle compliance",
+      "tests": [
+        {
+          "id": "S7-01",
+          "name": "Consent Creation Triggers Audit Log",
+          "purpose": "Verify createConsent mutation logs to auditLogs table (GDPR Art. 5(2) Accountability)",
+          "preconditions": [
+            "Authenticated as employer",
+            "Development server running on localhost:5175",
+            "Convex backend connected"
+          ],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1500",
+            "snapshot",
+            "click 'text:Add Employee'",
+            "wait 500",
+            "snapshot --forms",
+            "type e3 'AuditTest'",
+            "type e4 'Employee'",
+            "type e5 'audit-test-{timestamp}@test.com'",
+            "type e6 '1990-01-15'",
+            "snapshot",
+            "click 'button[type=\"submit\"]'",
+            "wait 2000",
+            "network --filter=patients:create",
+            "network --filter=gdpr:createConsent"
+          ],
+          "verify": [
+            "Network shows patients:create mutation",
+            "Network shows gdpr:createConsent mutation",
+            "Toast shows success message",
+            "Employee appears in list"
+          ],
+          "cleanup": ["Record employee email for audit log verification in S7-02"],
+          "expectedOutcome": "Consent creation triggers audit log entry with action='consent_granted'"
+        },
+        {
+          "id": "S7-02",
+          "name": "Audit Log Database Verification",
+          "purpose": "Verify audit logs persist in database and are queryable",
+          "preconditions": ["S7-01 completed successfully", "Convex CLI available"],
+          "steps": [
+            "npx tsx CONVEX-CLI/SCRIPTS/convex-data.ts auditLogs --limit=5 --json",
+            "Verify recent audit log has action='consent_granted'",
+            "Verify actorType='employer'",
+            "Verify resourceType='consent'",
+            "npx tsx CONVEX-CLI/SCRIPTS/convex-data.ts consents --limit=5 --json",
+            "Verify consent record exists with granted=true"
+          ],
+          "verify": [
+            "Audit log entry found with correct action",
+            "Consent record has patientEmail matching test email",
+            "Timestamps are recent (within last 5 minutes)"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Database contains audit trail for consent creation"
+        },
+        {
+          "id": "S7-03",
+          "name": "CSP Headers on Health Endpoint",
+          "purpose": "Verify Content-Security-Policy and security headers on /health endpoint",
+          "preconditions": ["Convex deployment URL available from .env.local"],
+          "steps": [
+            "curl -sI https://giddy-lapwing-915.convex.site/health",
+            "Verify Content-Security-Policy header present",
+            "Verify X-Content-Type-Options: nosniff",
+            "Verify X-Frame-Options: DENY",
+            "Verify X-XSS-Protection: 1; mode=block"
+          ],
+          "verify": [
+            "CSP header contains: default-src 'self'",
+            "CSP header contains: connect-src 'self' https://*.convex.cloud",
+            "X-Content-Type-Options is 'nosniff'",
+            "X-Frame-Options is 'DENY'"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "All Sprint 7 security headers present on HTTP responses"
+        },
+        {
+          "id": "S7-04",
+          "name": "EmployeeForm Error Toast Trigger",
+          "purpose": "Verify toast.error() displays on form submission failure",
+          "preconditions": ["Authenticated as employer"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1500",
+            "snapshot",
+            "click 'text:Add Employee'",
+            "wait 500",
+            "snapshot --forms",
+            "type e3 'Test'",
+            "type e4 'User'",
+            "type e5 'invalid-email-format'",
+            "type e6 '1990-01-15'",
+            "click 'button[type=\"submit\"]'",
+            "wait 1000",
+            "snapshot",
+            "console"
+          ],
+          "verify": [
+            "HTML5 validation prevents invalid email submission",
+            "OR toast.error appears if server-side validation fails",
+            "No unhandled console errors"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Form validation or error toast prevents invalid data"
+        },
+        {
+          "id": "S7-05",
+          "name": "Empty Form Validation",
+          "purpose": "Verify required field validation blocks empty submissions",
+          "preconditions": ["Authenticated as employer"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1500",
+            "click 'text:Add Employee'",
+            "wait 500",
+            "snapshot --forms",
+            "click 'button[type=\"submit\"]'",
+            "wait 500",
+            "snapshot",
+            "console"
+          ],
+          "verify": [
+            "Form does NOT submit",
+            "Required field validation messages appear",
+            "No network mutation fired",
+            "No console errors"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "HTML5 validation blocks empty form submission"
+        }
+      ]
+    },
+    {
+      "id": "sprint7-consent-erasure",
+      "name": "Sprint 7: Consent & Erasure Workflow",
+      "priority": "HIGH",
+      "description": "Verify consent management and GDPR right to erasure functionality",
+      "tests": [
+        {
+          "id": "S7-06",
+          "name": "Employee Creation with Consent Chain",
+          "purpose": "Verify employee creation includes consent creation (chained mutations)",
+          "preconditions": ["Authenticated as employer"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1500",
+            "snapshot",
+            "click 'text:Add Employee'",
+            "wait 500",
+            "type e3 'Consent'",
+            "type e4 'Test'",
+            "type e5 'consent-chain-{timestamp}@test.com'",
+            "type e6 '1985-06-20'",
+            "click 'button[type=\"submit\"]'",
+            "wait 2500",
+            "network --filter=convex",
+            "snapshot"
+          ],
+          "verify": [
+            "Network shows patients:create mutation",
+            "Network shows gdpr:createConsent mutation",
+            "Employee appears in list",
+            "Real-time update visible (no refresh needed)"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Employee and consent records created atomically"
+        },
+        {
+          "id": "S7-07",
+          "name": "GDPR Dashboard Stats Display",
+          "purpose": "Verify GDPR dashboard displays consent and audit statistics",
+          "preconditions": ["Authenticated as admin (manual login if no saved state)"],
+          "steps": [
+            "navigate http://localhost:5175",
+            "wait 1000",
+            "click 'text:Provider Login'",
+            "Manual: Complete WorkOS admin authentication",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 2000",
+            "snapshot",
+            "network --filter=gdpr:getGDPRStats"
+          ],
+          "verify": [
+            "GDPR Dashboard page loads",
+            "Pending Erasure Count displayed",
+            "Active Consents count displayed",
+            "Recent Audit Logs section shows entries",
+            "Consent Coverage percentage displayed"
+          ],
+          "cleanup": ["saveState authenticated-admin-test"],
+          "expectedOutcome": "GDPR dashboard displays comprehensive compliance statistics"
+        },
+        {
+          "id": "S7-08",
+          "name": "Audit Logs Admin View",
+          "purpose": "Verify admin can view filtered audit logs",
+          "preconditions": ["Authenticated as admin"],
+          "steps": [
+            "restoreState authenticated-admin-test",
+            "navigate http://localhost:5175/admin/gdpr/audit",
+            "wait 2000",
+            "snapshot",
+            "network --filter=gdpr:getAuditLogs",
+            "Verify table shows audit log entries",
+            "Click action filter dropdown",
+            "Select 'consent_granted' filter",
+            "wait 1000",
+            "snapshot"
+          ],
+          "verify": [
+            "Audit logs table displays",
+            "Entries show action, actorType, resourceType, timestamp",
+            "Filter functionality works",
+            "Filtered results show only consent_granted actions"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Admin can view and filter audit log history"
+        }
+      ]
+    },
+    {
+      "id": "sprint8-page-functionality",
+      "name": "Sprint 8: Page Functionality Verification",
+      "priority": "HIGH",
+      "description": "Verify all employer and admin portal pages load correctly per test coverage implementation",
+      "tests": [
+        {
+          "id": "S8-01",
+          "name": "Employer Dashboard Load",
+          "purpose": "Verify employer dashboard page loads with correct data",
+          "preconditions": ["Authenticated as employer"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 2000",
+            "snapshot",
+            "network --filter=employers:getDashboardStats",
+            "assertNetwork employers:getDashboardStats"
+          ],
+          "verify": [
+            "Dashboard page loads without errors",
+            "Statistics cards display (employees, appointments, reports)",
+            "Recent appointments section visible",
+            "Single getDashboardStats query used (Sprint 10 optimization)"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Dashboard loads with aggregated stats from single query"
+        },
+        {
+          "id": "S8-02",
+          "name": "Employer Employees Page Load",
+          "purpose": "Verify employees list page loads correctly",
+          "preconditions": ["Authenticated as employer"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1500",
+            "snapshot",
+            "network --filter=patients:list"
+          ],
+          "verify": [
+            "Employees page loads",
+            "Employee list or empty state displayed",
+            "Add Employee button visible",
+            "No console errors"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Employees page functional with data or empty state"
+        },
+        {
+          "id": "S8-03",
+          "name": "Employer Bookings Page Load",
+          "purpose": "Verify bookings page loads correctly",
+          "preconditions": ["Authenticated as employer"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1500",
+            "snapshot",
+            "network --filter=appointments:listByEmployer"
+          ],
+          "verify": [
+            "Bookings page loads",
+            "Appointments list or empty state displayed",
+            "New Booking button visible (if employer verified)",
+            "No console errors"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Bookings page functional"
+        },
+        {
+          "id": "S8-04",
+          "name": "Employer Reports Page Load",
+          "purpose": "Verify reports page loads correctly",
+          "preconditions": ["Authenticated as employer"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/reports",
+            "wait 1500",
+            "snapshot",
+            "network --filter=reports:listByEmployer"
+          ],
+          "verify": [
+            "Reports page loads",
+            "Reports list or empty state displayed",
+            "No console errors"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Reports page functional"
+        },
+        {
+          "id": "S8-05",
+          "name": "Employer Settings Page Load",
+          "purpose": "Verify settings page loads correctly",
+          "preconditions": ["Authenticated as employer"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/settings",
+            "wait 1500",
+            "snapshot",
+            "network --filter=employers:getById"
+          ],
+          "verify": [
+            "Settings page loads",
+            "Company profile form displayed",
+            "Current settings pre-filled",
+            "No console errors"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Settings page functional"
+        },
+        {
+          "id": "S8-06",
+          "name": "Admin GDPR Dashboard Load",
+          "purpose": "Verify admin GDPR dashboard loads correctly",
+          "preconditions": ["Authenticated as admin"],
+          "steps": [
+            "restoreState authenticated-admin-test",
+            "navigate http://localhost:5175/admin/gdpr",
+            "wait 2000",
+            "snapshot",
+            "network --filter=gdpr:getGDPRStats"
+          ],
+          "verify": [
+            "GDPR Dashboard loads",
+            "Stats cards display (pending erasure, consents, patients)",
+            "Audit activity chart displayed",
+            "Recent audit logs section visible"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "GDPR Dashboard fully functional"
+        },
+        {
+          "id": "S8-07",
+          "name": "Admin Audit Logs Load",
+          "purpose": "Verify audit logs page loads correctly",
+          "preconditions": ["Authenticated as admin"],
+          "steps": [
+            "restoreState authenticated-admin-test",
+            "navigate http://localhost:5175/admin/gdpr/audit",
+            "wait 2000",
+            "snapshot",
+            "network --filter=gdpr:getAuditLogs"
+          ],
+          "verify": [
+            "Audit Logs page loads",
+            "Logs table displays with columns (action, actor, resource, timestamp)",
+            "Filter controls visible",
+            "No console errors"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Audit logs page functional"
+        },
+        {
+          "id": "S8-08",
+          "name": "Admin Erasure Requests Load",
+          "purpose": "Verify erasure requests page loads correctly",
+          "preconditions": ["Authenticated as admin"],
+          "steps": [
+            "restoreState authenticated-admin-test",
+            "navigate http://localhost:5175/admin/gdpr/erasure",
+            "wait 2000",
+            "snapshot",
+            "network --filter=gdpr:listErasureRequests"
+          ],
+          "verify": [
+            "Erasure Requests page loads",
+            "Requests list or empty state displayed",
+            "Process Erasure button visible for pending requests",
+            "No console errors"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Erasure requests page functional"
+        },
+        {
+          "id": "S8-09",
+          "name": "Admin Employer Verification Load",
+          "purpose": "Verify employer verification page loads correctly",
+          "preconditions": ["Authenticated as admin"],
+          "steps": [
+            "restoreState authenticated-admin-test",
+            "navigate http://localhost:5175/admin/employers",
+            "wait 2000",
+            "snapshot",
+            "network --filter=employers:listPending"
+          ],
+          "verify": [
+            "Employer Verification page loads",
+            "Pending employers list or empty state displayed",
+            "Verify/Reject buttons visible for pending employers",
+            "No console errors"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Employer verification page functional"
+        },
+        {
+          "id": "S8-10",
+          "name": "Empty States Display Correctly",
+          "purpose": "Verify empty states show appropriate messages",
+          "preconditions": ["Account with no data OR verification of empty state text"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1500",
+            "snapshot",
+            "If no bookings, verify 'No bookings yet' text visible",
+            "navigate http://localhost:5175/employer/reports",
+            "wait 1500",
+            "snapshot",
+            "If no reports, verify 'No reports available' text visible"
+          ],
+          "verify": [
+            "Empty state messages are user-friendly",
+            "Empty states include call-to-action where appropriate",
+            "No broken UI elements"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Empty states handled gracefully across all pages"
+        }
+      ]
+    },
+    {
+      "id": "sprint9-module-split",
+      "name": "Sprint 9: Module Split Verification",
+      "priority": "HIGH",
+      "description": "Verify availableSlots module split works correctly with facade pattern",
+      "tests": [
+        {
+          "id": "S9-01",
+          "name": "Doctor Schedule Page Load (Modular Queries)",
+          "purpose": "Verify schedule page uses modular query exports correctly",
+          "preconditions": ["Authenticated as doctor"],
+          "steps": [
+            "restoreState authenticated-doctor-fixed",
+            "navigate http://localhost:5175/doctor/schedule",
+            "wait 2000",
+            "snapshot",
+            "network --filter=availableSlots:getByDateRange",
+            "network --filter=availableSlots:getTemplates"
+          ],
+          "verify": [
+            "Schedule page loads correctly",
+            "Calendar/schedule grid displays",
+            "Network shows modular query calls",
+            "Templates section visible (if any templates exist)",
+            "No console errors"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Modular queries work via facade pattern"
+        },
+        {
+          "id": "S9-02",
+          "name": "Single Slot Creation (Modular Mutation)",
+          "purpose": "Verify individual slot creation works through modular mutations",
+          "preconditions": ["Authenticated as doctor"],
+          "steps": [
+            "restoreState authenticated-doctor-fixed",
+            "navigate http://localhost:5175/doctor/schedule",
+            "wait 2000",
+            "snapshot",
+            "type 'input[type=\"date\"]' '2026-02-15'",
+            "type 'input[type=\"time\"]:first-of-type' '09:00'",
+            "type 'input[type=\"time\"]:last-of-type' '09:30'",
+            "click 'text:Add Slot'",
+            "wait 1500",
+            "network --filter=availableSlots:createSlots",
+            "snapshot"
+          ],
+          "verify": [
+            "Slot creation mutation fires",
+            "New slot appears in schedule grid",
+            "Real-time update (no refresh needed)",
+            "Success feedback displayed"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Modular createSlots mutation works correctly"
+        },
+        {
+          "id": "S9-03",
+          "name": "Slot Blocking/Unblocking",
+          "purpose": "Verify slot blocking and unblocking works through modular mutations",
+          "preconditions": ["Authenticated as doctor", "At least one available slot exists"],
+          "steps": [
+            "restoreState authenticated-doctor-fixed",
+            "navigate http://localhost:5175/doctor/schedule",
+            "wait 2000",
+            "snapshot",
+            "Find an available slot",
+            "click 'text:Block' on slot",
+            "wait 1500",
+            "network --filter=availableSlots:blockSlot",
+            "snapshot",
+            "Verify slot shows as blocked",
+            "click 'text:Unblock' on same slot",
+            "wait 1500",
+            "network --filter=availableSlots:unblockSlot",
+            "snapshot"
+          ],
+          "verify": [
+            "blockSlot mutation fires successfully",
+            "Slot status changes to blocked (visual indicator)",
+            "unblockSlot mutation fires successfully",
+            "Slot status returns to available",
+            "Real-time updates work"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Block/unblock modular mutations work correctly"
+        },
+        {
+          "id": "S9-04",
+          "name": "Recurring Slots Preview",
+          "purpose": "Verify recurring slot preview query works",
+          "preconditions": ["Authenticated as doctor"],
+          "steps": [
+            "restoreState authenticated-doctor-fixed",
+            "navigate http://localhost:5175/doctor/schedule",
+            "wait 2000",
+            "snapshot",
+            "Click on recurring slots / templates section",
+            "wait 500",
+            "snapshot --forms",
+            "Select days of week (e.g., Monday, Wednesday, Friday)",
+            "Enter time slots (e.g., 09:00-09:30)",
+            "Enter date range (e.g., 2026-02-01 to 2026-02-28)",
+            "Click 'Preview' or similar",
+            "wait 2000",
+            "network --filter=availableSlots:previewRecurringSlots",
+            "snapshot"
+          ],
+          "verify": [
+            "Preview query fires",
+            "Preview shows proposed slot count",
+            "Conflicts (if any) are displayed",
+            "Summary includes days count and slots per day"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Recurring preview provides accurate slot forecast"
+        },
+        {
+          "id": "S9-05",
+          "name": "Recurring Slots Creation",
+          "purpose": "Verify recurring slot creation mutation works",
+          "preconditions": ["Authenticated as doctor", "S9-04 preview completed"],
+          "steps": [
+            "After preview in S9-04",
+            "Click 'Create' or 'Confirm' button",
+            "wait 3000",
+            "network --filter=availableSlots:createRecurringSlots",
+            "snapshot",
+            "Navigate to calendar view",
+            "wait 1500",
+            "snapshot"
+          ],
+          "verify": [
+            "createRecurringSlots mutation fires",
+            "Response includes created count",
+            "Template record created",
+            "Slots visible in calendar on selected days"
+          ],
+          "cleanup": ["Note templateId for deletion test"],
+          "expectedOutcome": "Recurring slots bulk created successfully"
+        },
+        {
+          "id": "S9-06",
+          "name": "Template Slots Deletion",
+          "purpose": "Verify template slot deletion mutation works",
+          "preconditions": ["Authenticated as doctor", "Template from S9-05 exists"],
+          "steps": [
+            "restoreState authenticated-doctor-fixed",
+            "navigate http://localhost:5175/doctor/schedule",
+            "wait 2000",
+            "snapshot",
+            "Navigate to templates section",
+            "Find template from S9-05",
+            "Click 'Delete' or 'Remove' button",
+            "wait 500",
+            "Select deletion mode (e.g., 'future_only')",
+            "Confirm deletion",
+            "wait 2000",
+            "network --filter=availableSlots:deleteTemplateSlots",
+            "snapshot"
+          ],
+          "verify": [
+            "deleteTemplateSlots mutation fires",
+            "Response shows deleted count",
+            "Booked slots skipped (if applicable)",
+            "Template marked as archived (if all slots deleted)"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Template deletion works with configurable modes"
+        }
+      ]
+    },
+    {
+      "id": "sprint10-performance",
+      "name": "Sprint 10: Performance Verification",
+      "priority": "MEDIUM",
+      "description": "Verify dashboard aggregation, cron registration, and data retention",
+      "tests": [
+        {
+          "id": "S10-01",
+          "name": "Dashboard Single Query Optimization",
+          "purpose": "Verify employer dashboard uses single getDashboardStats query (3->1)",
+          "preconditions": ["Authenticated as employer"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "networkClear",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 2000",
+            "network --filter=convex",
+            "snapshot"
+          ],
+          "verify": [
+            "Single getDashboardStats query fires",
+            "NO separate patients:list query",
+            "NO separate appointments:listByEmployer query",
+            "NO separate reports:listByEmployer query",
+            "Dashboard displays all stats correctly"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Dashboard uses aggregated query (66% reduction in queries)"
+        },
+        {
+          "id": "S10-02",
+          "name": "Dashboard Stats Content Verification",
+          "purpose": "Verify getDashboardStats returns correct data structure",
+          "preconditions": ["Authenticated as employer"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 2000",
+            "snapshot",
+            "Verify employee count card visible",
+            "Verify appointment count card visible",
+            "Verify report count card visible",
+            "Verify pending appointments shown (if any)",
+            "Verify recent appointments list populated"
+          ],
+          "verify": [
+            "employeeCount displays correctly",
+            "appointmentCount displays correctly",
+            "reportCount displays correctly",
+            "pendingCount displays correctly",
+            "recentAppointments shows up to 5 items"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Aggregated stats display accurately"
+        },
+        {
+          "id": "S10-03",
+          "name": "Performance Metrics Capture",
+          "purpose": "Verify dashboard loads within acceptable performance thresholds",
+          "preconditions": ["Authenticated as employer"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/dashboard",
+            "capturePerformanceMetrics",
+            "wait 2000",
+            "getPerformanceMetrics",
+            "assertPerformance LCP lt 2500"
+          ],
+          "verify": [
+            "LCP (Largest Contentful Paint) < 2500ms",
+            "Page fully interactive within 3 seconds",
+            "No performance regressions"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Dashboard meets performance targets"
+        },
+        {
+          "id": "S10-04",
+          "name": "Data Retention Cron Registration",
+          "purpose": "Verify cron job is registered in Convex deployment",
+          "preconditions": ["Convex CLI available"],
+          "steps": [
+            "npx convex crons --json",
+            "Verify 'data retention cleanup' job exists",
+            "Verify schedule is daily at 3:00 UTC"
+          ],
+          "verify": [
+            "Cron job 'data retention cleanup' registered",
+            "Schedule matches: hourUTC=3, minuteUTC=0",
+            "Handler points to internal.scheduled.dataRetention.cleanupAuditLogs"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Data retention scheduler properly configured"
+        },
+        {
+          "id": "S10-05",
+          "name": "Data Retention Logic Verification",
+          "purpose": "Verify retention policy respects 90-day standard and 7-year compliance",
+          "preconditions": ["Access to convex/scheduled/dataRetention.ts code review"],
+          "steps": [
+            "Review dataRetention.ts implementation",
+            "Verify RETENTION_DAYS = 90",
+            "Verify COMPLIANCE_RETENTION_YEARS = 7",
+            "Verify compliance actions exempt: consent_granted, consent_withdrawn, erasure_processed",
+            "Verify batch processing (100 logs per run)"
+          ],
+          "verify": [
+            "90-day retention for standard logs",
+            "7-year retention for compliance-critical logs",
+            "Cleanup logs its own action (data_retention_cleanup)",
+            "Batch size prevents timeout"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Retention logic correct per GDPR requirements"
+        }
+      ]
+    },
+    {
+      "id": "cross-portal-integration",
+      "name": "Cross-Portal Integration Tests",
+      "priority": "MEDIUM",
+      "description": "Verify workflows spanning multiple portals work end-to-end",
+      "tests": [
+        {
+          "id": "INT-01",
+          "name": "Employee Creation -> Admin Audit Trail",
+          "purpose": "Verify employer action creates admin-visible audit log",
+          "preconditions": ["Employer and admin accounts available"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1500",
+            "click 'text:Add Employee'",
+            "wait 500",
+            "type e3 'Integration'",
+            "type e4 'Test'",
+            "type e5 'integration-{timestamp}@test.com'",
+            "type e6 '1988-03-15'",
+            "click 'button[type=\"submit\"]'",
+            "wait 2500",
+            "screenshot employer-integration-01.png",
+            "restoreState authenticated-admin-test",
+            "navigate http://localhost:5175/admin/gdpr/audit",
+            "wait 2000",
+            "snapshot",
+            "screenshot admin-audit-integration-01.png"
+          ],
+          "verify": [
+            "Employee created successfully",
+            "Audit log shows patient_created action",
+            "Audit log shows consent_granted action",
+            "actorType is 'employer' for both entries"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Cross-portal audit trail visible to admin"
+        },
+        {
+          "id": "INT-02",
+          "name": "Doctor Schedule -> Employer Booking Flow",
+          "purpose": "Verify doctor-created slots appear in employer booking flow",
+          "preconditions": ["Doctor and employer accounts available", "Doctor has available slots"],
+          "steps": [
+            "restoreState authenticated-doctor-fixed",
+            "navigate http://localhost:5175/doctor/schedule",
+            "wait 2000",
+            "Create a slot for tomorrow if none exist",
+            "screenshot doctor-schedule-01.png",
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1500",
+            "click 'text:New Booking'",
+            "wait 500",
+            "snapshot --forms",
+            "Select employee from dropdown",
+            "Select appointment type",
+            "click 'text:Next'",
+            "wait 500",
+            "Select tomorrow's date",
+            "wait 1000",
+            "snapshot"
+          ],
+          "verify": [
+            "Doctor-created slots appear in employer booking calendar",
+            "Available slots show correct times",
+            "Slot selection works"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Slots flow from doctor schedule to employer booking"
+        },
+        {
+          "id": "INT-03",
+          "name": "Full Booking Flow End-to-End",
+          "purpose": "Verify complete booking workflow across portals",
+          "preconditions": ["Doctor has available slots", "Employer has employees", "Employer is verified"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/bookings",
+            "wait 1500",
+            "click 'text:New Booking'",
+            "wait 500",
+            "snapshot --forms",
+            "Select first employee",
+            "Select first appointment type",
+            "click 'text:Next'",
+            "wait 500",
+            "Select available date",
+            "wait 1000",
+            "Select first available time slot",
+            "click 'text:Next'",
+            "wait 500",
+            "snapshot",
+            "type 'textarea' 'E2E integration test booking'",
+            "click 'text:Confirm Booking'",
+            "wait 2500",
+            "network --filter=appointments:book",
+            "snapshot",
+            "screenshot booking-complete-01.png"
+          ],
+          "verify": [
+            "Booking mutation fires successfully",
+            "Appointment appears in bookings list",
+            "Slot status changes to booked",
+            "Success message displayed"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Complete booking flow works end-to-end"
+        }
+      ]
+    },
+    {
+      "id": "error-handling-edge-cases",
+      "name": "Error Handling & Edge Cases",
+      "priority": "LOW",
+      "description": "Verify error handling and edge case behavior",
+      "tests": [
+        {
+          "id": "ERR-01",
+          "name": "Duplicate Email Prevention",
+          "purpose": "Verify duplicate employee email is rejected",
+          "preconditions": ["Authenticated as employer", "Employee with known email exists"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/employees",
+            "wait 1500",
+            "snapshot",
+            "Identify existing employee email",
+            "click 'text:Add Employee'",
+            "wait 500",
+            "type e3 'Duplicate'",
+            "type e4 'Test'",
+            "type e5 '{existing-employee-email}'",
+            "type e6 '1990-01-01'",
+            "click 'button[type=\"submit\"]'",
+            "wait 2000",
+            "snapshot",
+            "console"
+          ],
+          "verify": [
+            "Mutation fails or toast.error appears",
+            "Duplicate email prevented",
+            "User-friendly error message displayed"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Duplicate emails rejected gracefully"
+        },
+        {
+          "id": "ERR-02",
+          "name": "Slot Double-Booking Prevention",
+          "purpose": "Verify same slot cannot be booked twice",
+          "preconditions": ["Authenticated as employer", "At least one booked slot exists"],
+          "steps": [
+            "Attempt to book already-booked slot programmatically",
+            "OR verify UI does not show booked slots as available",
+            "snapshot",
+            "Verify booked slots have different visual state"
+          ],
+          "verify": [
+            "Booked slots not selectable in booking flow",
+            "OR booking mutation returns error for booked slot",
+            "User cannot double-book"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Double-booking prevented at UI and backend level"
+        },
+        {
+          "id": "ERR-03",
+          "name": "Unauthorized Access Redirect",
+          "purpose": "Verify unauthorized users redirected from protected routes",
+          "preconditions": ["No authenticated state"],
+          "steps": [
+            "Clear browser state (no auth)",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 2000",
+            "snapshot",
+            "Verify redirect to landing page OR login prompt"
+          ],
+          "verify": [
+            "Protected route not accessible without auth",
+            "User redirected to appropriate page",
+            "No sensitive data leaked"
+          ],
+          "cleanup": [],
+          "expectedOutcome": "Route guards work correctly"
+        },
+        {
+          "id": "ERR-04",
+          "name": "Network Error Recovery",
+          "purpose": "Verify graceful handling of network failures",
+          "preconditions": ["Authenticated as employer"],
+          "steps": [
+            "restoreState authenticated-employer-fixed",
+            "navigate http://localhost:5175/employer/dashboard",
+            "wait 1500",
+            "Disable network (if possible) OR mock network failure",
+            "Attempt action (e.g., add employee)",
+            "wait 2000",
+            "snapshot",
+            "console"
+          ],
+          "verify": [
+            "Application does not crash",
+            "Error message displayed to user",
+            "Retry capability available (if applicable)"
+          ],
+          "cleanup": ["Re-enable network"],
+          "expectedOutcome": "Network errors handled gracefully"
+        }
+      ]
+    }
+  ],
+  "estimatedDuration": "45-60 minutes",
+  "criticalPaths": [
+    {
+      "name": "GDPR Compliance Chain",
+      "tests": ["S7-01", "S7-02", "S7-06", "S7-07", "S7-08"],
+      "reason": "Core GDPR accountability requirements"
+    },
+    {
+      "name": "Module Split Verification",
+      "tests": ["S9-01", "S9-02", "S9-03"],
+      "reason": "Verify API paths preserved after refactor"
+    },
+    {
+      "name": "Performance Optimization",
+      "tests": ["S10-01", "S10-02", "S10-03"],
+      "reason": "Verify query optimization works correctly"
+    }
+  ],
+  "testDataRequirements": {
+    "employees": "At least 1 existing employee for duplicate test",
+    "slots": "At least 1 available slot for booking flow",
+    "templates": "None required (will create during test)"
+  },
+  "prerequisites": {
+    "servers": [
+      "Development server on localhost:5175",
+      "Convex backend connected"
+    ],
+    "tools": [
+      "Browser-CLI operational",
+      "Convex-CLI available for database queries"
+    ],
+    "states": [
+      "authenticated-employer-fixed (existing)",
+      "authenticated-doctor-fixed (existing)",
+      "authenticated-admin-test (create during S7-07)"
+    ]
+  },
+  "executionNotes": [
+    "Tests should be run sequentially within each suite",
+    "Cross-portal tests require state switching",
+    "Admin tests require manual WorkOS login (no saved state)",
+    "Network assertions may have timing dependencies - use wait commands",
+    "Screenshots captured for evidence trail"
+  ]
+}

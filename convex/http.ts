@@ -202,6 +202,26 @@ http.route({
 });
 
 // ---------------------------------------------------------------------------
+// CORS Headers for API Endpoints
+// ---------------------------------------------------------------------------
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+};
+
+// ---------------------------------------------------------------------------
+// Security Headers (CSP, X-Content-Type-Options, etc.)
+// ---------------------------------------------------------------------------
+const securityHeaders = {
+  "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://api.workos.com",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "X-XSS-Protection": "1; mode=block",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+};
+
+// ---------------------------------------------------------------------------
 // Health Check Endpoint
 // ---------------------------------------------------------------------------
 http.route({
@@ -216,21 +236,11 @@ http.route({
       }),
       {
         status: 200,
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...securityHeaders },
       }
     );
   }),
 });
-
-
-// ---------------------------------------------------------------------------
-// CORS Headers for API Endpoints
-// ---------------------------------------------------------------------------
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
 
 // ---------------------------------------------------------------------------
 // Token Refresh Endpoint

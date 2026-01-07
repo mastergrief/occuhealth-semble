@@ -1,0 +1,394 @@
+{
+  "planId": "plan-sprints-7-10-gdpr-testing-2026-01-07",
+  "title": "Sprints 7-10: GDPR Fixes, Test Coverage, Code Quality, Performance",
+  "createdAt": "2026-01-07T13:00:00.000Z",
+  "status": "pending",
+  "totalEstimatedHours": "20-29",
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Sprint 7: Critical GDPR Fixes",
+      "estimatedHours": "2-3",
+      "priority": "CRITICAL",
+      "tasks": [
+        {
+          "id": "7.1",
+          "name": "Add audit logging to createConsent",
+          "file": "convex/gdpr.ts",
+          "lines": "56-79",
+          "estimatedMinutes": 30,
+          "description": "Add ctx.runMutation(internal.gdpr.logAction, {...}) after successful consent insert"
+        },
+        {
+          "id": "7.2",
+          "name": "Add audit logging to withdrawConsent",
+          "file": "convex/gdpr.ts",
+          "lines": "82-97",
+          "estimatedMinutes": 20,
+          "description": "Add ctx.runMutation(internal.gdpr.logAction, {...}) after successful consent withdrawal"
+        },
+        {
+          "id": "7.3",
+          "name": "Add CSP security headers",
+          "file": "convex/http.ts",
+          "lines": "~233",
+          "estimatedMinutes": 25,
+          "description": "Create securityHeaders constant with CSP, X-Content-Type-Options, X-Frame-Options"
+        },
+        {
+          "id": "7.4",
+          "name": "Add error toast to EmployeeForm",
+          "file": "src/components/employer/EmployeeForm.tsx",
+          "lines": "63-66",
+          "estimatedMinutes": 15,
+          "description": "Replace console.error with toast.error() following BookingFlow pattern"
+        },
+        {
+          "id": "7.5",
+          "name": "Browser-CLI verification",
+          "estimatedMinutes": 30,
+          "browserCommands": [
+            "restoreState authenticated-employer",
+            "navigate /employer/employees",
+            "click 'text:Add Employee'",
+            "type e3 'AuditTest'",
+            "type e4 'User'",
+            "type e5 'audit@test.com'",
+            "type e6 '1990-01-01'",
+            "click 'text:Add Employee'",
+            "network --filter=gdpr:createConsent",
+            "assertNetwork gdpr:createConsent"
+          ]
+        }
+      ],
+      "successCriteria": [
+        "Consent operations logged in auditLogs table",
+        "CSP header present on /health endpoint",
+        "Toast appears on EmployeeForm error"
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Sprint 8: Test Coverage Expansion",
+      "estimatedHours": "8-12",
+      "priority": "HIGH",
+      "tasks": [
+        {
+          "id": "8.1",
+          "name": "Create employer Dashboard.test.tsx",
+          "file": "src/pages/employer/__tests__/Dashboard.test.tsx",
+          "estimatedMinutes": 60
+        },
+        {
+          "id": "8.2",
+          "name": "Create employer Employees.test.tsx",
+          "file": "src/pages/employer/__tests__/Employees.test.tsx",
+          "estimatedMinutes": 60
+        },
+        {
+          "id": "8.3",
+          "name": "Create employer Bookings.test.tsx",
+          "file": "src/pages/employer/__tests__/Bookings.test.tsx",
+          "estimatedMinutes": 90
+        },
+        {
+          "id": "8.4",
+          "name": "Create employer Reports.test.tsx",
+          "file": "src/pages/employer/__tests__/Reports.test.tsx",
+          "estimatedMinutes": 45
+        },
+        {
+          "id": "8.5",
+          "name": "Create employer Settings.test.tsx",
+          "file": "src/pages/employer/__tests__/Settings.test.tsx",
+          "estimatedMinutes": 45
+        },
+        {
+          "id": "8.6",
+          "name": "Create admin GDPRDashboard.test.tsx",
+          "file": "src/pages/admin/__tests__/GDPRDashboard.test.tsx",
+          "estimatedMinutes": 90
+        },
+        {
+          "id": "8.7",
+          "name": "Create admin AuditLogs.test.tsx",
+          "file": "src/pages/admin/__tests__/AuditLogs.test.tsx",
+          "estimatedMinutes": 60
+        },
+        {
+          "id": "8.8",
+          "name": "Create admin ErasureRequests.test.tsx",
+          "file": "src/pages/admin/__tests__/ErasureRequests.test.tsx",
+          "estimatedMinutes": 60
+        },
+        {
+          "id": "8.9",
+          "name": "Create admin EmployerVerification.test.tsx",
+          "file": "src/pages/admin/__tests__/EmployerVerification.test.tsx",
+          "estimatedMinutes": 60
+        },
+        {
+          "id": "8.10",
+          "name": "Create admin AppointmentTypes.test.tsx",
+          "file": "src/pages/admin/__tests__/AppointmentTypes.test.tsx",
+          "estimatedMinutes": 60
+        },
+        {
+          "id": "8.11",
+          "name": "Update vitest.config.ts coverage",
+          "file": "vitest.config.ts",
+          "estimatedMinutes": 15,
+          "description": "Expand to all src/, add 70% thresholds"
+        },
+        {
+          "id": "8.12",
+          "name": "Browser-CLI manual test verification",
+          "estimatedMinutes": 60,
+          "browserCommands": [
+            "restoreState authenticated-employer",
+            "navigate /employer/dashboard",
+            "assert 'text:Dashboard' visible",
+            "navigate /employer/employees",
+            "assert 'text:Employees' visible",
+            "restoreState authenticated-admin",
+            "navigate /admin/gdpr",
+            "assert 'text:GDPR Compliance Dashboard' visible"
+          ]
+        }
+      ],
+      "successCriteria": [
+        "10 new test files created",
+        "Coverage threshold passes (70%)",
+        "Browser-CLI tests pass for all portals"
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Sprint 9: Code Quality & Module Split",
+      "estimatedHours": "6-8",
+      "priority": "HIGH",
+      "tasks": [
+        {
+          "id": "9.1",
+          "name": "Create availableSlotsModules/types.ts",
+          "file": "convex/availableSlotsModules/types.ts",
+          "estimatedMinutes": 15,
+          "description": "Extract ProposedSlot, SlotConflict interfaces"
+        },
+        {
+          "id": "9.2",
+          "name": "Create availableSlotsModules/queries.ts",
+          "file": "convex/availableSlotsModules/queries.ts",
+          "estimatedMinutes": 60,
+          "description": "Extract getAvailable, getByDateRange, getByMonth, getTemplates"
+        },
+        {
+          "id": "9.3",
+          "name": "Create availableSlotsModules/mutations.ts",
+          "file": "convex/availableSlotsModules/mutations.ts",
+          "estimatedMinutes": 60,
+          "description": "Extract createSlots, blockSlot, unblockSlot"
+        },
+        {
+          "id": "9.4",
+          "name": "Create availableSlotsModules/recurring.ts",
+          "file": "convex/availableSlotsModules/recurring.ts",
+          "estimatedMinutes": 90,
+          "description": "Extract createRecurringSlots, previewRecurringSlots, deleteTemplateSlots"
+        },
+        {
+          "id": "9.5",
+          "name": "Create availableSlotsModules/index.ts facade",
+          "file": "convex/availableSlotsModules/index.ts",
+          "estimatedMinutes": 15,
+          "description": "Re-export all functions maintaining API compatibility"
+        },
+        {
+          "id": "9.6",
+          "name": "Transform availableSlots.ts to facade",
+          "file": "convex/availableSlots.ts",
+          "estimatedMinutes": 30,
+          "description": "Replace 659 lines with re-exports (<100 lines)"
+        },
+        {
+          "id": "9.7",
+          "name": "Add JSDoc to appointments.ts",
+          "file": "convex/appointments.ts",
+          "estimatedMinutes": 60
+        },
+        {
+          "id": "9.8",
+          "name": "Add JSDoc to gdpr.ts",
+          "file": "convex/gdpr.ts",
+          "estimatedMinutes": 45
+        },
+        {
+          "id": "9.9",
+          "name": "Add JSDoc to patients.ts",
+          "file": "convex/patients.ts",
+          "estimatedMinutes": 45
+        },
+        {
+          "id": "9.10",
+          "name": "Browser-CLI verification after refactoring",
+          "estimatedMinutes": 60,
+          "browserCommands": [
+            "restoreState authenticated-doctor",
+            "navigate /doctor/schedule",
+            "click 'text:Add Slot'",
+            "assertNetwork availableSlots:createSlots",
+            "navigate /employer/bookings",
+            "click 'text:New Booking'",
+            "assertNetwork availableSlots:getAvailable"
+          ]
+        }
+      ],
+      "successCriteria": [
+        "availableSlots.ts reduced to <100 lines (facade)",
+        "Modules in convex/availableSlotsModules/",
+        "All API paths preserved (api.availableSlots.*)",
+        "JSDoc on all Convex exports"
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Sprint 10: Performance Optimization",
+      "estimatedHours": "4-6",
+      "priority": "MEDIUM",
+      "tasks": [
+        {
+          "id": "10.1",
+          "name": "Create getDashboardStats aggregation query",
+          "file": "convex/employers.ts",
+          "estimatedMinutes": 60,
+          "description": "Combine patients, appointments, reports counts in single query"
+        },
+        {
+          "id": "10.2",
+          "name": "Update EmployerDashboard to use aggregated query",
+          "file": "src/pages/employer/Dashboard.tsx",
+          "estimatedMinutes": 45,
+          "description": "Replace 3 useQuery calls with single getDashboardStats"
+        },
+        {
+          "id": "10.3",
+          "name": "Create data retention scheduler",
+          "file": "convex/scheduled/dataRetention.ts",
+          "estimatedMinutes": 90,
+          "description": "Scheduled function to delete audit logs > 90 days (7 years for compliance logs)"
+        },
+        {
+          "id": "10.4",
+          "name": "Register cron job",
+          "file": "convex/crons.ts",
+          "estimatedMinutes": 15,
+          "description": "Daily 3 AM UTC cleanup job"
+        },
+        {
+          "id": "10.5",
+          "name": "Add manualChunks to vite.config.ts",
+          "file": "vite.config.ts",
+          "estimatedMinutes": 30,
+          "description": "Split vendor and portal chunks for better caching"
+        },
+        {
+          "id": "10.6",
+          "name": "Browser-CLI performance verification",
+          "estimatedMinutes": 60,
+          "browserCommands": [
+            "restoreState authenticated-employer",
+            "navigate /employer/dashboard",
+            "capturePerformanceMetrics",
+            "getPerformanceMetrics",
+            "assertPerformance LCP lt 2500",
+            "network --filter=employers:getDashboardStats"
+          ]
+        }
+      ],
+      "successCriteria": [
+        "Single API call for employer dashboard",
+        "Scheduled function deletes old audit logs",
+        "Bundle split into 6+ chunks",
+        "LCP < 2500ms"
+      ]
+    }
+  ],
+  "criticalFiles": [
+    {"path": "convex/gdpr.ts", "lines": 430, "sprint": 7, "change": "Add audit logging to consent operations"},
+    {"path": "convex/http.ts", "lines": 287, "sprint": 7, "change": "Add CSP security headers"},
+    {"path": "src/components/employer/EmployeeForm.tsx", "lines": 82, "sprint": 7, "change": "Add error toast"},
+    {"path": "vitest.config.ts", "sprint": 8, "change": "Expand coverage, add thresholds"},
+    {"path": "convex/availableSlots.ts", "lines": 659, "sprint": 9, "change": "Transform to facade"},
+    {"path": "convex/employers.ts", "sprint": 10, "change": "Add getDashboardStats query"},
+    {"path": "src/pages/employer/Dashboard.tsx", "lines": 111, "sprint": 10, "change": "Use aggregated query"}
+  ],
+  "risks": [
+    {"sprint": 7, "task": "CSP Headers", "level": "MEDIUM", "mitigation": "Start with report-only, test thoroughly"},
+    {"sprint": 8, "task": "Coverage Thresholds", "level": "MEDIUM", "mitigation": "May fail initially, adjust thresholds if needed"},
+    {"sprint": 9, "task": "Module Split", "level": "MEDIUM", "mitigation": "Facade pattern preserves API paths"},
+    {"sprint": 10, "task": "Data Retention", "level": "MEDIUM", "mitigation": "Test scheduler in dev before production"}
+  ],
+  "browserCliTestWorkflows": {
+    "sprint7": {
+      "consentAuditLogging": [
+        "restoreState authenticated-employer",
+        "navigate /employer/employees",
+        "click 'text:Add Employee'",
+        "type e3 'AuditTest'",
+        "type e4 'User'",
+        "type e5 'audit@test.com'",
+        "type e6 '1990-01-01'",
+        "click 'text:Add Employee'",
+        "wait 2000",
+        "network --filter=gdpr:createConsent",
+        "assertNetwork gdpr:createConsent"
+      ],
+      "errorToast": [
+        "restoreState authenticated-employer",
+        "navigate /employer/employees",
+        "click 'text:Add Employee'",
+        "click 'text:Add Employee'",
+        "wait 1000",
+        "snapshot",
+        "console"
+      ]
+    },
+    "sprint8": {
+      "employerPortal": [
+        "restoreState authenticated-employer",
+        "navigate /employer/dashboard",
+        "assert 'text:Dashboard' visible",
+        "navigate /employer/employees",
+        "assert 'text:Employees' visible",
+        "navigate /employer/bookings",
+        "assert 'text:Bookings' visible"
+      ],
+      "adminPortal": [
+        "restoreState authenticated-admin",
+        "navigate /admin/gdpr",
+        "assert 'text:GDPR Compliance Dashboard' visible",
+        "navigate /admin/employers",
+        "assert 'text:Employer Verification' visible"
+      ]
+    },
+    "sprint9": {
+      "slotOperations": [
+        "restoreState authenticated-doctor",
+        "navigate /doctor/schedule",
+        "wait 1500",
+        "snapshot",
+        "assertNetwork availableSlots:getByDateRange"
+      ]
+    },
+    "sprint10": {
+      "performance": [
+        "restoreState authenticated-employer",
+        "navigate /employer/dashboard",
+        "capturePerformanceMetrics",
+        "wait 1500",
+        "getPerformanceMetrics",
+        "assertPerformance LCP lt 2500"
+      ]
+    }
+  }
+}
