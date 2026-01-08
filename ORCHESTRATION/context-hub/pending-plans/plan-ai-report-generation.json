@@ -1,0 +1,280 @@
+{
+  "planId": "ai-report-generation-2026-01-08",
+  "title": "AI Report Generation with GPT-5-mini",
+  "description": "Enable GPT-5-mini powered report generation for doctors in OccuHealth doctor portal",
+  "createdAt": "2026-01-08T17:00:00Z",
+  "status": "pending",
+  "totalEffort": "16 hours",
+  "phases": [
+    {
+      "id": 1,
+      "name": "Prerequisites",
+      "sprint": "01",
+      "effort": "1 hour",
+      "priority": "P0",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "1.1",
+          "description": "Install OpenAI SDK",
+          "command": "npm install openai",
+          "verification": "Check package.json for openai dependency"
+        },
+        {
+          "id": "1.2",
+          "description": "Extend reports schema with AI metadata fields",
+          "file": "convex/schema.ts",
+          "lines": "197-217",
+          "changes": "Add aiAssisted, aiAccepted, aiModified optional boolean fields"
+        },
+        {
+          "id": "1.3",
+          "description": "Add AI error codes",
+          "file": "convex/lib/errorCodes.ts",
+          "changes": "Add AI_SERVICE_UNAVAILABLE, AI_RATE_LIMITED, AI_RESPONSE_MALFORMED, AI_RESPONSE_EMPTY, AI_TIMEOUT"
+        },
+        {
+          "id": "1.4",
+          "description": "Create actions directory",
+          "command": "mkdir -p convex/actions"
+        }
+      ],
+      "acceptanceCriteria": [
+        "npm run typecheck passes",
+        "package.json has openai dependency",
+        "convex/actions/ directory exists",
+        "Error codes extended"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Backend AI Infrastructure",
+      "sprint": "02",
+      "effort": "4 hours",
+      "priority": "P0",
+      "status": "pending",
+      "dependsOn": [1],
+      "tasks": [
+        {
+          "id": "2.1",
+          "description": "Create AI provider interface",
+          "file": "convex/lib/ai/providers/types.ts",
+          "newFile": true
+        },
+        {
+          "id": "2.2",
+          "description": "Create retry logic with exponential backoff",
+          "file": "convex/lib/ai/retry.ts",
+          "newFile": true
+        },
+        {
+          "id": "2.3",
+          "description": "Create OpenAI provider implementation",
+          "file": "convex/lib/ai/providers/openai.ts",
+          "newFile": true,
+          "constraints": ["NO temperature parameter", "Use max_completion_tokens", "Use response_format json_object"]
+        },
+        {
+          "id": "2.4",
+          "description": "Create provider factory function",
+          "file": "convex/lib/ai/providers/index.ts",
+          "newFile": true
+        },
+        {
+          "id": "2.5",
+          "description": "Create Zod validation schema",
+          "file": "convex/lib/ai/schemas/reportSuggestion.ts",
+          "newFile": true
+        },
+        {
+          "id": "2.6",
+          "description": "Create prompt templates",
+          "file": "convex/lib/ai/prompts/reportSuggestion.ts",
+          "newFile": true
+        },
+        {
+          "id": "2.7",
+          "description": "Create AI module facade",
+          "file": "convex/lib/ai/index.ts",
+          "newFile": true
+        }
+      ],
+      "acceptanceCriteria": [
+        "All files created per directory structure",
+        "Factory function getAIProvider works",
+        "Zod validation validates AI responses",
+        "Retry logic handles transient errors",
+        "npm run typecheck passes"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Convex Action Implementation",
+      "sprint": "03",
+      "effort": "4 hours",
+      "priority": "P0",
+      "status": "pending",
+      "dependsOn": [2],
+      "tasks": [
+        {
+          "id": "3.1",
+          "description": "Create AI helper queries/mutations",
+          "file": "convex/aiHelpers.ts",
+          "newFile": true,
+          "functions": ["getReportContext", "storeSuggestion", "generateWithRecovery", "cleanupExpiredCache"]
+        },
+        {
+          "id": "3.2",
+          "description": "Create AI report suggestion action",
+          "file": "convex/actions/aiReportSuggestion.ts",
+          "newFile": true,
+          "runtime": "node"
+        },
+        {
+          "id": "3.3",
+          "description": "Extend reports mutation with AI metadata",
+          "file": "convex/reports.ts",
+          "lines": "~149",
+          "changes": "Add createWithAI mutation"
+        },
+        {
+          "id": "3.4",
+          "description": "Create clinical notes API (if needed)",
+          "file": "convex/clinicalNotes.ts",
+          "newFile": true,
+          "functions": ["create", "getByAppointment"]
+        }
+      ],
+      "acceptanceCriteria": [
+        "Action callable from frontend via useAction",
+        "AI suggestion returned within 15 seconds",
+        "Audit log created for each AI generation",
+        "Error recovery logs failures",
+        "npm run typecheck passes"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Frontend Integration",
+      "sprint": "04",
+      "effort": "3 hours",
+      "priority": "P1",
+      "status": "pending",
+      "dependsOn": [3],
+      "tasks": [
+        {
+          "id": "4.1",
+          "description": "Create AI suggestion panel component",
+          "file": "src/components/doctor/AISuggestionPanel.tsx",
+          "newFile": true,
+          "features": ["Confidence badge", "Accept/Edit/Ignore buttons", "Restriction list", "Follow-up notes"]
+        },
+        {
+          "id": "4.2",
+          "description": "Update Reports page with AI integration",
+          "file": "src/pages/doctor/Reports.tsx",
+          "currentLines": 191,
+          "changes": ["Add useAction hook", "Add AI state management", "Add Generate with AI button", "Add AISuggestionPanel", "Update form population", "Update submit to createWithAI"]
+        }
+      ],
+      "acceptanceCriteria": [
+        "Generate with AI button visible in dialog",
+        "Loading state shows spinner",
+        "AI panel appears after generation",
+        "Accept/Edit/Ignore buttons work",
+        "Form populated correctly",
+        "AI metadata saved with report"
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Caching & Performance",
+      "sprint": "05",
+      "effort": "2 hours",
+      "priority": "P2",
+      "status": "pending",
+      "dependsOn": [3],
+      "tasks": [
+        {
+          "id": "5.1",
+          "description": "Add aiSuggestionCache table to schema",
+          "file": "convex/schema.ts",
+          "lines": "~327"
+        },
+        {
+          "id": "5.2",
+          "description": "Create cache helper functions",
+          "file": "convex/lib/ai/cache.ts",
+          "newFile": true,
+          "functions": ["getCacheKey", "getTTL", "getCachedRestrictions", "setCachedRestrictions", "incrementHitCount"]
+        },
+        {
+          "id": "5.3",
+          "description": "Add cache cleanup cron job",
+          "file": "convex/crons.ts",
+          "changes": "Add daily cleanup at 3 AM UTC"
+        },
+        {
+          "id": "5.4",
+          "description": "Update AI action to use cache",
+          "file": "convex/actions/aiReportSuggestion.ts",
+          "changes": "Check cache before API call, store results"
+        }
+      ],
+      "acceptanceCriteria": [
+        "Cache table created",
+        "Repeated queries use cache",
+        "Hit count tracked",
+        "Cleanup cron configured",
+        "60% cache hit rate target"
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Browser-CLI Testing",
+      "sprint": "06",
+      "effort": "2 hours",
+      "priority": "P1",
+      "status": "pending",
+      "dependsOn": [4],
+      "testScenarios": [
+        {"id": "T1", "description": "Navigate to Reports page", "verification": "Doctor dashboard visible"},
+        {"id": "T2", "description": "Open report dialog", "verification": "Generate with AI button visible"},
+        {"id": "T3", "description": "Generate AI suggestion", "verification": "Panel appears within 15s"},
+        {"id": "T4", "description": "Accept suggestion", "verification": "Form populated"},
+        {"id": "T5", "description": "Submit with AI", "verification": "Report saved with aiAssisted=true"},
+        {"id": "T6", "description": "Edit suggestion", "verification": "Report saved with aiModified=true"},
+        {"id": "T7", "description": "Reject suggestion", "verification": "Panel hides, form empty"},
+        {"id": "T8", "description": "Error handling", "verification": "Error message displayed"}
+      ],
+      "acceptanceCriteria": [
+        "All 8 test scenarios pass",
+        "Screenshots captured as evidence",
+        "Audit logs show AI tracking",
+        "No console errors"
+      ]
+    }
+  ],
+  "criticalFiles": [
+    {"path": "convex/schema.ts", "lines": "197-217, ~327", "changes": "AI fields on reports, aiSuggestionCache table"},
+    {"path": "convex/actions/aiReportSuggestion.ts", "newFile": true, "description": "Core AI action using Node runtime"},
+    {"path": "convex/lib/ai/providers/openai.ts", "newFile": true, "description": "GPT-5-mini provider implementation"},
+    {"path": "src/pages/doctor/Reports.tsx", "currentLines": 191, "changes": "AI button and panel integration"},
+    {"path": "src/components/doctor/AISuggestionPanel.tsx", "newFile": true, "description": "AI suggestion display component"}
+  ],
+  "risks": [
+    {"risk": "API Key Exposure", "severity": "CRITICAL", "mitigation": "Rotate keys before deployment"},
+    {"risk": "OpenAI Rate Limits", "severity": "HIGH", "mitigation": "Retry logic with exponential backoff"},
+    {"risk": "Slow AI Response", "severity": "MEDIUM", "mitigation": "15s timeout, loading state, cache"},
+    {"risk": "Schema Migration", "severity": "LOW", "mitigation": "Optional fields, no data loss"}
+  ],
+  "successCriteria": [
+    {"metric": "Doctor can generate AI suggestion", "target": "100%"},
+    {"metric": "AI response within 15 seconds", "target": "95%"},
+    {"metric": "Doctor can accept/edit/reject", "target": "100%"},
+    {"metric": "Report saved with AI metadata", "target": "100%"},
+    {"metric": "Audit logs capture AI usage", "target": "100%"},
+    {"metric": "Cache hit rate", "target": "60%"},
+    {"metric": "All browser-cli tests pass", "target": "8/8"}
+  ]
+}

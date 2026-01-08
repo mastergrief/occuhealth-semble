@@ -17,4 +17,11 @@ crons.interval(
   internal.scheduled.gdprStatsCache.updateGDPRStatsCache
 );
 
+// Clean expired AI cache entries daily at 3:15 AM UTC (offset from other cleanup)
+crons.daily(
+  "cleanup expired AI cache",
+  { hourUTC: 3, minuteUTC: 15 },
+  internal.aiHelpers.cleanupExpiredCache
+);
+
 export default crons;

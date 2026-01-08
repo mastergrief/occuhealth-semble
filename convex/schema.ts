@@ -211,6 +211,10 @@ export default defineSchema({
     signedAt: v.number(),
     sentToEmployerAt: v.optional(v.number()),
     viewedByEmployerAt: v.optional(v.number()),
+    // AI Report Generation tracking
+    aiAssisted: v.optional(v.boolean()),
+    aiAccepted: v.optional(v.boolean()),
+    aiModified: v.optional(v.boolean()),
   })
     .index("by_employer", ["employerId"])
     .index("by_appointment", ["appointmentId"])
@@ -332,4 +336,24 @@ export default defineSchema({
   numbers: defineTable({
     value: v.number(),
   }),
+
+  // ---------------------------------------------------------------------------
+  // AI Suggestion Cache (Performance Optimization)
+  // ---------------------------------------------------------------------------
+  aiSuggestionCache: defineTable({
+    cacheKey: v.string(),
+    suggestions: v.object({
+      restrictions: v.array(v.object({
+        code: v.string(),
+        category: v.string(),
+        description: v.string(),
+        duration: v.optional(v.string()),
+      })),
+    }),
+    hitCount: v.number(),
+    createdAt: v.number(),
+    expiresAt: v.number(),
+  })
+    .index("by_key", ["cacheKey"])
+    .index("by_expires", ["expiresAt"]),
 });

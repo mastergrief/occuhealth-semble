@@ -42,6 +42,13 @@ export const ErrorCodes = {
   // Server errors
   INTERNAL_ERROR: "INTERNAL_ERROR",
   CONFIGURATION_ERROR: "CONFIGURATION_ERROR",
-} as const;;
+
+  // AI Service Errors
+  AI_SERVICE_UNAVAILABLE: "AI_SERVICE_UNAVAILABLE",
+  AI_RATE_LIMITED: "AI_RATE_LIMITED",
+  AI_RESPONSE_MALFORMED: "AI_RESPONSE_MALFORMED",
+  AI_RESPONSE_EMPTY: "AI_RESPONSE_EMPTY",
+  AI_TIMEOUT: "AI_TIMEOUT",
+} as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
