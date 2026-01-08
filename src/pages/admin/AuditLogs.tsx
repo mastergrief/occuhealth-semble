@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,36 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Filter, X } from "lucide-react";
+import { Id } from "../../../convex/_generated/dataModel";
+
+/**
+ * Admin page for viewing GDPR audit logs.
+ *
+ * Displays a filterable, paginated list of all GDPR-related audit events
+ * including data access, consent changes, and erasure requests. Supports
+ * filtering by action type, actor type, resource type, and date range.
+ *
+ * ## Filter Options
+ * - **Action** - consent_created, data_accessed, data_exported, etc.
+ * - **Actor Type** - employer, doctor, admin, system
+ * - **Resource Type** - patient, consent, report, appointment, employer
+ * - **Date Range** - Start and end date filters
+ *
+ * ## Features
+ * - Cursor-based pagination with "Load More"
+ * - Color-coded action badges
+ * - Expandable details with metadata JSON
+ * - Clear filters button
+ *
+ * @component
+ * @example
+ * ```tsx
+ * // Rendered at /admin/gdpr/audit
+ * <AuditLogs />
+ * ```
+ *
+ * @fires api.gdpr.getAuditLogs - Fetches paginated audit log entries
+ */
 
 const ACTION_TYPES = [
   "patient_created",
@@ -34,6 +64,34 @@ const ACTION_TYPES = [
 
 const ACTOR_TYPES = ["employer", "doctor", "admin", "system"] as const;
 const RESOURCE_TYPES = ["patient", "appointment", "report", "consent", "employer", "appointmentType", "erasureRequest"];
+
+interface AuditLogRowProps {
+  log: {
+    _id: Id<"auditLogs">;
+    action: string;
+    actorType: string;
+    resourceType: string;
+    resourceId?: string;
+    timestamp: number;
+  };
+}
+
+const AuditLogRow = memo(function AuditLogRow({ log }: AuditLogRowProps) {
+  return (
+    <div className="p-3 border rounded-lg">
+      <div className="flex justify-between">
+        <span className="font-medium">{log.action}</span>
+        <span className="text-sm text-muted-foreground">
+          {new Date(log.timestamp).toLocaleString()}
+        </span>
+      </div>
+      <p className="text-sm">
+        {log.actorType} &rarr; {log.resourceType}
+        {log.resourceId && ` (${log.resourceId})`}
+      </p>
+    </div>
+  );
+});
 
 export function AuditLogs() {
   const [filters, setFilters] = useState({
@@ -180,18 +238,7 @@ export function AuditLogs() {
           {logs.length > 0 ? (
             <div className="space-y-2">
               {logs.map((log) => (
-                <div key={log._id} className="p-3 border rounded-lg">
-                  <div className="flex justify-between">
-                    <span className="font-medium">{log.action}</span>
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(log.timestamp).toLocaleString()}
-                    </span>
-                  </div>
-                  <p className="text-sm">
-                    {log.actorType} &rarr; {log.resourceType}
-                    {log.resourceId && ` (${log.resourceId})`}
-                  </p>
-                </div>
+                <AuditLogRow key={log._id} log={log} />
               ))}
               {hasMore && (
                 <div className="pt-4 flex justify-center">

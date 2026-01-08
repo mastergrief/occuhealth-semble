@@ -106,25 +106,25 @@ export const validateAndGetAppointment = query({
       return { valid: false as const, error: "This link is no longer valid" };
     }
 
-    // Get appointment with related data
+    // Get appointment first (needed for other IDs)
     const appointment = await ctx.db.get(tokenRecord.appointmentId);
     if (!appointment) {
       return { valid: false as const, error: "Appointment not found" };
     }
 
-    const patient = await ctx.db.get(tokenRecord.patientId);
-    const slot = appointment.slotId
-      ? await ctx.db.get(appointment.slotId)
-      : null;
-    const appointmentType = appointment.appointmentTypeId
-      ? await ctx.db.get(appointment.appointmentTypeId)
-      : null;
+    // Parallel batch 1: Independent entities
+    const [patient, slot, appointmentType] = await Promise.all([
+      ctx.db.get(tokenRecord.patientId),
+      appointment.slotId ? ctx.db.get(appointment.slotId) : Promise.resolve(null),
+      appointment.appointmentTypeId
+        ? ctx.db.get(appointment.appointmentTypeId)
+        : Promise.resolve(null),
+    ]);
 
-    // Get doctor from slot if available
-    let doctor = null;
-    if (slot?.doctorId) {
-      doctor = await ctx.db.get(slot.doctorId);
-    }
+    // Parallel batch 2: Entities depending on previous
+    const [doctor] = await Promise.all([
+      slot?.doctorId ? ctx.db.get(slot.doctorId) : Promise.resolve(null),
+    ]);
 
     return {
       valid: true as const,
@@ -189,25 +189,25 @@ export const validateAndGetAppointmentInternal = internalQuery({
       return { valid: false as const, error: "This link is no longer valid" };
     }
 
-    // Get appointment with related data
+    // Get appointment first (needed for other IDs)
     const appointment = await ctx.db.get(tokenRecord.appointmentId);
     if (!appointment) {
       return { valid: false as const, error: "Appointment not found" };
     }
 
-    const patient = await ctx.db.get(tokenRecord.patientId);
-    const slot = appointment.slotId
-      ? await ctx.db.get(appointment.slotId)
-      : null;
-    const appointmentType = appointment.appointmentTypeId
-      ? await ctx.db.get(appointment.appointmentTypeId)
-      : null;
+    // Parallel batch 1: Independent entities
+    const [patient, slot, appointmentType] = await Promise.all([
+      ctx.db.get(tokenRecord.patientId),
+      appointment.slotId ? ctx.db.get(appointment.slotId) : Promise.resolve(null),
+      appointment.appointmentTypeId
+        ? ctx.db.get(appointment.appointmentTypeId)
+        : Promise.resolve(null),
+    ]);
 
-    // Get doctor from slot if available
-    let doctor = null;
-    if (slot?.doctorId) {
-      doctor = await ctx.db.get(slot.doctorId);
-    }
+    // Parallel batch 2: Entities depending on previous
+    const [doctor] = await Promise.all([
+      slot?.doctorId ? ctx.db.get(slot.doctorId) : Promise.resolve(null),
+    ]);
 
     return {
       valid: true as const,

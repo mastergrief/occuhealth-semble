@@ -202,7 +202,7 @@ export const sendToEmployer = mutation({
     const report = await ctx.db.get(reportId);
     if (!report) {
       throw new ConvexError({
-        code: "REPORT_NOT_FOUND" as const,
+        code: ErrorCodes.REPORT_NOT_FOUND,
         message: "Report not found",
       });
     }
@@ -225,7 +225,7 @@ export const markViewed = mutation({
     const report = await ctx.db.get(reportId);
     if (!report) {
       throw new ConvexError({
-        code: "REPORT_NOT_FOUND" as const,
+        code: ErrorCodes.REPORT_NOT_FOUND,
         message: "Report not found",
       });
     }

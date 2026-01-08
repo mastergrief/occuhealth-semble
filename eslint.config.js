@@ -61,13 +61,13 @@ export default tseslint.config(
       // Allow explicit `any`s
       "@typescript-eslint/no-explicit-any": "off",
 
-      // START: Allow implicit `any`s
-      "@typescript-eslint/no-unsafe-argument": "off",
-      "@typescript-eslint/no-unsafe-assignment": "off",
-      "@typescript-eslint/no-unsafe-call": "off",
-      "@typescript-eslint/no-unsafe-member-access": "off",
-      "@typescript-eslint/no-unsafe-return": "off",
-      // END: Allow implicit `any`s
+      // START: Warn on implicit `any`s (upgraded from "off" for better type safety)
+      "@typescript-eslint/no-unsafe-argument": "warn",
+      "@typescript-eslint/no-unsafe-assignment": "warn",
+      "@typescript-eslint/no-unsafe-call": "warn",
+      "@typescript-eslint/no-unsafe-member-access": "warn",
+      "@typescript-eslint/no-unsafe-return": "warn",
+      // END: Warn on implicit `any`s
 
       // Allow async functions without await
       // for consistency (esp. Convex `handler`s)

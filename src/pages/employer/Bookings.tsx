@@ -1,3 +1,4 @@
+import { memo, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { defaultPaginationOpts } from "../../../convex/helpers/pagination";
@@ -5,10 +6,70 @@ import { BookingFlow } from "@/components/employer/BookingFlow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Share2, Check } from "lucide-react";
-import { useState } from "react";
 import { useEmployerContext } from "../EmployerLayout";
 import { toast } from "sonner";
 import { Id } from "../../../convex/_generated/dataModel";
+
+interface AppointmentCardProps {
+  appointment: {
+    _id: Id<"appointments">;
+    patient?: {
+      firstName: string;
+      lastName: string;
+    } | null;
+    scheduledDate: string;
+    scheduledTime: string;
+    status: string;
+  };
+  copiedId: Id<"appointments"> | null;
+  onShareLink: (appointmentId: Id<"appointments">) => void;
+}
+
+const AppointmentCard = memo(function AppointmentCard({
+  appointment,
+  copiedId,
+  onShareLink,
+}: AppointmentCardProps) {
+  return (
+    <div className="flex justify-between items-center p-4 border rounded-lg">
+      <div>
+        <p className="font-medium">
+          {appointment.patient?.firstName} {appointment.patient?.lastName}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {appointment.scheduledDate} at {appointment.scheduledTime}
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => onShareLink(appointment._id)}
+        >
+          {copiedId === appointment._id ? (
+            <Check className="h-4 w-4 text-green-600" />
+          ) : (
+            <Share2 className="h-4 w-4" />
+          )}
+          <span className="ml-1">Share</span>
+        </Button>
+        <span
+          className={`px-3 py-1 rounded-full text-sm ${
+            appointment.status === "completed"
+              ? "bg-green-100 text-green-800"
+              : appointment.status === "scheduled"
+                ? "bg-blue-100 text-blue-800"
+                : appointment.status === "cancelled"
+                  ? "bg-red-100 text-red-800"
+                  : "bg-gray-100 text-gray-800"
+          }`}
+        >
+          {appointment.status}
+        </span>
+      </div>
+    </div>
+  );
+});
 
 export function BookingsPage() {
   const { employer, isVerified } = useEmployerContext();
@@ -64,46 +125,12 @@ export function BookingsPage() {
           {appointments && appointments.length > 0 ? (
             <div className="space-y-2">
               {appointments.map((apt) => (
-                <div
+                <AppointmentCard
                   key={apt._id}
-                  className="flex justify-between items-center p-4 border rounded-lg"
-                >
-                  <div>
-                    <p className="font-medium">
-                      {apt.patient?.firstName} {apt.patient?.lastName}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {apt.scheduledDate} at {apt.scheduledTime}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleShareLink(apt._id)}
-                    >
-                      {copiedId === apt._id ? (
-                        <Check className="h-4 w-4 text-green-600" />
-                      ) : (
-                        <Share2 className="h-4 w-4" />
-                      )}
-                      <span className="ml-1">Share</span>
-                    </Button>
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm ${
-                        apt.status === "completed"
-                          ? "bg-green-100 text-green-800"
-                          : apt.status === "scheduled"
-                            ? "bg-blue-100 text-blue-800"
-                            : apt.status === "cancelled"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {apt.status}
-                    </span>
-                  </div>
-                </div>
+                  appointment={apt}
+                  copiedId={copiedId}
+                  onShareLink={handleShareLink}
+                />
               ))}
             </div>
           ) : (

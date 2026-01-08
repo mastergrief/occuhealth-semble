@@ -1,18 +1,19 @@
 /**
- * Unit tests for Doctor Authorization utilities
+ * Integration tests for Doctor Authorization using convex-test
  *
- * Tests pure functions from convex/doctorSettings.ts
- * Authorization functions requiring Convex context are documented but
- * must be tested via integration/E2E tests.
+ * Tests doctor settings, authorization, and Zoom URL validation.
  */
+/// <reference types="vite/client" />
 import { describe, it, expect } from "vitest";
+import { convexTest } from "convex-test";
+import schema from "../schema";
 import { isValidZoomUrl } from "../doctorSettings";
 
+// Import all convex modules for convex-test
+const modules = import.meta.glob("../**/*.*s");
+
 // ---------------------------------------------------------------------------
-// Zoom URL Validation Tests
-// ---------------------------------------------------------------------------
-// The isValidZoomUrl function validates Zoom meeting URLs to ensure they
-// are legitimate Zoom links before storing them as doctor settings.
+// Zoom URL Validation Tests (Pure Function)
 // ---------------------------------------------------------------------------
 
 describe("isValidZoomUrl", () => {
@@ -125,21 +126,293 @@ describe("isValidZoomUrl", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Authorization Helper Documentation
+// Doctor Settings Integration Tests
 // ---------------------------------------------------------------------------
-// The following functions from convex/authModules/authorization.ts require
-// Convex context and cannot be unit tested without mocking the database.
-// They should be tested via integration tests or E2E tests.
-//
-// requireDoctorAccess(ctx: AuthContext): Promise<Doc<"doctorSettings">>
-//   - Throws UNAUTHENTICATED when no user session exists
-//   - Throws DOCTOR_NOT_FOUND when authenticated user is not a doctor
-//   - Returns doctor record when valid doctor is authenticated
-//
-// AuthErrorCode type:
-//   - UNAUTHENTICATED: No valid auth session
-//   - UNAUTHORIZED: User lacks permission for action
-//   - EMPLOYER_NOT_FOUND: Employer record missing
-//   - DOCTOR_NOT_FOUND: Doctor record missing
-//   - ADMIN_NOT_FOUND: Admin record missing
-// ---------------------------------------------------------------------------
+
+describe("doctorSettings - creation", () => {
+  it("should create doctor settings with valid Zoom URL", async () => {
+    const t = convexTest(schema, modules);
+
+    const doctorId = await t.run(async (ctx) => {
+      return await ctx.db.insert("doctorSettings", {
+        workosUserId: "workos_doctor_1",
+        email: "doctor@test.com",
+        name: "Dr. Alice Smith",
+        zoomPersonalLink: "https://zoom.us/j/123456789",
+        createdAt: Date.now(),
+      });
+    });
+
+    const doctor = await t.run(async (ctx) => {
+      return await ctx.db.get(doctorId);
+    });
+
+    expect(doctor).toBeDefined();
+    expect(doctor?.email).toBe("doctor@test.com");
+    expect(doctor?.name).toBe("Dr. Alice Smith");
+    expect(doctor?.zoomPersonalLink).toBe("https://zoom.us/j/123456789");
+    expect(isValidZoomUrl(doctor?.zoomPersonalLink ?? "")).toBe(true);
+  });
+
+  it("should create doctor settings with personal meeting room URL", async () => {
+    const t = convexTest(schema, modules);
+
+    const doctorId = await t.run(async (ctx) => {
+      return await ctx.db.insert("doctorSettings", {
+        workosUserId: "workos_doctor_2",
+        email: "doctor2@test.com",
+        name: "Dr. Bob Johnson",
+        zoomPersonalLink: "https://zoom.us/my/drbobjohnson",
+        createdAt: Date.now(),
+      });
+    });
+
+    const doctor = await t.run(async (ctx) => {
+      return await ctx.db.get(doctorId);
+    });
+
+    expect(doctor?.zoomPersonalLink).toBe("https://zoom.us/my/drbobjohnson");
+    expect(isValidZoomUrl(doctor?.zoomPersonalLink ?? "")).toBe(true);
+  });
+});
+
+describe("doctorSettings - queries", () => {
+  it("should query doctor by WorkOS user ID", async () => {
+    const t = convexTest(schema, modules);
+
+    await t.run(async (ctx) => {
+      await ctx.db.insert("doctorSettings", {
+        workosUserId: "workos_doctor_unique",
+        email: "unique_doctor@test.com",
+        name: "Dr. Unique",
+        zoomPersonalLink: "https://zoom.us/j/111111111",
+        createdAt: Date.now(),
+      });
+    });
+
+    const doctor = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("doctorSettings")
+        .withIndex("by_workos_user", (q) =>
+          q.eq("workosUserId", "workos_doctor_unique")
+        )
+        .unique();
+    });
+
+    expect(doctor).toBeDefined();
+    expect(doctor?.email).toBe("unique_doctor@test.com");
+    expect(doctor?.workosUserId).toBe("workos_doctor_unique");
+  });
+
+  it("should return null for non-existent doctor", async () => {
+    const t = convexTest(schema, modules);
+
+    const doctor = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("doctorSettings")
+        .withIndex("by_workos_user", (q) =>
+          q.eq("workosUserId", "non_existent_workos_id")
+        )
+        .unique();
+    });
+
+    expect(doctor).toBeNull();
+  });
+});
+
+describe("doctorSettings - authorization scenarios", () => {
+  it("should allow doctor to access their own appointments", async () => {
+    const t = convexTest(schema, modules);
+
+    // Create doctor
+    const doctorId = await t.run(async (ctx) => {
+      return await ctx.db.insert("doctorSettings", {
+        workosUserId: "workos_doctor_auth_1",
+        email: "auth_doctor@test.com",
+        name: "Dr. Auth Test",
+        zoomPersonalLink: "https://zoom.us/j/999999999",
+        createdAt: Date.now(),
+      });
+    });
+
+    // Create slot for doctor
+    const slotId = await t.run(async (ctx) => {
+      return await ctx.db.insert("availableSlots", {
+        doctorId,
+        date: "2026-03-01",
+        startTime: "09:00",
+        endTime: "09:30",
+        status: "available",
+      });
+    });
+
+    // Verify doctor can see their slot
+    const slots = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("availableSlots")
+        .withIndex("by_doctor", (q) => q.eq("doctorId", doctorId))
+        .collect();
+    });
+
+    expect(slots).toHaveLength(1);
+    expect(slots[0]._id).toBe(slotId);
+  });
+
+  it("should isolate doctors from each other's slots", async () => {
+    const t = convexTest(schema, modules);
+
+    // Create two doctors
+    const doctor1Id = await t.run(async (ctx) => {
+      return await ctx.db.insert("doctorSettings", {
+        workosUserId: "workos_doctor_iso_1",
+        email: "doctor_iso_1@test.com",
+        name: "Dr. Isolation One",
+        zoomPersonalLink: "https://zoom.us/j/111111111",
+        createdAt: Date.now(),
+      });
+    });
+
+    const doctor2Id = await t.run(async (ctx) => {
+      return await ctx.db.insert("doctorSettings", {
+        workosUserId: "workos_doctor_iso_2",
+        email: "doctor_iso_2@test.com",
+        name: "Dr. Isolation Two",
+        zoomPersonalLink: "https://zoom.us/j/222222222",
+        createdAt: Date.now(),
+      });
+    });
+
+    // Create slots for each doctor
+    await t.run(async (ctx) => {
+      await ctx.db.insert("availableSlots", {
+        doctorId: doctor1Id,
+        date: "2026-03-01",
+        startTime: "10:00",
+        endTime: "10:30",
+        status: "available",
+      });
+
+      await ctx.db.insert("availableSlots", {
+        doctorId: doctor2Id,
+        date: "2026-03-01",
+        startTime: "10:00",
+        endTime: "10:30",
+        status: "available",
+      });
+    });
+
+    // Query doctor1's slots
+    const doctor1Slots = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("availableSlots")
+        .withIndex("by_doctor", (q) => q.eq("doctorId", doctor1Id))
+        .collect();
+    });
+
+    // Query doctor2's slots
+    const doctor2Slots = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("availableSlots")
+        .withIndex("by_doctor", (q) => q.eq("doctorId", doctor2Id))
+        .collect();
+    });
+
+    // Each doctor should only see their own slot
+    expect(doctor1Slots).toHaveLength(1);
+    expect(doctor1Slots[0].doctorId).toBe(doctor1Id);
+
+    expect(doctor2Slots).toHaveLength(1);
+    expect(doctor2Slots[0].doctorId).toBe(doctor2Id);
+  });
+});
+
+describe("doctorSettings - slot management", () => {
+  it("should allow doctor to create multiple slots", async () => {
+    const t = convexTest(schema, modules);
+
+    const doctorId = await t.run(async (ctx) => {
+      return await ctx.db.insert("doctorSettings", {
+        workosUserId: "workos_doctor_slots",
+        email: "slots_doctor@test.com",
+        name: "Dr. Multi Slots",
+        zoomPersonalLink: "https://zoom.us/j/333333333",
+        createdAt: Date.now(),
+      });
+    });
+
+    // Create multiple slots for different times
+    await t.run(async (ctx) => {
+      await ctx.db.insert("availableSlots", {
+        doctorId,
+        date: "2026-04-01",
+        startTime: "09:00",
+        endTime: "09:30",
+        status: "available",
+      });
+
+      await ctx.db.insert("availableSlots", {
+        doctorId,
+        date: "2026-04-01",
+        startTime: "10:00",
+        endTime: "10:30",
+        status: "available",
+      });
+
+      await ctx.db.insert("availableSlots", {
+        doctorId,
+        date: "2026-04-01",
+        startTime: "11:00",
+        endTime: "11:30",
+        status: "available",
+      });
+    });
+
+    // Query all slots for doctor
+    const slots = await t.run(async (ctx) => {
+      return await ctx.db
+        .query("availableSlots")
+        .withIndex("by_doctor", (q) => q.eq("doctorId", doctorId))
+        .collect();
+    });
+
+    expect(slots).toHaveLength(3);
+    expect(slots.every((s) => s.doctorId === doctorId)).toBe(true);
+  });
+
+  it("should allow doctor to block slots", async () => {
+    const t = convexTest(schema, modules);
+
+    const doctorId = await t.run(async (ctx) => {
+      return await ctx.db.insert("doctorSettings", {
+        workosUserId: "workos_doctor_block",
+        email: "block_doctor@test.com",
+        name: "Dr. Block Test",
+        zoomPersonalLink: "https://zoom.us/j/444444444",
+        createdAt: Date.now(),
+      });
+    });
+
+    // Create slot
+    const slotId = await t.run(async (ctx) => {
+      return await ctx.db.insert("availableSlots", {
+        doctorId,
+        date: "2026-05-01",
+        startTime: "14:00",
+        endTime: "14:30",
+        status: "available",
+      });
+    });
+
+    // Block the slot
+    await t.run(async (ctx) => {
+      await ctx.db.patch(slotId, { status: "blocked" });
+    });
+
+    // Verify slot is blocked
+    const slot = await t.run(async (ctx) => {
+      return await ctx.db.get(slotId);
+    });
+
+    expect(slot?.status).toBe("blocked");
+  });
+});

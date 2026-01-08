@@ -15,6 +15,28 @@ interface ReportsListProps {
   reports: Report[];
 }
 
+/**
+ * Display component for employer's medical reports list.
+ *
+ * Renders fitness-for-work reports sent by doctors, showing patient name,
+ * date, fitness status badge, and summary. Status badges are color-coded
+ * based on the fitness assessment outcome.
+ *
+ * ## Fitness Status Colors
+ * - **fit** - Green (employee cleared for work)
+ * - **fit_with_restrictions** - Yellow (cleared with limitations)
+ * - **temporarily_unfit** - Orange (temporary restriction)
+ * - **needs_further_assessment** - Red (requires additional evaluation)
+ *
+ * @component
+ * @example
+ * ```tsx
+ * <ReportsList reports={reportData} />
+ * ```
+ *
+ * @param props.reports - Array of medical report records to display
+ */
+
 const fitStatusColors: Record<string, string> = {
   fit: "bg-green-100 text-green-800",
   fit_with_restrictions: "bg-amber-100 text-amber-800",

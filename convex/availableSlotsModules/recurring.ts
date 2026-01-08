@@ -9,6 +9,7 @@ import { ConvexError } from "convex/values";
 import { mutation, query } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { requireDoctorAccess } from "../authModules/authorization";
+import { ErrorCodes } from "../lib/errorCodes";
 import {
   validateDateRange,
   validateDaysOfWeek,
@@ -18,6 +19,20 @@ import {
 } from "../lib/dateUtils";
 import { logSlotAction } from "../helpers/auditLogger";
 import type { ProposedSlot, SlotConflict } from "./types";
+
+/**
+ * Recurring Slot Management
+ *
+ * @filesize 397 lines (THRESHOLD: 400)
+ * @monitor If file exceeds 400 lines, consider splitting into:
+ *   - recurring-queries.ts (previewRecurringSlots query)
+ *   - recurring-mutations.ts (createRecurringSlots, deleteTemplateSlots mutations)
+ *
+ * Current exports:
+ * - previewRecurringSlots (query) - Preview what slots would be created
+ * - createRecurringSlots (mutation) - Create recurring weekly slots
+ * - deleteTemplateSlots (mutation) - Delete slots by template ID
+ */
 
 /**
  * Preview recurring slots before creating them.
@@ -234,7 +249,7 @@ export const createRecurringSlots = mutation({
     // Fail if requested and conflicts exist
     if (args.conflictResolution === "fail_on_conflict" && conflicts.length > 0) {
       throw new ConvexError({
-        code: "CONFLICT_DETECTED" as const,
+        code: ErrorCodes.CONFLICT_DETECTED,
         message: `${conflicts.length} conflict(s) detected. Cannot create slots.`,
         conflicts: conflicts.map((c) => ({
           date: c.date,

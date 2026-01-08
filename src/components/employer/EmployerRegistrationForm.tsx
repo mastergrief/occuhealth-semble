@@ -9,6 +9,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useEmployerAuth } from "@/lib/workos-auth";
 import { getErrorMessage } from "@/lib/errorHandler";
 
+/**
+ * Multi-step registration form for new employer accounts.
+ *
+ * A 3-step wizard that collects company details, address, and GDPR consents.
+ * Reads authentication tokens from URL parameters after WorkOS OAuth redirect.
+ *
+ * ## Steps
+ * 1. **Company Details** - Type, name, registration number, contact info
+ * 2. **Address** - Business address fields
+ * 3. **GDPR Consent** - Required consents for data processing, health data, employer sharing
+ *
+ * ## URL Parameters
+ * - `userId` - WorkOS user ID (required)
+ * - `accessToken` - OAuth access token (required)
+ * - `refreshToken` - OAuth refresh token
+ * - `sessionId` - WorkOS session ID
+ *
+ * @component
+ * @example
+ * ```tsx
+ * // Rendered at /register/employer with URL params
+ * <EmployerRegistrationForm />
+ * ```
+ *
+ * @fires api.employers.create - Creates the employer record
+ * @fires api.gdpr.createConsent - Creates GDPR consent records (3 calls)
+ */
+
 export function EmployerRegistrationForm() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();

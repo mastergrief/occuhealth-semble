@@ -14,6 +14,28 @@ import { Id } from "../../../convex/_generated/dataModel";
 
 import { handleMutationError } from "@/lib/errorHandler";
 
+/**
+ * Form dialog for adding new employees to an employer's organization.
+ *
+ * Creates both GDPR consent record and patient/employee record in a single flow.
+ * Requires explicit data processing consent before employee creation.
+ *
+ * @component
+ * @example
+ * ```tsx
+ * <EmployeeForm
+ *   employerId={employer._id}
+ *   onClose={() => setShowForm(false)}
+ * />
+ * ```
+ *
+ * @param props.employerId - The employer's Convex ID to associate the employee with
+ * @param props.onClose - Callback when dialog is closed (on success or cancel)
+ *
+ * @fires api.gdpr.createConsent - Creates GDPR data processing consent
+ * @fires api.patients.create - Creates the employee/patient record
+ */
+
 interface EmployeeFormProps {
   employerId: Id<"employers">;
   onClose: () => void;

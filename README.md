@@ -1,16 +1,16 @@
-# Convex Medical Starter
+# OccuHealth - Occupational Health Platform
 
-A full-stack starter template with **Convex** backend and **Semble** healthcare API integration.
+A full-stack GDPR-compliant occupational health platform with **Convex** backend and **WorkOS AuthKit** authentication.
 
 ## Features
 
-- 🏥 **Semble Integration** - GraphQL API client with token caching
-- 🔄 **Real-time Sync** - Webhook handlers for patient/appointment updates
-- 💾 **Local Caching** - Convex tables for offline access and fast queries
-- 🔐 **WorkOS AuthKit** - OAuth 2.0 authentication with role-based routing
-- ⚡ **React 19 + Vite** - Modern frontend stack
-- 🎨 **Tailwind CSS v4** - Utility-first styling
-- 📝 **TypeScript** - Full type safety with tsgo
+- **WorkOS AuthKit** - OAuth 2.0 authentication with role-based routing
+- **Real-time Data** - Convex reactive queries for instant updates
+- **GDPR Compliance** - Audit logging, consent management, data erasure
+- **Multi-Portal** - Admin, Employer, and Doctor portals
+- **React 19 + Vite** - Modern frontend stack
+- **Tailwind CSS v4** - Utility-first styling
+- **TypeScript** - Full type safety
 
 ## Quick Start
 
@@ -20,46 +20,46 @@ npm install
 
 # Set up environment variables
 cp .env.example .env.local
-# Edit .env.local with your Semble credentials
+# Edit .env.local with your WorkOS credentials
 
-# Start development
+# Start Convex dev server
+npx convex dev
+
+# Start frontend (in another terminal)
 npm run dev
-```
-
-## Environment Variables
-
-```bash
-# Semble API (required for integration)
-SEMBLE_API_URL=https://api.semble.io/graphql
-SEMBLE_CLIENT_ID=your-semble-email
-SEMBLE_CLIENT_SECRET=your-semble-password
-SEMBLE_WEBHOOK_SECRET=your-webhook-secret
-
-# Convex (auto-configured)
-CONVEX_DEPLOYMENT=dev:your-deployment
-VITE_CONVEX_URL=https://your-deployment.convex.cloud
 ```
 
 ## Authentication
 
-This application uses **WorkOS AuthKit** for OAuth 2.0 authentication.
+OccuHealth uses **WorkOS AuthKit** for authentication with three role types:
+- **Admin**: Platform administrators (WorkOS User Management)
+- **Employer**: Company/insurer accounts
+- **Doctor**: Healthcare provider accounts
+
+### Environment Variables
+
+```env
+# WorkOS AuthKit
+WORKOS_API_KEY=sk_test_...
+WORKOS_CLIENT_ID=client_...
+VITE_WORKOS_CLIENT_ID=client_...
+
+# Convex (auto-configured)
+CONVEX_DEPLOYMENT=dev:your-deployment
+VITE_CONVEX_URL=https://your-deployment.convex.cloud
+
+# Site URLs
+CONVEX_SITE_URL=https://your-deployment.convex.site
+APP_URL=http://localhost:5175
+```
 
 ### User Roles
 
 | Role | Portal | Features |
 |------|--------|----------|
-| Admin | `/admin` | Employer verification, erasure requests |
-| Employer | `/employer` | Patient management, appointment scheduling |
-| Doctor | `/doctor` | Appointments, clinical notes, reports |
-
-### Environment Variables
-
-| Variable | Purpose | Required |
-|----------|---------|----------|
-| `WORKOS_API_KEY` | WorkOS API secret (backend only) | Yes |
-| `WORKOS_CLIENT_ID` | WorkOS OAuth client ID | Yes |
-| `CONVEX_SITE_URL` | OAuth redirect URI base | Yes |
-| `APP_URL` | Frontend redirect after auth | Optional |
+| Admin | `/admin` | Employer verification, GDPR management, audit logs |
+| Employer | `/employer` | Employee management, appointment booking, reports |
+| Doctor | `/doctor` | Appointments, schedule management, clinical reports |
 
 ### Auth Flow
 
@@ -74,93 +74,42 @@ For detailed auth architecture, see [DOCUMENTS/AUTH.md](DOCUMENTS/AUTH.md).
 
 ```
 convex/
-├── http.ts              # HTTP routes (auth + webhooks)
+├── http.ts              # HTTP routes (auth callbacks)
 ├── oauthState.ts        # CSRF state management
 ├── schema.ts            # Database schema
-├── semble.ts            # Semble API integration
-├── sembleWebhooks.ts    # Webhook event handlers
-└── myFunctions.ts       # Example functions
+├── patients.ts          # Patient/employee management
+├── appointments.ts      # Appointment scheduling
+├── employers.ts         # Employer verification
+├── doctors.ts           # Doctor settings
+├── gdpr.ts              # GDPR compliance (audit, consent, erasure)
+├── reports.ts           # Clinical reports
+└── availableSlots.ts    # Doctor availability
+
+src/
+├── pages/
+│   ├── admin/           # Admin portal pages
+│   ├── employer/        # Employer portal pages
+│   └── doctor/          # Doctor portal pages
+├── components/          # Shared UI components
+├── contexts/            # Auth contexts
+└── lib/                 # Utilities
 ```
-
-## Semble Integration
-
-### API Actions
-
-```typescript
-// Get a patient by ID
-const patient = await ctx.runAction(api.semble.getPatient, { 
-  patientId: "patient-123" 
-});
-
-// List patients with pagination
-const { nodes, totalCount } = await ctx.runAction(api.semble.listPatients, {
-  limit: 50,
-  offset: 0,
-});
-
-// Search patients
-const results = await ctx.runAction(api.semble.searchPatients, {
-  searchTerm: "John",
-});
-
-// List appointments
-const appointments = await ctx.runAction(api.semble.listAppointments, {
-  patientId: "patient-123",
-  startDate: "2026-01-01",
-  endDate: "2026-01-31",
-});
-
-// Submit questionnaire to Semble
-await ctx.runAction(api.semble.submitQuestionnaire, {
-  patientId: "patient-123",
-  questionnaireType: "intake",
-  responses: [
-    { questionId: "q1", answer: "Yes" },
-    { questionId: "q2", answer: "No" },
-  ],
-});
-```
-
-### Sync Patients to Local Cache
-
-```bash
-# Via CLI
-npm run semble:sync
-
-# Or programmatically
-await ctx.runAction(api.semble.syncPatients, {});
-```
-
-### Webhook Setup
-
-1. Deploy your Convex app: `npm run convex:deploy`
-2. Configure webhook in Semble:
-   - URL: `https://your-deployment.convex.site/webhooks/semble`
-   - Events: `patient.created`, `patient.updated`, `appointment.*`
-   - Secret: Generate and save to `SEMBLE_WEBHOOK_SECRET`
 
 ## Database Schema
 
 | Table | Purpose |
 |-------|---------|
-| `semblePatients` | Cached patient data from Semble |
-| `sembleAppointments` | Cached appointment data |
-| `sembleWebhookEvents` | Webhook event audit trail |
-| `questionnaireSubmissions` | Questionnaire responses |
+| `patients` | Employee/patient records |
+| `appointments` | Scheduled appointments |
+| `employers` | Employer accounts with verification status |
+| `doctors` | Doctor profiles and settings |
+| `availableSlots` | Doctor availability slots |
+| `reports` | Clinical fitness reports |
+| `gdprConsent` | Patient consent records |
+| `gdprErasureRequests` | Data erasure requests |
+| `auditLogs` | GDPR audit trail |
 
 ## API Reference
-
-### Semble Actions
-
-| Action | Description |
-|--------|-------------|
-| `semble:getPatient` | Fetch single patient |
-| `semble:listPatients` | List patients (paginated) |
-| `semble:searchPatients` | Search by name/email |
-| `semble:getAppointment` | Fetch single appointment |
-| `semble:listAppointments` | Filter appointments |
-| `semble:syncPatients` | Bulk sync to local cache |
-| `semble:submitQuestionnaire` | Submit to Semble |
 
 ### HTTP Endpoints
 
@@ -168,18 +117,33 @@ await ctx.runAction(api.semble.syncPatients, {});
 |----------|--------|-------------|
 | `/auth/login` | GET | Initiate OAuth flow with WorkOS |
 | `/auth/callback` | GET | OAuth callback handler |
-| `/webhooks/semble` | POST | Semble webhook receiver |
 | `/health` | GET | Health check |
+
+### Core Mutations
+
+| Function | Description |
+|----------|-------------|
+| `patients:create` | Create employee with GDPR consent |
+| `appointments:book` | Book appointment |
+| `employers:verify` | Admin verifies employer |
+| `gdpr:processErasure` | Process data erasure request |
+| `reports:create` | Create fitness report |
+
+### Core Queries
+
+| Function | Description |
+|----------|-------------|
+| `patients:list` | List employees by employer |
+| `appointments:listByEmployer` | List employer appointments |
+| `gdpr:getAuditLogs` | Get GDPR audit trail |
+| `availableSlots:getByDateRange` | Get doctor availability |
 
 ## Documentation
 
-- [Setup Guide](./SETUP_GUIDE.md) - Getting started for developers
-- [Testing Guide](./TESTING_GUIDE.md) - Running unit and E2E tests
 - [Auth Architecture](./DOCUMENTS/AUTH.md) - Detailed authentication flow
 
 ## Resources
 
-- [Semble API Docs](https://docs.semble.io/)
 - [Convex Docs](https://docs.convex.dev/)
 - [WorkOS AuthKit](https://workos.com/docs/user-management)
 

@@ -6,6 +6,7 @@ import { mutation } from "../_generated/server";
 import { requireDoctorAccess } from "../authModules/authorization";
 import { isValidDateFormat, validateTimeRange } from "../lib/dateUtils";
 import { logSlotAction } from "../helpers/auditLogger";
+import { ErrorCodes } from "../lib/errorCodes";
 
 /**
  * Create multiple time slots for the authenticated doctor.
@@ -89,7 +90,7 @@ export const blockSlot = mutation({
     }
 
     if (slot.status !== "available") {
-      throw new ConvexError({ code: "INVALID_STATE" as const, message: "Slot not available to block" });
+      throw new ConvexError({ code: ErrorCodes.INVALID_STATE, message: "Slot not available to block" });
     }
 
     await ctx.db.patch(slotId, { status: "blocked" });
@@ -125,7 +126,7 @@ export const unblockSlot = mutation({
     }
 
     if (slot.status !== "blocked") {
-      throw new ConvexError({ code: "INVALID_STATE" as const, message: "Slot is not blocked" });
+      throw new ConvexError({ code: ErrorCodes.INVALID_STATE, message: "Slot is not blocked" });
     }
 
     await ctx.db.patch(slotId, { status: "available" });

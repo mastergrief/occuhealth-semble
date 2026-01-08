@@ -23,6 +23,32 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 import type { ConflictResolution as ConflictResolutionType, TimeSlotTemplate } from "@/types/scheduling";
 
+/**
+ * Multi-step wizard for creating recurring availability slots.
+ *
+ * Allows doctors to define weekly schedule patterns and apply them across
+ * a date range. Provides real-time preview of slots to be created and
+ * conflict detection with existing slots.
+ *
+ * ## Features
+ * - Day-of-week selection (Mon-Sun)
+ * - Multiple time slots per day
+ * - Date range picker with quick fill options
+ * - Conflict resolution strategy (skip, overwrite)
+ * - Real-time slot preview with debouncing
+ *
+ * @component
+ * @example
+ * ```tsx
+ * <RecurringSlotForm onClose={() => setShowForm(false)} />
+ * ```
+ *
+ * @param props.onClose - Callback when dialog is closed (on success or cancel)
+ *
+ * @fires api.availableSlots.previewRecurringSlots - Preview slots to be created
+ * @fires api.availableSlots.createRecurringSlots - Create the recurring slots
+ */
+
 interface RecurringSlotFormProps {
   onClose: () => void;
 }

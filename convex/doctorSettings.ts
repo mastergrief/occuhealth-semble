@@ -10,6 +10,7 @@ import { mutation, query, internalQuery } from "./_generated/server";
 // Internal query for auth routing
 import { ConvexError } from "convex/values";
 import { requireDoctorAccess } from "./authModules/authorization";
+import { ErrorCodes } from "./lib/errorCodes";
 
 // Zoom URL validation helper - exported for testing
 export function isValidZoomUrl(url: string): boolean {
@@ -131,7 +132,7 @@ export const update = mutation({
 
     if (updates.zoomPersonalLink && !isValidZoomUrl(updates.zoomPersonalLink)) {
       throw new ConvexError({
-        code: "INVALID_URL" as const,
+        code: ErrorCodes.INVALID_URL,
         message: "Zoom link must be a valid Zoom URL (e.g., https://zoom.us/j/123456)",
       });
     }

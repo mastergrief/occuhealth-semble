@@ -9,6 +9,35 @@ import { useAdminAuth, useDoctorAuth, useEmployerAuth } from "@/lib/workos-auth"
 // Extracts tokens from URL params, stores them, and redirects to admin dashboard
 // ---------------------------------------------------------------------------
 
+/**
+ * OAuth callback handler for WorkOS authentication.
+ *
+ * Processes authentication tokens from URL parameters after WorkOS redirect,
+ * stores credentials in the appropriate auth context based on user role,
+ * and redirects to the correct portal.
+ *
+ * ## URL Parameters
+ * - `accessToken` - OAuth access token (required)
+ * - `refreshToken` - OAuth refresh token
+ * - `userId` - WorkOS user ID (required)
+ * - `sessionId` - WorkOS session ID
+ * - `redirectPath` - Target path after auth (determines role storage)
+ * - `error` - Error message if auth failed
+ *
+ * ## Redirect Logic
+ * - `/admin/*` - Stores admin credentials, redirects to admin portal
+ * - `/doctor/*` - Stores doctor credentials, redirects to doctor portal
+ * - `/employer/*` - Stores employer credentials, redirects to employer portal
+ * - `/register/*` - Preserves tokens in URL, redirects to registration
+ *
+ * @component
+ * @example
+ * ```tsx
+ * // Rendered at /auth/callback
+ * <AdminAuthCallback />
+ * ```
+ */
+
 export function AdminAuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();

@@ -15,6 +15,29 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+/**
+ * Registration form for new doctor accounts.
+ *
+ * Single-step form that collects doctor profile information including
+ * name, email, and Zoom meeting link. Reads authentication tokens from
+ * URL parameters after WorkOS OAuth redirect.
+ *
+ * ## URL Parameters
+ * - `userId` - WorkOS user ID (required)
+ * - `accessToken` - OAuth access token (required)
+ * - `refreshToken` - OAuth refresh token
+ * - `sessionId` - WorkOS session ID
+ *
+ * @component
+ * @example
+ * ```tsx
+ * // Rendered at /register/doctor with URL params
+ * <DoctorRegistrationForm />
+ * ```
+ *
+ * @fires api.doctorSettings.create - Creates the doctor settings/profile record
+ */
+
 export function DoctorRegistrationForm() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();

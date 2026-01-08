@@ -18,6 +18,41 @@ interface WeekCalendarViewProps {
   unblockingId?: Id<"availableSlots"> | null;
 }
 
+/**
+ * Weekly calendar grid displaying doctor's availability slots.
+ *
+ * Renders a 7-day view (Mon-Sun) with time slots organized by day.
+ * Slots are color-coded by status and support click interactions
+ * for blocking/unblocking availability.
+ *
+ * ## Slot Status Colors
+ * - **available** - Green (open for booking)
+ * - **blocked** - Gray (manually blocked by doctor)
+ * - **booked** - Blue (has appointment, not clickable)
+ *
+ * @component
+ * @example
+ * ```tsx
+ * <WeekCalendarView
+ *   weekStart="2024-01-15"
+ *   slots={slotData}
+ *   onBlockSlot={(id) => blockMutation({ slotId: id })}
+ *   onUnblockSlot={(id) => unblockMutation({ slotId: id })}
+ *   isLoading={false}
+ *   blockingId={null}
+ *   unblockingId={null}
+ * />
+ * ```
+ *
+ * @param props.weekStart - ISO date string for the Monday of the week
+ * @param props.slots - Array of slot data for the week
+ * @param props.onBlockSlot - Callback to block an available slot
+ * @param props.onUnblockSlot - Callback to unblock a blocked slot
+ * @param props.isLoading - Whether slot data is loading
+ * @param props.blockingId - ID of slot currently being blocked (for loading state)
+ * @param props.unblockingId - ID of slot currently being unblocked (for loading state)
+ */
+
 const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 function addDays(dateStr: string, days: number): string {

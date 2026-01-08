@@ -19,6 +19,16 @@ export const ErrorCodes = {
   SLOT_UNAVAILABLE: "SLOT_UNAVAILABLE",
   SLOT_ALREADY_BOOKED: "SLOT_ALREADY_BOOKED",
 
+  // State and transition errors
+  INVALID_STATE: "INVALID_STATE",
+  CONFLICT_DETECTED: "CONFLICT_DETECTED",
+
+  // Report errors
+  REPORT_NOT_FOUND: "REPORT_NOT_FOUND",
+
+  // URL validation errors
+  INVALID_URL: "INVALID_URL",
+
   // Employer status errors
   EMPLOYER_NOT_VERIFIED: "EMPLOYER_NOT_VERIFIED",
 
@@ -32,6 +42,6 @@ export const ErrorCodes = {
   // Server errors
   INTERNAL_ERROR: "INTERNAL_ERROR",
   CONFIGURATION_ERROR: "CONFIGURATION_ERROR",
-} as const;
+} as const;;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];

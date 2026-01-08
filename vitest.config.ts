@@ -9,6 +9,10 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./tests/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}", "tests/unit/**/*.test.{ts,tsx}", "convex/__tests__/**/*.test.ts"],
+    // Use node environment for convex-test integration tests
+    environmentMatchGlobs: [
+      ["convex/__tests__/**", "node"],
+    ],
     coverage: {
       provider: "v8",
       include: [
@@ -23,10 +27,10 @@ export default defineConfig({
       ],
       reporter: ["text", "json", "html"],
       thresholds: {
-        lines: 60,
-        functions: 60,
-        branches: 50,
-        statements: 60,
+        lines: 70,
+        functions: 70,
+        branches: 60,
+        statements: 70,
       },
     },
   },
