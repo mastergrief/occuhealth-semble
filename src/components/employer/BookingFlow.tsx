@@ -14,7 +14,32 @@ import {
 import { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { AlertTriangle } from "lucide-react";
-import { ConvexError } from "convex/values";
+import { handleMutationError } from "@/lib/errorHandler";
+
+/**
+ * Multi-step appointment booking wizard for employers.
+ *
+ * A 3-step dialog flow that guides employers through scheduling appointments:
+ *
+ * ## Steps
+ * 1. **Select Employee & Type** - Choose patient and appointment type
+ * 2. **Select Date & Time** - Pick available date and time slot
+ * 3. **Review & Confirm** - Add reason and confirm booking
+ *
+ * ## Features
+ * - Real-time slot availability via Convex subscription
+ * - Handles loading states with skeleton UI
+ * - Shows warning if no appointment types configured
+ * - Toast notifications for success/error
+ *
+ * @example
+ * ```tsx
+ * <BookingFlow
+ *   employerId={employer._id}
+ *   onClose={() => setShowBooking(false)}
+ * />
+ * ```
+ */
 
 interface BookingFlowProps {
   employerId: Id<"employers">;
@@ -58,12 +83,7 @@ export function BookingFlow({ employerId, onClose }: BookingFlowProps) {
       });
       onClose();
     } catch (error) {
-      const message = error instanceof ConvexError
-        ? (error.data as string)
-        : error instanceof Error
-          ? error.message
-          : "An unexpected error occurred";
-      toast.error("Booking failed", { description: message });
+      handleMutationError(error, "Booking");
     } finally {
       setIsSubmitting(false);
     }

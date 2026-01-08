@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ import { WeekRangeSelector } from "./WeekRangeSelector";
 import { SlotPreview } from "./SlotPreview";
 import { ConflictResolution } from "./ConflictResolution";
 import { QuickFillBar } from "./QuickFillBar";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 import type { ConflictResolution as ConflictResolutionType, TimeSlotTemplate } from "@/types/scheduling";
 
@@ -47,15 +48,35 @@ function addWeeks(dateStr: string, weeks: number): string {
 }
 
 /**
- * RecurringSlotForm - Main form container for creating recurring slots
+ * Form for creating recurring time slots across multiple weeks.
  *
- * Integrates all sub-components:
- * - DaySelector for day selection
- * - TimeSlotList for time slots
- * - QuickFillBar for auto-generating time slots
- * - WeekRangeSelector for date range
- * - SlotPreview for real-time preview with conflict highlighting
- * - ConflictResolution for handling conflicts
+ * Allows doctors to define their weekly availability template and apply it
+ * across a date range, with real-time conflict detection.
+ *
+ * ## Features
+ * - Day selection (Mon-Fri default, any combination supported)
+ * - Multiple time slots per day with validation
+ * - Quick-fill presets (Full Day, Morning, Afternoon)
+ * - Live preview of slots to be created
+ * - Conflict detection against existing slots
+ * - Three conflict resolution strategies: skip, overwrite, or fail
+ *
+ * ## Sub-components
+ * - DaySelector - Weekday checkbox grid
+ * - TimeSlotList - Add/remove time slot entries
+ * - QuickFillBar - Preset templates (9-5, AM only, PM only)
+ * - WeekRangeSelector - Date range picker
+ * - SlotPreview - Visual calendar preview
+ * - ConflictResolution - Strategy selection dropdown
+ *
+ * @example
+ * ```tsx
+ * <Dialog open={showForm} onOpenChange={setShowForm}>
+ *   <DialogContent>
+ *     <RecurringSlotForm onClose={() => setShowForm(false)} />
+ *   </DialogContent>
+ * </Dialog>
+ * ```
  */
 export function RecurringSlotForm({ onClose }: RecurringSlotFormProps) {
   // Form state
@@ -79,17 +100,27 @@ export function RecurringSlotForm({ onClose }: RecurringSlotFormProps) {
   const canSubmit =
     hasValidTimeSlots && hasValidDays && hasValidDateRange && !isSubmitting;
 
-  // Real-time preview query
+  // Debounce preview parameters to reduce query frequency
+  // Only create params object when form is valid to avoid unnecessary renders
+  const previewParams = useMemo(() => {
+    if (!hasValidTimeSlots || !hasValidDays || !hasValidDateRange) {
+      return null;
+    }
+    return {
+      daysOfWeek: selectedDays,
+      timeSlots,
+      startDate,
+      endDate,
+    };
+  }, [selectedDays, timeSlots, startDate, endDate, hasValidTimeSlots, hasValidDays, hasValidDateRange]);
+
+  // Debounce the params by 300ms to prevent excessive API calls during typing
+  const debouncedPreviewParams = useDebouncedValue(previewParams, 300);
+
+  // Real-time preview query (debounced)
   const preview = useQuery(
     api.availableSlots.previewRecurringSlots,
-    hasValidTimeSlots && hasValidDays && hasValidDateRange
-      ? {
-          daysOfWeek: selectedDays,
-          timeSlots,
-          startDate,
-          endDate,
-        }
-      : "skip"
+    debouncedPreviewParams ?? "skip"
   );
 
   // Create mutation

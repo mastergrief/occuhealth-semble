@@ -6,6 +6,7 @@ import {
 } from "./authModules";
 import { paginatedQueryArgs, toPaginatedResult } from "./helpers/pagination";
 import { logPatientAction } from "./helpers/auditLogger";
+import { rateLimit, throwRateLimitError } from "./lib/rateLimiter";
 
 // ---------------------------------------------------------------------------
 // Patients CRUD Operations
@@ -177,6 +178,15 @@ export const create = mutation({
     consentId: v.id("consents"),
   },
   handler: async (ctx, args) => {
+    // Rate limit: 20 patient creations per minute per employer
+    const { ok, retryAt } = await rateLimit(ctx, {
+      name: "createPatient",
+      key: args.employerId,
+    });
+    if (!ok) {
+      throwRateLimitError("createPatient", retryAt);
+    }
+
     // Verify caller owns the employer
     await requireEmployerOwnership(ctx, args.employerId);
 
@@ -192,7 +202,7 @@ export const create = mutation({
 
     return patientId;
   },
-});
+});;
 
 /**
  * Updates an existing patient record with partial data.

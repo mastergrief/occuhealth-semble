@@ -21,7 +21,7 @@ export const logAction = internalMutation({
     actorId: v.optional(v.string()),
     resourceType: v.string(),
     resourceId: v.optional(v.string()),
-    details: v.optional(v.any()),
+    details: v.optional(v.record(v.string(), v.any())),
   },
   handler: async (ctx, args) => {
     return ctx.db.insert("auditLogs", {
@@ -38,6 +38,7 @@ export const logAction = internalMutation({
 export const getAuditLogs = query({
   args: {
     limit: v.optional(v.number()),
+    cursor: v.optional(v.string()),
     action: v.optional(v.string()),
     actorType: v.optional(
       v.union(
@@ -51,39 +52,51 @@ export const getAuditLogs = query({
     startTime: v.optional(v.number()),
     endTime: v.optional(v.number()),
   },
-  handler: async (ctx, { limit, action, actorType, resourceType, startTime, endTime }) => {
+  handler: async (ctx, { limit, cursor, action, actorType, resourceType, startTime, endTime }) => {
     // Authorization: Only admins can view audit logs
     await requireAdmin(ctx);
 
-    // Start with all logs ordered by timestamp desc
-    let results = await ctx.db
-      .query("auditLogs")
-      .withIndex("by_timestamp")
-      .order("desc")
-      .collect();
+    // Default to last 30 days if no time range specified
+    const defaultStartTime = startTime ?? (Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const pageSize = Math.min(limit ?? 50, 100); // Cap at 100 per page
 
-    // Apply filters
+    // Build query with index-based filtering for time range
+    let queryBuilder = ctx.db
+      .query("auditLogs")
+      .withIndex("by_timestamp", (q) => 
+        q.gte("timestamp", defaultStartTime)
+      )
+      .order("desc");
+
+    // Apply filters (endTime filter must be done via filter since index only supports one range)
+    if (endTime) {
+      queryBuilder = queryBuilder.filter((q) => q.lte(q.field("timestamp"), endTime));
+    }
     if (action) {
-      results = results.filter((log) => log.action === action);
+      queryBuilder = queryBuilder.filter((q) => q.eq(q.field("action"), action));
     }
     if (actorType) {
-      results = results.filter((log) => log.actorType === actorType);
+      queryBuilder = queryBuilder.filter((q) => q.eq(q.field("actorType"), actorType));
     }
     if (resourceType) {
-      results = results.filter((log) => log.resourceType === resourceType);
-    }
-    if (startTime) {
-      results = results.filter((log) => log.timestamp >= startTime);
-    }
-    if (endTime) {
-      results = results.filter((log) => log.timestamp <= endTime);
+      queryBuilder = queryBuilder.filter((q) => q.eq(q.field("resourceType"), resourceType));
     }
 
-    // Apply limit after filtering with max cap of 1000
-    const maxLimit = limit && limit > 0 ? Math.min(limit, 1000) : 100;
-    return results.slice(0, maxLimit);
+    // Paginate results
+    const paginationOpts = {
+      numItems: pageSize,
+      cursor: cursor ?? null,
+    };
+    
+    const results = await queryBuilder.paginate(paginationOpts);
+
+    return {
+      logs: results.page,
+      nextCursor: results.continueCursor,
+      hasMore: !results.isDone,
+    };
   },
-});
+});;;
 
 /**
  * Query to retrieve audit logs for a specific resource

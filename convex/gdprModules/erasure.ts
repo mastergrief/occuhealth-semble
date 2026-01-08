@@ -2,10 +2,11 @@
 // Erasure request functions for GDPR compliance
 
 import { mutation, query } from "../_generated/server";
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { requireAdmin } from "../authModules";
 import { internal } from "../_generated/api";
 import { paginatedQueryArgs, toPaginatedResult } from "../helpers/pagination";
+import { ErrorCodes } from "../lib/errorCodes";
 
 /**
  * Requests erasure of personal data (GDPR Article 17 - Right to Erasure).
@@ -83,7 +84,12 @@ export const processErasure = mutation({
     const admin = await requireAdmin(ctx);
 
     const request = await ctx.db.get(requestId);
-    if (!request) throw new Error("Request not found");
+    if (!request) {
+      throw new ConvexError({
+        code: ErrorCodes.NOT_FOUND,
+        message: "Erasure request not found",
+      });
+    }
 
     // Mark as in progress
     await ctx.db.patch(requestId, { status: "in_progress" });

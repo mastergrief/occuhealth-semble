@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
+import { rateLimitTables } from "convex-helpers/server/rateLimit";
 
 // =============================================================================
 // OCCUHEALTH GDPR-COMPLIANT SCHEMA
@@ -17,6 +18,11 @@ export default defineSchema({
   // Auth Tables (required by @convex-dev/auth)
   // ---------------------------------------------------------------------------
   ...authTables,
+
+  // ---------------------------------------------------------------------------
+  // Rate Limiting Tables (required by convex-helpers rate limiter)
+  // ---------------------------------------------------------------------------
+  ...rateLimitTables,
 
   // ---------------------------------------------------------------------------
   // Admin Users (WorkOS AuthKit)
@@ -124,6 +130,7 @@ export default defineSchema({
     endTime: v.string(),
     status: v.union(v.literal("available"), v.literal("booked"), v.literal("blocked")),
     appointmentId: v.optional(v.id("appointments")),
+    bookedAt: v.optional(v.number()),
     templateId: v.optional(v.id("recurringSlotTemplates")),
   })
     .index("by_date", ["date"])
@@ -258,7 +265,7 @@ export default defineSchema({
     actorId: v.optional(v.string()),
     resourceType: v.string(),
     resourceId: v.optional(v.string()),
-    details: v.optional(v.any()),
+    details: v.optional(v.record(v.string(), v.any())),
     timestamp: v.number(),
   })
     .index("by_action", ["action"])

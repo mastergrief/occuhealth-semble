@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useEmployerAuth } from "@/lib/workos-auth";
+import { getErrorMessage } from "@/lib/errorHandler";
 
 export function EmployerRegistrationForm() {
   const [searchParams] = useSearchParams();
@@ -112,7 +113,7 @@ export function EmployerRegistrationForm() {
       // Redirect to employer dashboard
       navigate("/employer");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+      setError(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }

@@ -23,93 +23,35 @@ const mockEmployer = {
   status: "verified" as const,
 };
 
-// Mock patients data
-const mockPatients = {
-  items: [
-    {
-      _id: "patient_1" as Id<"patients">,
-      _creationTime: Date.now(),
-      firstName: "Alice",
-      lastName: "Smith",
-      email: "alice@test.com",
-      dateOfBirth: "1990-01-15",
-      employerId: "employer_123" as Id<"employers">,
-    },
-    {
-      _id: "patient_2" as Id<"patients">,
-      _creationTime: Date.now(),
-      firstName: "Bob",
-      lastName: "Johnson",
-      email: "bob@test.com",
-      dateOfBirth: "1985-06-20",
-      employerId: "employer_123" as Id<"employers">,
-    },
-  ],
-  continueCursor: null,
-  isDone: true,
-};
-
-// Mock appointments data
-const mockAppointments = {
-  items: [
+// Mock dashboard stats data (new single query format)
+const mockDashboardStats = {
+  employeeCount: 2,
+  appointmentCount: 3,
+  reportCount: 1,
+  pendingCount: 2,
+  recentAppointments: [
     {
       _id: "apt_1" as Id<"appointments">,
-      _creationTime: Date.now(),
       status: "scheduled" as const,
       scheduledDate: "2026-01-05",
       scheduledTime: "09:00",
-      patientId: "patient_1" as Id<"patients">,
-      employerId: "employer_123" as Id<"employers">,
-      doctorId: "doctor_123" as Id<"doctorSettings">,
-      appointmentType: "initial_assessment",
       patient: { firstName: "Alice", lastName: "Smith" },
     },
     {
       _id: "apt_2" as Id<"appointments">,
-      _creationTime: Date.now(),
       status: "completed" as const,
       scheduledDate: "2026-01-04",
       scheduledTime: "10:00",
-      patientId: "patient_2" as Id<"patients">,
-      employerId: "employer_123" as Id<"employers">,
-      doctorId: "doctor_123" as Id<"doctorSettings">,
-      appointmentType: "follow_up",
       patient: { firstName: "Bob", lastName: "Johnson" },
     },
     {
       _id: "apt_3" as Id<"appointments">,
-      _creationTime: Date.now(),
       status: "scheduled" as const,
       scheduledDate: "2026-01-06",
       scheduledTime: "14:00",
-      patientId: "patient_1" as Id<"patients">,
-      employerId: "employer_123" as Id<"employers">,
-      doctorId: "doctor_123" as Id<"doctorSettings">,
-      appointmentType: "routine_checkup",
       patient: { firstName: "Alice", lastName: "Smith" },
     },
   ],
-  continueCursor: null,
-  isDone: true,
-};
-
-// Mock reports data
-const mockReports = {
-  items: [
-    {
-      _id: "report_1" as Id<"reports">,
-      _creationTime: Date.now(),
-      appointmentId: "apt_2" as Id<"appointments">,
-      patientId: "patient_2" as Id<"patients">,
-      employerId: "employer_123" as Id<"employers">,
-      doctorId: "doctor_123" as Id<"doctorSettings">,
-      fitnessForWork: "fit",
-      notes: "Patient is fit for work.",
-      createdAt: Date.now(),
-    },
-  ],
-  continueCursor: null,
-  isDone: true,
 };
 
 describe("EmployerDashboard", () => {
@@ -119,10 +61,7 @@ describe("EmployerDashboard", () => {
   });
 
   it("renders dashboard title", () => {
-    vi.mocked(useQuery)
-      .mockReturnValueOnce(mockPatients)
-      .mockReturnValueOnce(mockAppointments)
-      .mockReturnValueOnce(mockReports);
+    vi.mocked(useQuery).mockReturnValue(mockDashboardStats);
 
     render(<EmployerDashboard />);
 
@@ -130,10 +69,7 @@ describe("EmployerDashboard", () => {
   });
 
   it("displays stats cards with correct values", () => {
-    vi.mocked(useQuery)
-      .mockReturnValueOnce(mockPatients)
-      .mockReturnValueOnce(mockAppointments)
-      .mockReturnValueOnce(mockReports);
+    vi.mocked(useQuery).mockReturnValue(mockDashboardStats);
 
     render(<EmployerDashboard />);
 
@@ -143,31 +79,29 @@ describe("EmployerDashboard", () => {
     expect(screen.getByText("Reports")).toBeInTheDocument();
     expect(screen.getByText("Pending")).toBeInTheDocument();
 
-    // Check stats values exist (multiple "2" values: employees=2, pending=2)
-    // Use getAllByText for values that appear multiple times
-    expect(screen.getAllByText("2").length).toBe(2); // 2 patients, 2 pending
-    expect(screen.getByText("3")).toBeInTheDocument(); // 3 appointments
-    expect(screen.getByText("1")).toBeInTheDocument(); // 1 report
+    // Check stats values - employees=2, appointments=3, reports=1, pending=2
+    // "2" appears twice (employees and pending)
+    expect(screen.getAllByText("2").length).toBe(2);
+    expect(screen.getByText("3")).toBeInTheDocument();
+    expect(screen.getByText("1")).toBeInTheDocument();
   });
 
   it("shows empty state when no appointments exist", () => {
-    const emptyAppointments = {
-      items: [],
-      continueCursor: null,
-      isDone: true,
+    const statsWithNoAppointments = {
+      ...mockDashboardStats,
+      appointmentCount: 0,
+      pendingCount: 0,
+      recentAppointments: [],
     };
 
-    vi.mocked(useQuery)
-      .mockReturnValueOnce(mockPatients)
-      .mockReturnValueOnce(emptyAppointments)
-      .mockReturnValueOnce(mockReports);
+    vi.mocked(useQuery).mockReturnValue(statsWithNoAppointments);
 
     render(<EmployerDashboard />);
 
     expect(screen.getByText("No appointments yet")).toBeInTheDocument();
   });
 
-  it("handles loading state when queries return undefined", () => {
+  it("handles loading state when query returns undefined", () => {
     vi.mocked(useQuery).mockReturnValue(undefined);
 
     render(<EmployerDashboard />);
@@ -185,83 +119,54 @@ describe("EmployerDashboard", () => {
   });
 
   it("calculates pending appointments correctly", () => {
-    // Create appointments with varying statuses
-    const mixedAppointments = {
-      items: [
+    const statsWithMixedStatuses = {
+      employeeCount: 0,
+      appointmentCount: 4,
+      reportCount: 0,
+      pendingCount: 2,
+      recentAppointments: [
         {
           _id: "apt_1" as Id<"appointments">,
-          _creationTime: Date.now(),
           status: "scheduled" as const,
           scheduledDate: "2026-01-05",
           scheduledTime: "09:00",
-          patientId: "patient_1" as Id<"patients">,
-          employerId: "employer_123" as Id<"employers">,
-          doctorId: "doctor_123" as Id<"doctorSettings">,
-          appointmentType: "initial_assessment",
           patient: { firstName: "Alice", lastName: "Smith" },
         },
         {
           _id: "apt_2" as Id<"appointments">,
-          _creationTime: Date.now(),
           status: "completed" as const,
           scheduledDate: "2026-01-04",
           scheduledTime: "10:00",
-          patientId: "patient_2" as Id<"patients">,
-          employerId: "employer_123" as Id<"employers">,
-          doctorId: "doctor_123" as Id<"doctorSettings">,
-          appointmentType: "follow_up",
           patient: { firstName: "Bob", lastName: "Johnson" },
         },
         {
           _id: "apt_3" as Id<"appointments">,
-          _creationTime: Date.now(),
           status: "cancelled" as const,
           scheduledDate: "2026-01-06",
           scheduledTime: "14:00",
-          patientId: "patient_1" as Id<"patients">,
-          employerId: "employer_123" as Id<"employers">,
-          doctorId: "doctor_123" as Id<"doctorSettings">,
-          appointmentType: "routine_checkup",
           patient: { firstName: "Alice", lastName: "Smith" },
         },
         {
           _id: "apt_4" as Id<"appointments">,
-          _creationTime: Date.now(),
           status: "scheduled" as const,
           scheduledDate: "2026-01-07",
           scheduledTime: "11:00",
-          patientId: "patient_2" as Id<"patients">,
-          employerId: "employer_123" as Id<"employers">,
-          doctorId: "doctor_123" as Id<"doctorSettings">,
-          appointmentType: "follow_up",
           patient: { firstName: "Bob", lastName: "Johnson" },
         },
       ],
-      continueCursor: null,
-      isDone: true,
     };
 
-    const emptyPatients = { items: [], continueCursor: null, isDone: true };
-    const emptyReports = { items: [], continueCursor: null, isDone: true };
-
-    vi.mocked(useQuery)
-      .mockReturnValueOnce(emptyPatients)
-      .mockReturnValueOnce(mixedAppointments)
-      .mockReturnValueOnce(emptyReports);
+    vi.mocked(useQuery).mockReturnValue(statsWithMixedStatuses);
 
     render(<EmployerDashboard />);
 
     // 4 total appointments, but only 2 are "scheduled" (pending)
-    // Stats should show: 0 employees, 4 appointments, 0 reports, 2 pending
-    expect(screen.getByText("4")).toBeInTheDocument(); // Total appointments
-    expect(screen.getByText("2")).toBeInTheDocument(); // Pending (scheduled only)
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
   });
 
   it("displays recent appointments list with patient information", () => {
-    vi.mocked(useQuery)
-      .mockReturnValueOnce(mockPatients)
-      .mockReturnValueOnce(mockAppointments)
-      .mockReturnValueOnce(mockReports);
+    vi.mocked(useQuery).mockReturnValue(mockDashboardStats);
 
     render(<EmployerDashboard />);
 
@@ -273,12 +178,12 @@ describe("EmployerDashboard", () => {
     const aliceElements = screen.getAllByText((content, element) => {
       return element?.textContent === "Alice Smith" && element.tagName === "P";
     });
-    expect(aliceElements.length).toBe(2); // Alice has 2 appointments
+    expect(aliceElements.length).toBe(2);
 
     const bobElements = screen.getAllByText((content, element) => {
       return element?.textContent === "Bob Johnson" && element.tagName === "P";
     });
-    expect(bobElements.length).toBe(1); // Bob has 1 appointment
+    expect(bobElements.length).toBe(1);
 
     // Check appointment dates are displayed
     expect(screen.getByText(/2026-01-05/)).toBeInTheDocument();

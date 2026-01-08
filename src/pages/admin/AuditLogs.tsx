@@ -43,9 +43,11 @@ export function AuditLogs() {
     startDate: "",
     endDate: "",
   });
+  const [cursor, setCursor] = useState<string | undefined>(undefined);
 
-  const logs = useQuery(api.gdpr.getAuditLogs, {
-    limit: 100,
+  const result = useQuery(api.gdpr.getAuditLogs, {
+    limit: 50,
+    cursor,
     action: filters.action || undefined,
     actorType: filters.actorType || undefined,
     resourceType: filters.resourceType || undefined,
@@ -53,8 +55,19 @@ export function AuditLogs() {
     endTime: filters.endDate ? new Date(filters.endDate + "T23:59:59").getTime() : undefined,
   });
 
+  const logs = result?.logs ?? [];
+  const hasMore = result?.hasMore ?? false;
+  const nextCursor = result?.nextCursor;
+
   const clearFilters = () => {
     setFilters({ action: "", actorType: "", resourceType: "", startDate: "", endDate: "" });
+    setCursor(undefined);
+  };
+
+  const loadMore = () => {
+    if (nextCursor) {
+      setCursor(nextCursor);
+    }
   };
 
   const hasActiveFilters = Object.values(filters).some((v) => v !== "");
@@ -83,7 +96,10 @@ export function AuditLogs() {
               <Label>Action</Label>
               <Select
                 value={filters.action}
-                onValueChange={(v) => setFilters((f) => ({ ...f, action: v === "all" ? "" : v }))}
+                onValueChange={(v) => {
+                  setFilters((f) => ({ ...f, action: v === "all" ? "" : v }));
+                  setCursor(undefined);
+                }}
               >
                 <SelectTrigger><SelectValue placeholder="All actions" /></SelectTrigger>
                 <SelectContent>
@@ -98,7 +114,10 @@ export function AuditLogs() {
               <Label>Actor Type</Label>
               <Select
                 value={filters.actorType}
-                onValueChange={(v) => setFilters((f) => ({ ...f, actorType: v === "all" ? "" : v as typeof filters.actorType }))}
+                onValueChange={(v) => {
+                  setFilters((f) => ({ ...f, actorType: v === "all" ? "" : v as typeof filters.actorType }));
+                  setCursor(undefined);
+                }}
               >
                 <SelectTrigger><SelectValue placeholder="All actors" /></SelectTrigger>
                 <SelectContent>
@@ -113,7 +132,10 @@ export function AuditLogs() {
               <Label>Resource Type</Label>
               <Select
                 value={filters.resourceType}
-                onValueChange={(v) => setFilters((f) => ({ ...f, resourceType: v === "all" ? "" : v }))}
+                onValueChange={(v) => {
+                  setFilters((f) => ({ ...f, resourceType: v === "all" ? "" : v }));
+                  setCursor(undefined);
+                }}
               >
                 <SelectTrigger><SelectValue placeholder="All resources" /></SelectTrigger>
                 <SelectContent>
@@ -129,7 +151,10 @@ export function AuditLogs() {
               <Input
                 type="date"
                 value={filters.startDate}
-                onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value }))}
+                onChange={(e) => {
+                  setFilters((f) => ({ ...f, startDate: e.target.value }));
+                  setCursor(undefined);
+                }}
               />
             </div>
             <div className="space-y-2">
@@ -137,7 +162,10 @@ export function AuditLogs() {
               <Input
                 type="date"
                 value={filters.endDate}
-                onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value }))}
+                onChange={(e) => {
+                  setFilters((f) => ({ ...f, endDate: e.target.value }));
+                  setCursor(undefined);
+                }}
               />
             </div>
           </div>
@@ -146,10 +174,10 @@ export function AuditLogs() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Results ({logs?.length ?? 0})</CardTitle>
+          <CardTitle>Results ({logs.length}{hasMore ? "+" : ""})</CardTitle>
         </CardHeader>
         <CardContent>
-          {logs && logs.length > 0 ? (
+          {logs.length > 0 ? (
             <div className="space-y-2">
               {logs.map((log) => (
                 <div key={log._id} className="p-3 border rounded-lg">
@@ -165,6 +193,13 @@ export function AuditLogs() {
                   </p>
                 </div>
               ))}
+              {hasMore && (
+                <div className="pt-4 flex justify-center">
+                  <Button variant="outline" onClick={loadMore}>
+                    Load More
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-muted-foreground">No audit logs</p>

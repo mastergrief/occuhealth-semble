@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +30,13 @@ export function DoctorDashboard() {
   const { doctor } = useDoctorContext();
   const todaysAppointments = useQuery(api.appointments.getTodaysAppointments);
 
+  // Memoize computed stats to prevent unnecessary re-renders
+  const { total, completed, remaining } = useMemo(() => ({
+    total: todaysAppointments?.length ?? 0,
+    completed: todaysAppointments?.filter(a => a.status === "completed").length ?? 0,
+    remaining: todaysAppointments?.filter(a => a.status === "scheduled").length ?? 0,
+  }), [todaysAppointments]);
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Today's Schedule</h1>
@@ -39,7 +47,7 @@ export function DoctorDashboard() {
             <CardTitle className="text-sm text-muted-foreground">Total Today</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{todaysAppointments?.length ?? 0}</p>
+            <p className="text-3xl font-bold">{total}</p>
           </CardContent>
         </Card>
         <Card data-testid="stat-completed">
@@ -47,9 +55,7 @@ export function DoctorDashboard() {
             <CardTitle className="text-sm text-muted-foreground">Completed</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-green-600">
-              {todaysAppointments?.filter(a => a.status === "completed").length ?? 0}
-            </p>
+            <p className="text-3xl font-bold text-green-600">{completed}</p>
           </CardContent>
         </Card>
         <Card data-testid="stat-remaining">
@@ -57,9 +63,7 @@ export function DoctorDashboard() {
             <CardTitle className="text-sm text-muted-foreground">Remaining</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-blue-600">
-              {todaysAppointments?.filter(a => a.status === "scheduled").length ?? 0}
-            </p>
+            <p className="text-3xl font-bold text-blue-600">{remaining}</p>
           </CardContent>
         </Card>
       </div>

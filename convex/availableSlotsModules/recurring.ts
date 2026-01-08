@@ -7,6 +7,7 @@
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 import { mutation, query } from "../_generated/server";
+import type { Id } from "../_generated/dataModel";
 import { requireDoctorAccess } from "../authModules/authorization";
 import {
   validateDateRange,
@@ -195,7 +196,7 @@ export const createRecurringSlots = mutation({
     const toCreate: ProposedSlot[] = [];
     const conflicts: SlotConflict[] = [];
     const skipped: ProposedSlot[] = [];
-    const toOverwrite: string[] = [];
+    const toOverwrite: Id<"availableSlots">[] = [];
 
     for (const proposed of proposedSlots) {
       const conflict = existingSlots.find(
@@ -257,7 +258,7 @@ export const createRecurringSlots = mutation({
 
     // Delete slots to be overwritten
     for (const slotId of toOverwrite) {
-      await ctx.db.delete(slotId as any);
+      await ctx.db.delete(slotId);
     }
 
     // Batch insert new slots

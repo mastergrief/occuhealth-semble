@@ -8,6 +8,7 @@ import {
 import { paginatedQueryArgs, toPaginatedResult } from "./helpers/pagination";
 import { extractUniqueIds, batchGet, enrichWithRelation } from "./helpers/batchFetch";
 import { logReportAction } from "./helpers/auditLogger";
+import { ErrorCodes } from "./lib/errorCodes";
 
 // ---------------------------------------------------------------------------
 // Reports Management
@@ -148,7 +149,12 @@ export const create = mutation({
     await requireDoctorAccess(ctx);
 
     const appointment = await ctx.db.get(args.appointmentId);
-    if (!appointment) throw new Error("Appointment not found");
+    if (!appointment) {
+      throw new ConvexError({
+        code: ErrorCodes.NOT_FOUND,
+        message: "Appointment not found",
+      });
+    }
 
     const reportId = await ctx.db.insert("reports", {
       appointmentId: args.appointmentId,

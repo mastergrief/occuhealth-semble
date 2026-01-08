@@ -4,6 +4,31 @@ import { internal } from "./_generated/api";
 import { WorkOS } from "@workos-inc/node";
 import { generateICS } from "./lib/icsGenerator";
 
+/**
+ * HTTP Routes for OccuHealth
+ *
+ * This module defines all HTTP endpoints for the Convex backend:
+ *
+ * ## Authentication Routes (WorkOS AuthKit)
+ * - GET /auth/login - Initiates OAuth flow, redirects to WorkOS
+ * - GET /auth/callback - Handles OAuth callback, creates session
+ * - GET /auth/logout - Signs out of WorkOS session
+ * - POST /auth/refresh - Refreshes access token
+ *
+ * ## OAuth Flow
+ * 1. User clicks login -> redirected to WorkOS AuthKit
+ * 2. User authenticates -> WorkOS redirects to /auth/callback
+ * 3. Backend validates code, fetches user info
+ * 4. Role-based routing: employer/doctor/admin portal
+ *
+ * ## Utility Routes
+ * - GET /health - Health check endpoint
+ * - GET /calendar/:token - ICS calendar download for appointments
+ *
+ * @module http
+ * @see {@link https://workos.com/docs/user-management} WorkOS AuthKit docs
+ */
+
 const http = httpRouter();
 
 // ---------------------------------------------------------------------------
@@ -58,7 +83,16 @@ http.route({
       return Response.redirect(authorizationUrl, 302);
     } catch (err) {
       console.error("WorkOS login error:", err);
-      return new Response("WorkOS not configured", { status: 500 });
+      return new Response(
+        JSON.stringify({
+          error: "CONFIGURATION_ERROR",
+          message: "WorkOS authentication not configured",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
     }
   }),
 });
@@ -72,10 +106,7 @@ http.route({
     const sessionId = url.searchParams.get("sessionId");
     const appUrl = process.env.APP_URL || "http://localhost:5175";
 
-    console.log("Logout request - sessionId:", sessionId ? "present" : "missing");
-
     if (!sessionId) {
-      console.log("No sessionId, redirecting home");
       return Response.redirect(appUrl, 302);
     }
 
@@ -85,7 +116,6 @@ http.route({
         sessionId,
         returnTo: appUrl,
       });
-      console.log("WorkOS logout URL generated, redirecting...");
       return Response.redirect(logoutUrl, 302);
     } catch (err) {
       console.error("WorkOS logout error:", err);
@@ -147,8 +177,6 @@ http.route({
       // Extract session ID from JWT for proper logout
       const jwtPayload = JSON.parse(atob(accessToken.split(".")[1]));
       const sessionId = jwtPayload.sid as string;
-      console.log("JWT claims:", Object.keys(jwtPayload));
-      console.log("Session ID from JWT:", sessionId || "NOT FOUND");
 
       // Check role-based routing - which table does this user belong to?
       const [employer, doctor, adminUser] = await Promise.all([

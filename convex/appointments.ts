@@ -16,6 +16,7 @@ import {
   enrichWithRelation,
 } from "./helpers/batchFetch";
 import { logAppointmentAction } from "./helpers/auditLogger";
+import { rateLimit, throwRateLimitError } from "./lib/rateLimiter";
 
 // ---------------------------------------------------------------------------
 // Appointments Management
@@ -189,6 +190,15 @@ export const book = mutation({
     preAppointmentNotes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Rate limit: 10 bookings per minute per employer
+    const { ok, retryAt } = await rateLimit(ctx, {
+      name: "bookAppointment",
+      key: args.employerId,
+    });
+    if (!ok) {
+      throwRateLimitError("bookAppointment", retryAt);
+    }
+
     // Verify caller owns this employer
     const employer = await requireEmployerOwnership(ctx, args.employerId);
 
@@ -218,7 +228,23 @@ export const book = mutation({
       });
     }
 
-    // Create appointment
+    // Atomically book slot first to prevent race conditions
+    // Use replace() which fails if document was modified since read
+    try {
+      await ctx.db.replace(args.slotId, {
+        ...slot,
+        status: "booked",
+        bookedAt: Date.now(),
+      });
+    } catch {
+      // Slot was modified by another concurrent request
+      throw new ConvexError({
+        code: "SLOT_ALREADY_BOOKED" as const,
+        message: "This slot was just booked by another user. Please select a different time.",
+      });
+    }
+
+    // Create appointment after slot is secured
     const appointmentId = await ctx.db.insert("appointments", {
       patientId: args.patientId,
       employerId: args.employerId,
@@ -232,9 +258,8 @@ export const book = mutation({
       createdAt: Date.now(),
     });
 
-    // Mark slot as booked
+    // Update slot with appointment reference
     await ctx.db.patch(args.slotId, {
-      status: "booked",
       appointmentId,
     });
 
@@ -248,7 +273,7 @@ export const book = mutation({
 
     return appointmentId;
   },
-});;
+});;;;
 
 /**
  * Mark an appointment as completed.

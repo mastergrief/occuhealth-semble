@@ -7,10 +7,11 @@
  * @module appointmentTokens
  */
 
-import { v } from "convex/values";
+import { v, ConvexError } from "convex/values";
 import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { requireEmployerOwnership } from "./authModules/authorization";
+import { ErrorCodes } from "./lib/errorCodes";
 
 const TOKEN_TTL_MS = 48 * 60 * 60 * 1000; // 48 hours
 
@@ -38,7 +39,10 @@ export const generate = mutation({
     // Get appointment and verify it exists
     const appointment = await ctx.db.get(appointmentId);
     if (!appointment) {
-      throw new Error("Appointment not found");
+      throw new ConvexError({
+        code: ErrorCodes.NOT_FOUND,
+        message: "Appointment not found",
+      });
     }
 
     // Verify employer ownership

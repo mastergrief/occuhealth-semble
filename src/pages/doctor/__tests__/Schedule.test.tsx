@@ -36,6 +36,20 @@ const mockSlots = [
   },
 ];
 
+// Mock templates data
+const mockTemplates: Array<{
+  _id: Id<"recurringSlotTemplates">;
+  _creationTime: number;
+  doctorId: Id<"doctorSettings">;
+  name?: string;
+  daysOfWeek: number[];
+  timeSlots: Array<{ startTime: string; endTime: string }>;
+  startDate: string;
+  endDate: string;
+  createdAt: number;
+  status: "active" | "archived";
+}> = [];
+
 describe("DoctorSchedule", () => {
   let mockCreateSlots: ReturnType<typeof createMockMutation>;
   let mockBlockSlot: ReturnType<typeof createMockMutation>;
@@ -47,12 +61,18 @@ describe("DoctorSchedule", () => {
 
     // Return different mutations based on call order
     vi.mocked(useMutation)
-      .mockReturnValueOnce(mockCreateSlots)
-      .mockReturnValueOnce(mockBlockSlot);
+      .mockReturnValueOnce(mockCreateSlots)  // createSlots
+      .mockReturnValueOnce(mockBlockSlot)    // blockSlot
+      .mockReturnValueOnce(vi.fn())          // unblockSlot
+      .mockReturnValueOnce(vi.fn());         // deleteTemplateSlots
   });
 
   it("renders slot grid with available slots", () => {
-    vi.mocked(useQuery).mockReturnValue(mockSlots);
+    // Mock all queries: singleDaySlots, weekSlots (skipped in list view), templates
+    vi.mocked(useQuery)
+      .mockReturnValueOnce(mockSlots)       // singleDaySlots
+      .mockReturnValueOnce(undefined)       // weekSlots (skipped)
+      .mockReturnValueOnce(mockTemplates);  // templates
 
     render(<DoctorSchedule />);
 
@@ -71,7 +91,10 @@ describe("DoctorSchedule", () => {
   });
 
   it("renders add slot form with date and time inputs", () => {
-    vi.mocked(useQuery).mockReturnValue([]);
+    vi.mocked(useQuery)
+      .mockReturnValueOnce([])              // singleDaySlots
+      .mockReturnValueOnce(undefined)       // weekSlots (skipped)
+      .mockReturnValueOnce(mockTemplates);  // templates
 
     render(<DoctorSchedule />);
 
@@ -83,7 +106,10 @@ describe("DoctorSchedule", () => {
   });
 
   it("shows validation error when end time is not after start time", async () => {
-    vi.mocked(useQuery).mockReturnValue([]);
+    vi.mocked(useQuery)
+      .mockReturnValueOnce([])              // singleDaySlots
+      .mockReturnValueOnce(undefined)       // weekSlots (skipped)
+      .mockReturnValueOnce(mockTemplates);  // templates
 
     render(<DoctorSchedule />);
 
@@ -110,7 +136,10 @@ describe("DoctorSchedule", () => {
   });
 
   it("calls createSlots mutation on valid form submit", async () => {
-    vi.mocked(useQuery).mockReturnValue([]);
+    vi.mocked(useQuery)
+      .mockReturnValueOnce([])              // singleDaySlots
+      .mockReturnValueOnce(undefined)       // weekSlots (skipped)
+      .mockReturnValueOnce(mockTemplates);  // templates
 
     render(<DoctorSchedule />);
 
@@ -130,13 +159,16 @@ describe("DoctorSchedule", () => {
   });
 
   it("calls blockSlot mutation on Block button click", async () => {
-    vi.mocked(useQuery).mockReturnValue(mockSlots);
+    vi.mocked(useQuery)
+      .mockReturnValueOnce(mockSlots)       // singleDaySlots
+      .mockReturnValueOnce(undefined)       // weekSlots (skipped)
+      .mockReturnValueOnce(mockTemplates);  // templates
 
     render(<DoctorSchedule />);
 
-    // Find the Block button (only for available slots)
-    const blockButton = screen.getByRole("button", { name: /block/i });
-    fireEvent.click(blockButton);
+    // Find the first Block button (only for available slots - there may be multiple)
+    const blockButtons = screen.getAllByRole("button", { name: /block/i });
+    fireEvent.click(blockButtons[0]);
 
     await waitFor(() => {
       expect(mockBlockSlot).toHaveBeenCalledWith({

@@ -176,7 +176,9 @@ export const getDashboardStats = query({
     // Verify employer ownership
     await requireEmployerOwnership(ctx, employerId);
 
-    // Parallel database queries (server-side, efficient)
+    // Get counts efficiently using indexed queries
+    // Note: Convex doesn't have COUNT aggregates, so we still need to collect
+    // but we can limit the scope with filters
     const [patients, appointments, reports] = await Promise.all([
       ctx.db
         .query("patients")
@@ -193,13 +195,14 @@ export const getDashboardStats = query({
         .collect(),
     ]);
 
-    // Sort appointments by date for recent list
-    const sortedAppointments = appointments.sort(
-      (a, b) => (b._creationTime || 0) - (a._creationTime || 0)
-    );
+    // Get only recent appointments (last 30 days) for the dashboard list
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const recentAppointments = appointments
+      .filter((apt) => apt._creationTime >= thirtyDaysAgo)
+      .sort((a, b) => (b._creationTime || 0) - (a._creationTime || 0))
+      .slice(0, 5);
 
-    // Get patient data for recent appointments
-    const recentAppointments = sortedAppointments.slice(0, 5);
+    // Batch fetch patients for recent appointments
     const patientIds = [...new Set(recentAppointments.map((apt) => apt.patientId))];
     const patientDocs = await Promise.all(
       patientIds.map((id) => ctx.db.get(id))
@@ -229,7 +232,7 @@ export const getDashboardStats = query({
       }),
     };
   },
-});;
+});;;;
 
 // Admin: reject employer
 export const reject = mutation({

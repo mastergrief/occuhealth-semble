@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,8 @@ export function EmployerDashboard() {
     employer?._id ? { employerId: employer._id } : "skip"
   );
 
-  const stats = [
+  // Memoize stats array to prevent unnecessary re-renders
+  const stats = useMemo(() => [
     {
       title: "Employees",
       value: dashboardStats?.employeeCount ?? 0,
@@ -37,7 +39,7 @@ export function EmployerDashboard() {
       icon: Clock,
       color: "text-amber-600",
     },
-  ];
+  ], [dashboardStats]);
 
   const recentAppointments = dashboardStats?.recentAppointments;
 

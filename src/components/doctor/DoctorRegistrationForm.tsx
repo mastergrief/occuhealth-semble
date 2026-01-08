@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useDoctorAuth } from "@/lib/workos-auth";
+import { getErrorMessage } from "@/lib/errorHandler";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -74,7 +75,7 @@ export function DoctorRegistrationForm() {
       // Redirect to doctor dashboard
       navigate("/doctor");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed");
+      setError(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }

@@ -171,6 +171,12 @@ await ctx.runAction(api.semble.syncPatients, {});
 | `/webhooks/semble` | POST | Semble webhook receiver |
 | `/health` | GET | Health check |
 
+## Documentation
+
+- [Setup Guide](./SETUP_GUIDE.md) - Getting started for developers
+- [Testing Guide](./TESTING_GUIDE.md) - Running unit and E2E tests
+- [Auth Architecture](./DOCUMENTS/AUTH.md) - Detailed authentication flow
+
 ## Resources
 
 - [Semble API Docs](https://docs.semble.io/)
