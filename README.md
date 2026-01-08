@@ -70,6 +70,32 @@ APP_URL=http://localhost:5175
 
 For detailed auth architecture, see [DOCUMENTS/AUTH.md](DOCUMENTS/AUTH.md).
 
+## Deployment
+
+### Quick Deploy Commands
+
+```bash
+# Deploy backend to staging
+npm run convex:deploy
+
+# Deploy backend to production
+npm run convex:deploy:prod
+
+# Build frontend for deployment
+npm run build
+```
+
+### Health Check
+
+Verify deployment status via the health endpoint:
+
+```bash
+curl https://your-deployment.convex.site/health
+# Returns: { "status": "healthy", "timestamp": "...", "service": "convex-medical-starter" }
+```
+
+For full deployment instructions including WorkOS configuration, rollback procedures, and troubleshooting, see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+
 ## Project Structure
 
 ```

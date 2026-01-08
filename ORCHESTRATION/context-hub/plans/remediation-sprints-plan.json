@@ -1,0 +1,447 @@
+{
+  "id": "remediation-sprints-2026-01-07",
+  "type": "plan",
+  "metadata": {
+    "promptId": "remediation-sprints-2026-01-07",
+    "sessionId": "remediation-sprints-2026-01-07",
+    "timestamp": "2026-01-07T16:30:00Z",
+    "version": "1.0.0"
+  },
+  "summary": "Execute 4 remediation sprints: employer booking security fix, GDPR module split (651 lines to facade pattern), GDPR data export feature, and Browser-CLI E2E verification testing",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Parallel Implementation Phase",
+      "description": "Sprint 01 (security fix) and Sprint 02 (GDPR module split) run in parallel as they have no dependencies",
+      "parallelizable": true,
+      "subtasks": [
+        {
+          "id": "task-1.1",
+          "description": "Sprint 01: Add employer.status verification check in appointments.book mutation after requireEmployerOwnership call",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": [],
+          "estimatedTokens": 8000,
+          "context": {
+            "memories": ["REMEDIATION_SPRINT_01_EMPLOYER_BOOKING_FIX"],
+            "files": [
+              "convex/appointments.ts",
+              "convex/authModules/authorization.ts"
+            ]
+          },
+          "acceptanceCriteria": [
+            "employer.status === 'verified' check added to book mutation",
+            "EMPLOYER_NOT_VERIFIED error code added to AuthErrorCode type",
+            "ConvexError thrown with descriptive message for unverified employers",
+            "TypeScript compiles without errors (npm run typecheck)"
+          ],
+          "implementation": {
+            "step1": "Find book mutation handler in convex/appointments.ts",
+            "step2": "Locate requireEmployerOwnership call (~line 195)",
+            "step3": "Add status check: if (employer.status !== 'verified') throw ConvexError",
+            "step4": "Add EMPLOYER_NOT_VERIFIED to AuthErrorCode union in convex/authModules/authorization.ts",
+            "step5": "Run npm run typecheck to verify"
+          }
+        },
+        {
+          "id": "task-1.2",
+          "description": "Sprint 02: Create gdprModules/ directory structure with types.ts",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 3000,
+          "context": {
+            "memories": ["REMEDIATION_SPRINT_02_GDPR_MODULE_SPLIT"],
+            "files": [
+              "convex/gdpr.ts",
+              "convex/availableSlotsModules/types.ts"
+            ]
+          },
+          "acceptanceCriteria": [
+            "convex/gdprModules/ directory created",
+            "types.ts with ConsentType, ErasureStatus, ActorType, AuditLogEntry types created"
+          ],
+          "implementation": {
+            "step1": "mkdir -p convex/gdprModules",
+            "step2": "Create types.ts with shared type definitions",
+            "step3": "Export all types for use by other modules"
+          }
+        },
+        {
+          "id": "task-1.3",
+          "description": "Sprint 02: Extract audit functions to gdprModules/audit.ts",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-1.2"],
+          "estimatedTokens": 5000,
+          "context": {
+            "memories": ["REMEDIATION_SPRINT_02_GDPR_MODULE_SPLIT"],
+            "files": ["convex/gdpr.ts"]
+          },
+          "acceptanceCriteria": [
+            "logAction internalMutation moved to audit.ts",
+            "getAuditLogs query moved to audit.ts",
+            "getAuditLogsByResource query moved to audit.ts",
+            "All imports updated correctly"
+          ],
+          "implementation": {
+            "step1": "Find logAction symbol in gdpr.ts and get body",
+            "step2": "Find getAuditLogs symbol in gdpr.ts and get body",
+            "step3": "Find getAuditLogsByResource symbol in gdpr.ts and get body",
+            "step4": "Create audit.ts with all three functions and correct imports"
+          }
+        },
+        {
+          "id": "task-1.4",
+          "description": "Sprint 02: Extract consent functions to gdprModules/consent.ts",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-1.2"],
+          "estimatedTokens": 5000,
+          "context": {
+            "memories": ["REMEDIATION_SPRINT_02_GDPR_MODULE_SPLIT"],
+            "files": ["convex/gdpr.ts"]
+          },
+          "acceptanceCriteria": [
+            "createConsent mutation moved to consent.ts",
+            "withdrawConsent mutation moved to consent.ts",
+            "getConsentsByPatient query moved to consent.ts",
+            "All imports updated correctly"
+          ],
+          "implementation": {
+            "step1": "Find createConsent, withdrawConsent, getConsentsByPatient symbols",
+            "step2": "Create consent.ts with all three functions",
+            "step3": "Ensure internal API calls use correct paths"
+          }
+        },
+        {
+          "id": "task-1.5",
+          "description": "Sprint 02: Extract erasure functions to gdprModules/erasure.ts",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-1.2"],
+          "estimatedTokens": 6000,
+          "context": {
+            "memories": ["REMEDIATION_SPRINT_02_GDPR_MODULE_SPLIT"],
+            "files": ["convex/gdpr.ts"]
+          },
+          "acceptanceCriteria": [
+            "requestErasure mutation moved to erasure.ts",
+            "listErasureRequests query moved to erasure.ts",
+            "processErasure mutation moved to erasure.ts (largest function ~80 lines)",
+            "All imports updated correctly"
+          ],
+          "implementation": {
+            "step1": "Find requestErasure, listErasureRequests, processErasure symbols",
+            "step2": "Create erasure.ts with all three functions",
+            "step3": "Ensure internal API calls preserved"
+          }
+        },
+        {
+          "id": "task-1.6",
+          "description": "Sprint 02: Extract stats to gdprModules/stats.ts",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-1.2"],
+          "estimatedTokens": 4000,
+          "context": {
+            "memories": ["REMEDIATION_SPRINT_02_GDPR_MODULE_SPLIT"],
+            "files": ["convex/gdpr.ts"]
+          },
+          "acceptanceCriteria": [
+            "getGDPRStats query moved to stats.ts",
+            "GDPRStats type preserved or moved to types.ts",
+            "All imports updated correctly"
+          ],
+          "implementation": {
+            "step1": "Find getGDPRStats and GDPRStats symbols",
+            "step2": "Create stats.ts with function and type",
+            "step3": "Update type exports"
+          }
+        },
+        {
+          "id": "task-1.7",
+          "description": "Sprint 02: Create gdprModules/index.ts and transform gdpr.ts to facade",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-1.3", "task-1.4", "task-1.5", "task-1.6"],
+          "estimatedTokens": 5000,
+          "context": {
+            "memories": ["REMEDIATION_SPRINT_02_GDPR_MODULE_SPLIT"],
+            "files": [
+              "convex/gdpr.ts",
+              "convex/availableSlots.ts",
+              "convex/availableSlotsModules/index.ts"
+            ]
+          },
+          "acceptanceCriteria": [
+            "gdprModules/index.ts created with all re-exports",
+            "gdpr.ts transformed to <50 line facade with re-exports only",
+            "API paths preserved: api.gdpr.* calls still work",
+            "TypeScript compiles without errors"
+          ],
+          "implementation": {
+            "step1": "Create index.ts with module re-exports pattern from availableSlotsModules",
+            "step2": "Replace gdpr.ts content with facade re-exports",
+            "step3": "Run npm run typecheck to verify all API paths work"
+          }
+        }
+      ],
+      "gateCondition": "npm run typecheck passes with zero errors, all 10 GDPR functions accessible via api.gdpr.*"
+    },
+    {
+      "id": "phase-2",
+      "name": "Data Export Feature Phase",
+      "description": "Sprint 03: Implement GDPR Article 20 data export feature building on module structure",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-2.1",
+          "description": "Sprint 03: Create gdprModules/export.ts with exportPatientData query",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-1.7"],
+          "estimatedTokens": 12000,
+          "context": {
+            "memories": ["REMEDIATION_SPRINT_03_DATA_EXPORT"],
+            "files": [
+              "convex/gdprModules/index.ts",
+              "convex/schema.ts",
+              "convex/patients.ts"
+            ]
+          },
+          "acceptanceCriteria": [
+            "exportPatientData query created in export.ts",
+            "Returns complete patient data: patient info, employer, consents, appointments, reports",
+            "Uses human-readable values (type names not IDs)",
+            "Admin-only access via requireAdmin",
+            "Deleted patients return null",
+            "Export action logged to audit trail"
+          ],
+          "implementation": {
+            "step1": "Create export.ts with exportPatientData query following memory spec",
+            "step2": "Fetch patient, employer, consents, appointments, reports",
+            "step3": "Build export structure with ISO timestamps",
+            "step4": "Add audit logging via internal.gdpr.logAction",
+            "step5": "Update gdprModules/index.ts with export",
+            "step6": "Update gdpr.ts facade with re-export"
+          }
+        },
+        {
+          "id": "task-2.2",
+          "description": "Sprint 03: Update module exports and verify typecheck",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-2.1"],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": [
+              "convex/gdprModules/index.ts",
+              "convex/gdpr.ts"
+            ]
+          },
+          "acceptanceCriteria": [
+            "exportPatientData exported from gdprModules/index.ts",
+            "exportPatientData re-exported from gdpr.ts facade",
+            "TypeScript compiles without errors",
+            "api.gdpr.exportPatientData accessible"
+          ],
+          "implementation": {
+            "step1": "Add export to index.ts",
+            "step2": "Add re-export to gdpr.ts",
+            "step3": "Run npm run typecheck"
+          }
+        }
+      ],
+      "gateCondition": "npm run typecheck passes, npx convex run gdpr:exportPatientData returns valid structure"
+    },
+    {
+      "id": "phase-3",
+      "name": "E2E Verification Phase",
+      "description": "Sprint 04: Browser-CLI end-to-end testing for all implementation sprints with evidence collection",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-3.1",
+          "description": "Sprint 04: Test Suite 1 - Employer Booking Verification E2E",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": ["task-1.1", "task-2.2"],
+          "estimatedTokens": 8000,
+          "context": {
+            "memories": ["REMEDIATION_SPRINT_04_BROWSER_CLI_TESTING"],
+            "files": [".claude/rules/BROWSER-CLI/NAV-MAP.md"]
+          },
+          "acceptanceCriteria": [
+            "Pending employer sees disabled booking UI (screenshot evidence)",
+            "Verified employer can open booking dialog (screenshot evidence)",
+            "No console errors during flow",
+            "Network shows correct API calls"
+          ],
+          "testCommands": [
+            "restoreState authenticated-employer",
+            "navigate localhost:5175/employer/bookings",
+            "snapshot",
+            "click 'text:New Booking'",
+            "wait 500",
+            "assert 'text:Book Appointment' visible",
+            "screenshot EVIDENCE_SPRINT01_verified_booking.png"
+          ]
+        },
+        {
+          "id": "task-3.2",
+          "description": "Sprint 04: Test Suite 2 - GDPR Module Split Verification E2E",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": ["task-1.7", "task-2.2"],
+          "estimatedTokens": 10000,
+          "context": {
+            "memories": ["REMEDIATION_SPRINT_04_BROWSER_CLI_TESTING"],
+            "files": [".claude/rules/BROWSER-CLI/NAV-MAP.md"]
+          },
+          "acceptanceCriteria": [
+            "GDPR Dashboard loads with stats (screenshot evidence)",
+            "Audit Logs page displays correctly (screenshot evidence)",
+            "Erasure Requests page accessible",
+            "No console errors on any GDPR page"
+          ],
+          "testCommands": [
+            "restoreState authenticated-admin",
+            "navigate localhost:5175/admin/gdpr",
+            "wait 1500",
+            "snapshot",
+            "assert 'text:GDPR' visible",
+            "screenshot EVIDENCE_SPRINT02_gdpr_dashboard.png",
+            "navigate localhost:5175/admin/gdpr/audit",
+            "wait 1000",
+            "screenshot EVIDENCE_SPRINT02_audit_logs.png",
+            "assertConsole --level=error"
+          ]
+        },
+        {
+          "id": "task-3.3",
+          "description": "Sprint 04: Test Suite 3 - GDPR Data Export Verification",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-2.2"],
+          "estimatedTokens": 6000,
+          "context": {
+            "memories": ["REMEDIATION_SPRINT_04_BROWSER_CLI_TESTING"]
+          },
+          "acceptanceCriteria": [
+            "exportPatientData returns complete JSON with all fields",
+            "Export includes patient, employer, consents, appointments, reports",
+            "Audit log entry created for export action",
+            "Non-admin access rejected"
+          ],
+          "testCommands": [
+            "npx tsx CONVEX-CLI/SCRIPTS/convex-data.ts patients --limit=1 --json",
+            "npx tsx CONVEX-CLI/SCRIPTS/convex-run.ts gdpr:exportPatientData '{\"patientId\": \"PATIENT_ID\"}' --json",
+            "npx tsx CONVEX-CLI/SCRIPTS/convex-run.ts gdpr:getAuditLogs '{}' --json"
+          ]
+        },
+        {
+          "id": "task-3.4",
+          "description": "Sprint 04: Test Suite 4 - Integration and Regression Testing",
+          "agentType": "browser",
+          "priority": "medium",
+          "dependencies": ["task-3.1", "task-3.2", "task-3.3"],
+          "estimatedTokens": 8000,
+          "context": {
+            "memories": ["REMEDIATION_SPRINT_04_BROWSER_CLI_TESTING"]
+          },
+          "acceptanceCriteria": [
+            "Full employer workflow: Dashboard -> Employees -> Bookings -> Reports",
+            "Full admin workflow: Dashboard -> GDPR -> Audit -> Employers",
+            "Zero console errors across all pages",
+            "All navigation links functional"
+          ],
+          "testCommands": [
+            "restoreState authenticated-employer",
+            "navigate localhost:5175/employer/dashboard",
+            "click 'text:Employees'",
+            "wait 500",
+            "click 'text:Bookings'",
+            "wait 500",
+            "click 'text:Reports'",
+            "wait 500",
+            "console",
+            "assertConsole --level=error"
+          ]
+        }
+      ],
+      "gateCondition": "All 4 test suites pass, 5 evidence screenshots collected, no console errors"
+    }
+  ],
+  "totalEstimatedTokens": 83000,
+  "risks": [
+    {
+      "description": "GDPR module split breaks internal API paths (internal.gdpr.logAction)",
+      "mitigation": "Verify all internal.gdpr.* calls work after split, update if needed",
+      "severity": "high"
+    },
+    {
+      "description": "Facade pattern requires correct re-export syntax for Convex",
+      "mitigation": "Follow availableSlotsModules pattern exactly, test with npx convex run",
+      "severity": "medium"
+    },
+    {
+      "description": "exportPatientData may have missing fields if schema differs from spec",
+      "mitigation": "Check schema.ts for exact field names before implementation",
+      "severity": "low"
+    },
+    {
+      "description": "Browser state authenticated-employer-pending may not exist",
+      "mitigation": "Create test state manually or test with available verified employer state",
+      "severity": "low"
+    }
+  ],
+  "executionOrder": {
+    "parallel": [
+      ["task-1.1"],
+      ["task-1.2", "task-1.3", "task-1.4", "task-1.5", "task-1.6", "task-1.7"]
+    ],
+    "sequential": [
+      "phase-1-gate",
+      "task-2.1",
+      "task-2.2",
+      "phase-2-gate",
+      "task-3.1",
+      "task-3.2",
+      "task-3.3",
+      "task-3.4"
+    ]
+  },
+  "evidenceManifest": [
+    {
+      "id": "evidence-1",
+      "type": "screenshot",
+      "filename": "EVIDENCE_SPRINT01_verified_booking.png",
+      "description": "Verified employer can access booking dialog"
+    },
+    {
+      "id": "evidence-2",
+      "type": "screenshot",
+      "filename": "EVIDENCE_SPRINT02_gdpr_dashboard.png",
+      "description": "GDPR dashboard loads with stats post-refactor"
+    },
+    {
+      "id": "evidence-3",
+      "type": "screenshot",
+      "filename": "EVIDENCE_SPRINT02_audit_logs.png",
+      "description": "Audit logs page displays correctly"
+    },
+    {
+      "id": "evidence-4",
+      "type": "json",
+      "filename": "EVIDENCE_SPRINT03_data_export.json",
+      "description": "Patient data export JSON sample"
+    },
+    {
+      "id": "evidence-5",
+      "type": "console",
+      "filename": "EVIDENCE_ALL_console_clean.txt",
+      "description": "Console output showing no errors"
+    }
+  ]
+}

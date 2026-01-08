@@ -1,0 +1,219 @@
+{
+  "id": "patient-access-phase1",
+  "title": "Patient Appointment Access - Magic Link + Calendar Integration (Phase 1)",
+  "createdAt": "2026-01-07T10:30:00Z",
+  "status": "pending",
+  "source": "PATIENT_ACCESS_INDEX memory",
+
+  "scope": {
+    "ui": {
+      "components": 6,
+      "pagesNew": 1,
+      "pagesModified": 2,
+      "estimatedLines": 230
+    },
+    "api": {
+      "mutations": 3,
+      "queries": 1,
+      "internalMutations": 1,
+      "httpRoutes": 1,
+      "estimatedLines": 235
+    },
+    "db": {
+      "tablesNew": 1,
+      "tablesModified": 0,
+      "indexes": 3
+    }
+  },
+
+  "phases": [
+    {
+      "id": 1,
+      "name": "Database Schema",
+      "description": "Add appointmentTokens table to schema.ts",
+      "priority": "P0",
+      "blocking": true,
+      "estimatedMinutes": 15,
+      "files": [
+        {
+          "path": "convex/schema.ts",
+          "action": "MODIFY",
+          "linesAdded": 15,
+          "description": "Add appointmentTokens table with 3 indexes"
+        }
+      ],
+      "verification": ["npm run typecheck"],
+      "dependencies": []
+    },
+    {
+      "id": 2,
+      "name": "Backend Token Module",
+      "description": "Create appointmentTokens.ts with CRUD operations and ICS generator",
+      "priority": "P0",
+      "blocking": true,
+      "estimatedMinutes": 90,
+      "files": [
+        {
+          "path": "convex/appointmentTokens.ts",
+          "action": "CREATE",
+          "linesAdded": 150,
+          "description": "Token generation, validation, audit logging"
+        },
+        {
+          "path": "convex/lib/icsGenerator.ts",
+          "action": "CREATE",
+          "linesAdded": 60,
+          "description": "RFC 5545 ICS calendar file generation"
+        }
+      ],
+      "verification": [
+        "npm run typecheck",
+        "npx tsx CONVEX-CLI/SCRIPTS/convex-run.ts appointmentTokens:generate '{}' --json"
+      ],
+      "dependencies": [1]
+    },
+    {
+      "id": 3,
+      "name": "HTTP Calendar Endpoint",
+      "description": "Add /calendar/:token GET route for ICS download",
+      "priority": "P1",
+      "blocking": false,
+      "estimatedMinutes": 30,
+      "files": [
+        {
+          "path": "convex/http.ts",
+          "action": "MODIFY",
+          "linesAdded": 25,
+          "description": "Add /calendar/:token route returning ICS file"
+        }
+      ],
+      "verification": ["npm run typecheck"],
+      "dependencies": [2]
+    },
+    {
+      "id": 4,
+      "name": "Patient View Page",
+      "description": "Create public ViewAppointment.tsx page and add route",
+      "priority": "P1",
+      "blocking": false,
+      "estimatedMinutes": 90,
+      "files": [
+        {
+          "path": "src/pages/patient/ViewAppointment.tsx",
+          "action": "CREATE",
+          "linesAdded": 180,
+          "description": "Public appointment view with loading/error states"
+        },
+        {
+          "path": "src/App.tsx",
+          "action": "MODIFY",
+          "linesAdded": 8,
+          "description": "Add /view-appointment/:token route"
+        }
+      ],
+      "verification": [
+        "npm run typecheck",
+        "Browser-CLI: navigate /view-appointment/test-token"
+      ],
+      "dependencies": [2]
+    },
+    {
+      "id": 5,
+      "name": "Employer Share Button",
+      "description": "Add Share link button to Bookings page",
+      "priority": "P1",
+      "blocking": false,
+      "estimatedMinutes": 45,
+      "files": [
+        {
+          "path": "src/pages/employer/Bookings.tsx",
+          "action": "MODIFY",
+          "linesAdded": 40,
+          "description": "Share button with copy-to-clipboard and toast feedback"
+        }
+      ],
+      "verification": [
+        "npm run typecheck",
+        "Browser-CLI: restoreState authenticated-employer && navigate /employer/bookings"
+      ],
+      "dependencies": [2]
+    }
+  ],
+
+  "criticalFiles": [
+    {
+      "path": "convex/schema.ts",
+      "currentLines": 294,
+      "reason": "Schema foundation - blocks all other phases"
+    },
+    {
+      "path": "convex/appointmentTokens.ts",
+      "currentLines": 0,
+      "reason": "Core token logic - generation, validation, hashing"
+    },
+    {
+      "path": "convex/http.ts",
+      "currentLines": 296,
+      "reason": "HTTP endpoint for calendar download"
+    },
+    {
+      "path": "src/pages/patient/ViewAppointment.tsx",
+      "currentLines": 0,
+      "reason": "Main deliverable - patient appointment view"
+    },
+    {
+      "path": "src/pages/employer/Bookings.tsx",
+      "currentLines": 82,
+      "reason": "Entry point - Share button triggers flow"
+    }
+  ],
+
+  "risks": [
+    {
+      "risk": "Web Crypto API availability",
+      "severity": "High",
+      "probability": "Low",
+      "mitigation": "Convex runtime supports Web Crypto; test locally first"
+    },
+    {
+      "risk": "ICS format compatibility",
+      "severity": "Medium",
+      "probability": "Low",
+      "mitigation": "Test with Google Calendar, Outlook, Apple Calendar"
+    },
+    {
+      "risk": "Rate limiting not implemented",
+      "severity": "Low",
+      "probability": "Medium",
+      "mitigation": "Future enhancement: limit tokens per appointment/day"
+    },
+    {
+      "risk": "Email delivery not implemented",
+      "severity": "Low",
+      "probability": "High",
+      "mitigation": "Out of scope for Phase 1; manual copy/paste workflow"
+    }
+  ],
+
+  "browserCliTests": [
+    {"id": "PT-01", "description": "Generate magic link from employer portal", "priority": "P1"},
+    {"id": "PT-02", "description": "View appointment via valid magic link", "priority": "P1"},
+    {"id": "PT-03", "description": "Invalid token shows error", "priority": "P1"},
+    {"id": "PT-04", "description": "Expired token shows error", "priority": "P1"},
+    {"id": "PT-05", "description": "Download ICS calendar file", "priority": "P2"},
+    {"id": "PT-06", "description": "Mobile responsive layout", "priority": "P2"},
+    {"id": "PT-07", "description": "Zoom link opens correctly", "priority": "P2"},
+    {"id": "PT-08", "description": "Copy link feedback", "priority": "P2"}
+  ],
+
+  "estimatedTotalMinutes": 270,
+  "estimatedTotalHours": 4.5,
+
+  "memoryReferences": [
+    "PATIENT_ACCESS_INDEX",
+    "PATIENT_ACCESS_SPRINT_01_OVERVIEW",
+    "PATIENT_ACCESS_SPRINT_02_BACKEND",
+    "PATIENT_ACCESS_SPRINT_03_FRONTEND",
+    "PATIENT_ACCESS_SPRINT_04_BROWSER_TESTING"
+  ]
+}

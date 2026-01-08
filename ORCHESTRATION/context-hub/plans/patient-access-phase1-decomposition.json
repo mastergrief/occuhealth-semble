@@ -1,0 +1,412 @@
+{
+  "id": "patient-access-phase1-20260107",
+  "type": "plan",
+  "metadata": {
+    "promptId": "patient-access-phase1-20260107",
+    "sessionId": "patient-access-phase1-20260107",
+    "timestamp": "2026-01-07T15:00:00Z",
+    "version": "1.0.0"
+  },
+  "summary": "Enable patients to view appointment details via magic link without account creation. Implements token-based access with 48hr TTL, ICS calendar generation, and employer share workflow.",
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Database Schema",
+      "description": "Add appointmentTokens table to Convex schema with required indexes",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-1.1",
+          "description": "Add appointmentTokens table to convex/schema.ts with tokenHash, appointmentId, patientId, createdAt, expiresAt, viewedAt, invalidated fields and 3 indexes (by_token, by_appointment, by_expiry)",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 3000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_02_BACKEND"],
+            "files": ["convex/schema.ts"]
+          },
+          "acceptanceCriteria": [
+            "appointmentTokens table defined with all 7 fields",
+            "by_token index on tokenHash",
+            "by_appointment index on appointmentId",
+            "by_expiry index on expiresAt",
+            "npm run typecheck passes"
+          ]
+        }
+      ],
+      "gateCondition": "npm run typecheck passes with new schema"
+    },
+    {
+      "id": "phase-2",
+      "name": "Backend Token Module",
+      "description": "Create token generation, validation, and ICS calendar utilities",
+      "parallelizable": true,
+      "subtasks": [
+        {
+          "id": "task-2.1",
+          "description": "Create convex/appointmentTokens.ts with: generate mutation (creates SHA-256 hashed token, 48hr TTL, audit logging), validateAndGetAppointment query (returns appointment with patient/doctor/type details), markViewed mutation, invalidateForAppointment internal mutation, hashToken utility",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-1.1"],
+          "estimatedTokens": 8000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_02_BACKEND"],
+            "files": ["convex/schema.ts", "convex/gdpr.ts"]
+          },
+          "acceptanceCriteria": [
+            "generate mutation creates token with SHA-256 hash",
+            "validateAndGetAppointment returns full appointment details for valid token",
+            "validateAndGetAppointment returns error for invalid/expired tokens",
+            "markViewed updates viewedAt timestamp",
+            "invalidateForAppointment sets invalidated=true for all appointment tokens",
+            "Audit log entry created on token generation",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-2.2",
+          "description": "Create convex/lib/icsGenerator.ts with generateICS function producing RFC 5545 compliant calendar files with VCALENDAR, VEVENT, VALARM (1 day and 1 hour reminders)",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": ["task-1.1"],
+          "estimatedTokens": 3000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_02_BACKEND"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "ICSEventData interface defined",
+            "generateICS produces valid ICS string",
+            "Includes VCALENDAR header with VERSION 2.0",
+            "VEVENT has UID, DTSTART, DTEND, SUMMARY, DESCRIPTION, LOCATION",
+            "Two VALARM reminders (1 day, 1 hour before)",
+            "Date escaping handles special characters",
+            "npm run typecheck passes"
+          ]
+        }
+      ],
+      "gateCondition": "Both files created, typecheck passes, generate mutation can be called via Convex CLI"
+    },
+    {
+      "id": "phase-3",
+      "name": "HTTP Calendar Endpoint",
+      "description": "Add public HTTP route for ICS file download",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-3.1",
+          "description": "Add /calendar/:token GET route to convex/http.ts that validates token, fetches appointment data, generates ICS using icsGenerator, returns with Content-Type text/calendar and Content-Disposition attachment header",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": ["task-2.1", "task-2.2"],
+          "estimatedTokens": 5000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_02_BACKEND"],
+            "files": ["convex/http.ts", "convex/appointmentTokens.ts", "convex/lib/icsGenerator.ts"]
+          },
+          "acceptanceCriteria": [
+            "Route registered at /calendar/:token",
+            "Validates token via appointmentTokens.validateAndGetAppointment",
+            "Returns 400 for missing token",
+            "Returns 404 for invalid/expired token",
+            "Returns 200 with ICS content for valid token",
+            "Content-Type: text/calendar; charset=utf-8",
+            "Content-Disposition: attachment; filename=appointment-{id}.ics",
+            "npm run typecheck passes"
+          ]
+        }
+      ],
+      "gateCondition": "HTTP route deployed, curl to /calendar/{valid-token} returns ICS file"
+    },
+    {
+      "id": "phase-4",
+      "name": "Patient View Page",
+      "description": "Create public appointment view page and add routing",
+      "parallelizable": true,
+      "subtasks": [
+        {
+          "id": "task-4.1",
+          "description": "Create src/pages/patient/ViewAppointment.tsx with: loading state (spinner), error state (red X, helpful message, home link), success state (appointment card with date/time/doctor/type/status/zoom link, Add to Calendar button, Print button). Uses useQuery for validateAndGetAppointment, useMutation for markViewed on mount.",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-2.1"],
+          "estimatedTokens": 8000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_03_FRONTEND"],
+            "files": ["src/pages/employer/Bookings.tsx"]
+          },
+          "acceptanceCriteria": [
+            "Page renders loading spinner initially",
+            "Invalid token shows error card with XCircle icon",
+            "Expired token shows expiration message",
+            "Valid token shows appointment details card",
+            "Date formatted as weekday, day month year",
+            "Time formatted as 12-hour with AM/PM",
+            "Status badge with correct color (pending=yellow, confirmed=blue, completed=green, cancelled=red)",
+            "Zoom link section visible when doctor has zoomPersonalLink",
+            "Add to Calendar button links to /calendar/:token",
+            "Print button calls window.print()",
+            "markViewed called on successful load",
+            "Responsive layout (mobile-friendly)",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-4.2",
+          "description": "Add /view-appointment/:token route to src/App.tsx using lazy import and Suspense with PageLoader fallback. Route must be OUTSIDE protected routes (public access).",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-4.1"],
+          "estimatedTokens": 2000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_03_FRONTEND"],
+            "files": ["src/App.tsx"]
+          },
+          "acceptanceCriteria": [
+            "ViewAppointment lazy import added",
+            "Route at /view-appointment/:token",
+            "Route outside auth-protected section",
+            "Suspense wrapper with PageLoader fallback",
+            "npm run typecheck passes"
+          ]
+        }
+      ],
+      "gateCondition": "Navigate to /view-appointment/{token} loads page correctly, invalid token shows error"
+    },
+    {
+      "id": "phase-5",
+      "name": "Employer Share Button",
+      "description": "Add share functionality to employer bookings page",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-5.1",
+          "description": "Modify src/pages/employer/Bookings.tsx to add Share button per appointment row. On click: call appointmentTokens.generate mutation, construct URL, copy to clipboard, show toast with sonner, button shows checkmark icon for 2 seconds then reverts to share icon.",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": ["task-2.1"],
+          "estimatedTokens": 4000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_03_FRONTEND"],
+            "files": ["src/pages/employer/Bookings.tsx"]
+          },
+          "acceptanceCriteria": [
+            "Share2 icon button added to each appointment",
+            "Click calls appointmentTokens.generate",
+            "URL constructed as {origin}/view-appointment/{token}",
+            "navigator.clipboard.writeText copies URL",
+            "Toast shows 'Link copied!' with 48-hour validity note",
+            "Button shows Check icon (green) for 2 seconds after success",
+            "Error toast on failure",
+            "npm run typecheck passes"
+          ]
+        }
+      ],
+      "gateCondition": "Share button visible, clicking copies link to clipboard"
+    },
+    {
+      "id": "phase-6",
+      "name": "Browser-CLI E2E Testing",
+      "description": "Execute 8 test cases covering full patient access flow",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-6.1",
+          "description": "Execute PT-01: Generate magic link from employer portal. Restore authenticated-employer state, navigate to /employer/bookings, click Share button, verify toast appears, capture screenshot.",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": ["task-5.1"],
+          "estimatedTokens": 3000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_04_BROWSER_TESTING"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "Share button clickable",
+            "Toast 'Link copied!' appears",
+            "No console errors",
+            "Screenshot PT-01 captured"
+          ]
+        },
+        {
+          "id": "task-6.2",
+          "description": "Execute PT-02: View appointment via valid magic link. Generate token via Convex CLI, navigate to /view-appointment/{token}, verify appointment details displayed, capture screenshot.",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": ["task-4.2", "task-6.1"],
+          "estimatedTokens": 3000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_04_BROWSER_TESTING"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "Page loads without errors",
+            "'Your Appointment' heading visible",
+            "Patient name displayed",
+            "Date and time shown",
+            "Status badge visible",
+            "Screenshot PT-02 captured"
+          ]
+        },
+        {
+          "id": "task-6.3",
+          "description": "Execute PT-03: Invalid token shows error. Navigate to /view-appointment/invalid-token-12345, verify error UI with XCircle icon and 'Link Invalid or Expired' message, capture screenshot.",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": ["task-4.2"],
+          "estimatedTokens": 2000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_04_BROWSER_TESTING"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "Error card with red X icon displayed",
+            "'Link Invalid or Expired' heading visible",
+            "'contact your employer' message visible",
+            "'Return to Home' button visible",
+            "Screenshot PT-03 captured"
+          ]
+        },
+        {
+          "id": "task-6.4",
+          "description": "Execute PT-05: Download ICS calendar file. Navigate to valid appointment view, click 'Add to Calendar', verify network request to /calendar/:token succeeds with 200 status, capture screenshot.",
+          "agentType": "browser",
+          "priority": "medium",
+          "dependencies": ["task-3.1", "task-4.2"],
+          "estimatedTokens": 3000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_04_BROWSER_TESTING"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "'Add to Calendar' button visible",
+            "Click initiates download",
+            "Network shows GET /calendar/:token with 200",
+            "Screenshot PT-05 captured"
+          ]
+        },
+        {
+          "id": "task-6.5",
+          "description": "Execute PT-06: Mobile responsive layout. Set iPhone 12 viewport, navigate to valid appointment view, verify content readable and buttons accessible, capture screenshot, reset viewport.",
+          "agentType": "browser",
+          "priority": "medium",
+          "dependencies": ["task-4.2"],
+          "estimatedTokens": 2000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_04_BROWSER_TESTING"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "Content readable on mobile",
+            "Buttons full-width and tappable",
+            "No horizontal scroll",
+            "Screenshot PT-06 captured"
+          ]
+        },
+        {
+          "id": "task-6.6",
+          "description": "Execute PT-07: Zoom link opens correctly. Navigate to appointment with Zoom link, click 'Join Zoom Meeting', verify new tab opens with Zoom URL, capture screenshot.",
+          "agentType": "browser",
+          "priority": "medium",
+          "dependencies": ["task-4.2"],
+          "estimatedTokens": 2000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_04_BROWSER_TESTING"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "Zoom button visible with blue styling",
+            "Click opens new tab",
+            "New tab navigates to Zoom URL",
+            "Original page remains open",
+            "Screenshot PT-07 captured"
+          ]
+        },
+        {
+          "id": "task-6.7",
+          "description": "Execute PT-08: Copy link feedback. Restore employer state, click Share button, verify button shows green checkmark temporarily and toast appears, capture screenshot.",
+          "agentType": "browser",
+          "priority": "medium",
+          "dependencies": ["task-5.1"],
+          "estimatedTokens": 2000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_04_BROWSER_TESTING"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "Share button shows checkmark after click",
+            "Toast notification appears",
+            "Checkmark reverts to share icon after 2 seconds",
+            "Screenshot PT-08 captured"
+          ]
+        },
+        {
+          "id": "task-6.8",
+          "description": "Compile test evidence: Collect all PT-*.png screenshots, create test-results.md summary with pass/fail status for each test, log any issues found.",
+          "agentType": "analyst",
+          "priority": "high",
+          "dependencies": ["task-6.1", "task-6.2", "task-6.3", "task-6.4", "task-6.5", "task-6.6", "task-6.7"],
+          "estimatedTokens": 2000,
+          "context": {
+            "memories": ["PATIENT_ACCESS_SPRINT_04_BROWSER_TESTING"],
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "All screenshots collected in evidence directory",
+            "test-results.md created with status table",
+            "Any failures documented with repro steps",
+            "Overall pass/fail verdict"
+          ]
+        }
+      ],
+      "gateCondition": "All 8 tests pass, evidence collected"
+    }
+  ],
+  "totalEstimatedTokens": 52000,
+  "risks": [
+    {
+      "description": "Web Crypto API availability in Convex runtime",
+      "mitigation": "crypto.subtle.digest is available in Convex - verified in existing codebase patterns",
+      "severity": "low"
+    },
+    {
+      "description": "HTTP route path parameter extraction",
+      "mitigation": "Use URL parsing to extract token from pathname - pattern exists in current http.ts",
+      "severity": "low"
+    },
+    {
+      "description": "ICS file compatibility across calendar apps",
+      "mitigation": "Using RFC 5545 standard format with VCALENDAR/VEVENT structure - widely supported",
+      "severity": "medium"
+    },
+    {
+      "description": "Clipboard API browser support",
+      "mitigation": "navigator.clipboard.writeText has 95%+ browser support, graceful fallback not critical for admin users",
+      "severity": "low"
+    },
+    {
+      "description": "Token exposure in URL",
+      "mitigation": "Tokens are UUID v4 (unguessable), SHA-256 hashed in DB, 48hr TTL, single-use option available",
+      "severity": "low"
+    }
+  ],
+  "executionOrder": {
+    "sequential": [
+      ["task-1.1"],
+      ["task-2.1", "task-2.2"],
+      ["task-3.1"],
+      ["task-4.1", "task-4.2", "task-5.1"],
+      ["task-6.1", "task-6.2", "task-6.3", "task-6.4", "task-6.5", "task-6.6", "task-6.7"],
+      ["task-6.8"]
+    ],
+    "notes": [
+      "Phase 1 must complete before Phase 2 (schema required for types)",
+      "Phase 2 tasks can run in parallel (independent files)",
+      "Phase 3 depends on both Phase 2 tasks",
+      "Phase 4 and 5 can run in parallel after Phase 2.1",
+      "Phase 6 tests depend on all implementation phases",
+      "Task 6.8 (evidence compilation) runs after all tests"
+    ]
+  }
+}

@@ -249,7 +249,8 @@ export default defineSchema({
   })
     .index("by_patient", ["patientId"])
     .index("by_email", ["patientEmail"])
-    .index("by_type", ["consentType"]),
+    .index("by_type", ["consentType"])
+    .index("by_granted", ["granted"]),
 
   // ---------------------------------------------------------------------------
   // Audit Logs (GDPR Compliance)
@@ -307,6 +308,23 @@ export default defineSchema({
     .index("by_token", ["tokenHash"])
     .index("by_appointment", ["appointmentId"])
     .index("by_expiry", ["expiresAt"]),
+
+  // ---------------------------------------------------------------------------
+  // GDPR Stats Cache (Performance Optimization)
+  // ---------------------------------------------------------------------------
+  gdprStatsCache: defineTable({
+    computedAt: v.number(),
+    totalPatients: v.number(),
+    activeConsents: v.number(),
+    pendingErasureCount: v.number(),
+    patientsWithAllConsents: v.number(),
+    erasureApproachingDeadline: v.number(),
+    erasureOverdue: v.number(),
+    auditLogsByAction: v.array(v.object({
+      action: v.string(),
+      count: v.number(),
+    })),
+  }),
 
   // ---------------------------------------------------------------------------
   // Example Table (from starter)

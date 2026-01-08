@@ -1,0 +1,422 @@
+{
+  "planId": "remediation-v2-2026-01-08",
+  "title": "6-Sprint Remediation Plan",
+  "created": "2026-01-08T12:00:00Z",
+  "source": "ORCH-PLAN Discovery Phase",
+  "totalIssues": 17,
+  "estimatedEffort": "15-22 hours",
+  "criticalPath": "Sprint 01 → (Sprints 02 || 03) → Sprint 04 → Sprint 05 → Sprint 06",
+
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Foundation",
+      "sprints": ["01"],
+      "blocking": true,
+      "duration": "4-6 hours",
+      "description": "Critical fixes for race condition, error handling, npm vulnerabilities"
+    },
+    {
+      "phase": 2,
+      "name": "Quality & Performance",
+      "sprints": ["02", "03"],
+      "parallel": true,
+      "duration": "6-9 hours combined",
+      "description": "Testing infrastructure + performance optimization (can run in parallel)"
+    },
+    {
+      "phase": 3,
+      "name": "Refinement",
+      "sprints": ["04"],
+      "duration": "3-4 hours",
+      "description": "Type safety, code quality, shared utilities"
+    },
+    {
+      "phase": 4,
+      "name": "Validation",
+      "sprints": ["05"],
+      "duration": "2-3 hours",
+      "description": "Browser-CLI manual testing of all fixes"
+    },
+    {
+      "phase": 5,
+      "name": "Documentation",
+      "sprints": ["06"],
+      "duration": "4-6 hours",
+      "description": "Setup guide, testing guide, algorithm docs"
+    }
+  ],
+
+  "sprints": {
+    "01": {
+      "name": "Critical Fixes",
+      "priority": "P0",
+      "effort": "4-6h",
+      "agent": "developer",
+      "issues": ["RACE-001", "ERR-001-004", "DEP-001-002", "CODE-001"],
+      "subtasks": [
+        {
+          "id": "01.1",
+          "name": "Fix Double-Booking Race Condition",
+          "complexity": "HIGH",
+          "files": [
+            {"path": "convex/schema.ts", "action": "ADD bookedAt field to availableSlots"},
+            {"path": "convex/appointments.ts", "lines": "203-239", "action": "Replace patch() with atomic replace()"}
+          ]
+        },
+        {
+          "id": "01.2",
+          "name": "Standardize Error Handling",
+          "complexity": "MEDIUM",
+          "files": [
+            {"path": "convex/lib/errorCodes.ts", "action": "CREATE error codes enum"},
+            {"path": "convex/appointmentTokens.ts", "line": 41, "action": "Replace Error with ConvexError"},
+            {"path": "convex/reports.ts", "line": 151, "action": "Replace Error with ConvexError"},
+            {"path": "convex/gdprModules/erasure.ts", "line": 86, "action": "Replace Error with ConvexError"},
+            {"path": "convex/http.ts", "line": 21, "action": "Replace Error with ConvexError"}
+          ]
+        },
+        {
+          "id": "01.3",
+          "name": "Fix npm Vulnerabilities",
+          "complexity": "LOW",
+          "files": [
+            {"path": "package.json", "action": "Update vite to 6.4.1+, run npm audit fix"}
+          ]
+        },
+        {
+          "id": "01.4",
+          "name": "Remove Dead Code",
+          "complexity": "LOW",
+          "files": [
+            {"path": "convex/myFunctions.ts", "action": "DELETE entire file"}
+          ]
+        }
+      ],
+      "acceptance": [
+        "No double-booking possible (test concurrent requests)",
+        "All mutations use ConvexError with structured codes",
+        "npm audit shows 0 high/critical vulnerabilities",
+        "myFunctions.ts deleted, no compilation errors"
+      ]
+    },
+
+    "02": {
+      "name": "Testing Infrastructure",
+      "priority": "P1",
+      "effort": "2-3d",
+      "agent": "developer",
+      "dependsOn": ["01"],
+      "parallelWith": ["03"],
+      "issues": ["TEST-001", "CODE-002", "EDGE-001"],
+      "subtasks": [
+        {
+          "id": "02.1",
+          "name": "Create Convex Appointments Tests",
+          "complexity": "MEDIUM",
+          "files": [
+            {"path": "convex/__tests__/appointments.test.ts", "action": "CREATE test file with 5+ test cases"}
+          ]
+        },
+        {
+          "id": "02.2",
+          "name": "Create Convex GDPR Tests",
+          "complexity": "MEDIUM",
+          "files": [
+            {"path": "convex/__tests__/gdpr-erasure.test.ts", "action": "CREATE test file"},
+            {"path": "convex/__tests__/gdpr-consent.test.ts", "action": "CREATE test file"}
+          ]
+        },
+        {
+          "id": "02.3",
+          "name": "Create Convex Patients Tests",
+          "complexity": "LOW",
+          "files": [
+            {"path": "convex/__tests__/patients.test.ts", "action": "CREATE test file"}
+          ]
+        },
+        {
+          "id": "02.4",
+          "name": "Fix Failing Dashboard Tests",
+          "complexity": "LOW-MEDIUM",
+          "files": [
+            {"path": "src/pages/employer/__tests__/Dashboard.test.tsx", "line": 273, "action": "Fix failing assertions"}
+          ]
+        }
+      ],
+      "acceptance": [
+        "Convex function coverage ≥ 60%",
+        "All tests passing (0 failures)",
+        "15+ new test cases added"
+      ]
+    },
+
+    "03": {
+      "name": "Performance Optimization",
+      "priority": "P1",
+      "effort": "4-6h",
+      "agent": "developer",
+      "dependsOn": ["01"],
+      "parallelWith": ["02"],
+      "issues": ["PERF-003", "PERF-004", "PERF-011", "MEMO-001", "PERF-012"],
+      "subtasks": [
+        {
+          "id": "03.1",
+          "name": "Fix Unbounded getAuditLogs",
+          "complexity": "MEDIUM",
+          "files": [
+            {"path": "convex/gdprModules/audit.ts", "lines": "59-63", "action": "Replace collect() with paginate()"},
+            {"path": "src/pages/admin/AuditLogs.tsx", "action": "Add pagination controls"}
+          ]
+        },
+        {
+          "id": "03.2",
+          "name": "Fix Unbounded getDashboardStats",
+          "complexity": "MEDIUM",
+          "files": [
+            {"path": "convex/employers.ts", "lines": "180-194", "action": "Add limits and filters"}
+          ]
+        },
+        {
+          "id": "03.3",
+          "name": "Implement Rate Limiting",
+          "complexity": "MEDIUM",
+          "files": [
+            {"path": "package.json", "action": "Install convex-helpers"},
+            {"path": "convex/lib/rateLimiter.ts", "action": "CREATE rate limiter config"},
+            {"path": "convex/appointments.ts", "action": "Add rate limiting to book mutation"},
+            {"path": "convex/patients.ts", "action": "Add rate limiting to create mutation"},
+            {"path": "convex/availableSlotsModules/recurring.ts", "action": "Add rate limiting"}
+          ]
+        },
+        {
+          "id": "03.4",
+          "name": "Add useMemo to Dashboards",
+          "complexity": "LOW",
+          "files": [
+            {"path": "src/pages/employer/Dashboard.tsx", "action": "Wrap computed values in useMemo"},
+            {"path": "src/pages/doctor/Dashboard.tsx", "action": "Wrap computed values in useMemo"}
+          ]
+        },
+        {
+          "id": "03.5",
+          "name": "Add Debounce to RecurringSlotForm",
+          "complexity": "LOW",
+          "files": [
+            {"path": "src/hooks/useDebouncedValue.ts", "action": "CREATE debounce hook"},
+            {"path": "src/components/doctor/recurring/RecurringSlotForm.tsx", "action": "Use debounced value in preview query"}
+          ]
+        }
+      ],
+      "acceptance": [
+        "Audit logs page LCP < 2.5s",
+        "Dashboard LCP < 2s",
+        "Rate limiting active on mutations",
+        "useMemo added to 2 dashboard components",
+        "RecurringSlotForm debounces preview query"
+      ]
+    },
+
+    "04": {
+      "name": "Code Quality",
+      "priority": "P2",
+      "effort": "3-4h",
+      "agent": "developer",
+      "dependsOn": ["01", "02", "03"],
+      "issues": ["TYPE-001", "TYPE-002", "CODE-003", "CONS-001"],
+      "subtasks": [
+        {
+          "id": "04.1",
+          "name": "Fix Type Safety Gaps",
+          "complexity": "LOW",
+          "files": [
+            {"path": "convex/availableSlotsModules/recurring.ts", "line": 260, "action": "Replace as any with proper Id type"},
+            {"path": "convex/schema.ts", "line": 261, "action": "Replace v.any() with structured object"}
+          ]
+        },
+        {
+          "id": "04.2",
+          "name": "Remove Console Statements",
+          "complexity": "LOW",
+          "files": [
+            {"path": "convex/http.ts", "action": "Remove 12 console.log statements"}
+          ]
+        },
+        {
+          "id": "04.3",
+          "name": "Create Shared Error Handler",
+          "complexity": "MEDIUM",
+          "files": [
+            {"path": "src/lib/errorHandler.ts", "action": "CREATE shared error utility"},
+            {"path": "src/components/employer/EmployerRegistrationForm.tsx", "action": "Refactor to use shared handler"},
+            {"path": "src/components/doctor/DoctorRegistrationForm.tsx", "action": "Refactor to use shared handler"},
+            {"path": "src/components/employer/EmployeeForm.tsx", "action": "Refactor to use shared handler"}
+          ]
+        }
+      ],
+      "acceptance": [
+        "npm run typecheck passes with 0 errors",
+        "No as any casts in production code",
+        "No v.any() in schema",
+        "No console.log in http.ts",
+        "All forms use shared error handler"
+      ]
+    },
+
+    "05": {
+      "name": "Browser-CLI Testing",
+      "priority": "P2",
+      "effort": "2-3h",
+      "agent": "browser",
+      "dependsOn": ["01", "02", "03", "04"],
+      "testSuites": [
+        {
+          "id": "T1",
+          "name": "Critical Fix Verification",
+          "tests": ["Race condition fix", "Error handling", "Rate limiting"]
+        },
+        {
+          "id": "T2",
+          "name": "Performance Verification",
+          "tests": ["Audit logs pagination (LCP < 2.5s)", "Dashboard performance (LCP < 2s)"]
+        },
+        {
+          "id": "T3",
+          "name": "GDPR Compliance",
+          "tests": ["Soft delete PII redaction", "Data export completeness"]
+        },
+        {
+          "id": "T4",
+          "name": "Portal Navigation",
+          "tests": ["Employer portal flow", "Doctor portal flow", "Admin portal flow"]
+        },
+        {
+          "id": "T5",
+          "name": "Error Scenarios",
+          "tests": ["Unauthorized access", "Invalid token", "Rate limiting response"]
+        }
+      ],
+      "acceptance": [
+        "All 10 test scenarios pass",
+        "No console errors during testing",
+        "Performance metrics within targets",
+        "20+ evidence screenshots captured",
+        "Test report generated"
+      ]
+    },
+
+    "06": {
+      "name": "Documentation",
+      "priority": "P3",
+      "effort": "4-6h",
+      "agent": "developer",
+      "dependsOn": ["01", "02", "03", "04", "05"],
+      "subtasks": [
+        {
+          "id": "06.1",
+          "name": "Create Setup Guide",
+          "complexity": "LOW",
+          "files": [
+            {"path": "SETUP_GUIDE.md", "action": "CREATE developer setup guide"}
+          ]
+        },
+        {
+          "id": "06.2",
+          "name": "Create Testing Guide",
+          "complexity": "LOW",
+          "files": [
+            {"path": "TESTING_GUIDE.md", "action": "CREATE testing guide with examples"}
+          ]
+        },
+        {
+          "id": "06.3",
+          "name": "Document Complex Algorithms",
+          "complexity": "MEDIUM",
+          "files": [
+            {"path": "convex/availableSlotsModules/recurring.ts", "action": "Add JSDoc for createRecurringSlots"},
+            {"path": "convex/http.ts", "action": "Add OAuth flow documentation"}
+          ]
+        },
+        {
+          "id": "06.4",
+          "name": "Document Key Components",
+          "complexity": "MEDIUM",
+          "files": [
+            {"path": "src/components/employer/BookingFlow.tsx", "action": "Add component JSDoc"},
+            {"path": "src/components/doctor/recurring/RecurringSlotForm.tsx", "action": "Add component JSDoc"}
+          ]
+        },
+        {
+          "id": "06.5",
+          "name": "Update README",
+          "complexity": "LOW",
+          "files": [
+            {"path": "README.md", "action": "Add documentation links and troubleshooting"}
+          ]
+        }
+      ],
+      "acceptance": [
+        "SETUP_GUIDE.md created with quick start",
+        "TESTING_GUIDE.md created with examples",
+        "Key algorithms documented (JSDoc)",
+        "README updated with documentation links"
+      ]
+    }
+  },
+
+  "criticalFiles": [
+    {"path": "convex/appointments.ts", "lines": 364, "sprints": ["01", "02", "03"], "priority": "HIGHEST"},
+    {"path": "convex/schema.ts", "lines": 310, "sprints": ["01", "04"], "priority": "HIGHEST"},
+    {"path": "convex/gdprModules/audit.ts", "lines": 108, "sprints": ["03"], "priority": "HIGH"},
+    {"path": "convex/http.ts", "lines": 347, "sprints": ["01", "04", "06"], "priority": "HIGH"},
+    {"path": "package.json", "sprints": ["01", "03"], "priority": "HIGH"}
+  ],
+
+  "riskAssessment": {
+    "high": [
+      {
+        "item": "Race condition fix",
+        "sprint": "01",
+        "risk": "Schema migration may fail if production has conflicting data",
+        "mitigation": "Use v.optional() for backward compatibility, test on dev first"
+      },
+      {
+        "item": "npm vulnerability updates",
+        "sprint": "01",
+        "risk": "Dependency updates may break existing code",
+        "mitigation": "Update one package at a time, run typecheck after each"
+      }
+    ],
+    "medium": [
+      {
+        "item": "Test coverage goal",
+        "sprint": "02",
+        "risk": "Writing tests may reveal bugs in production code",
+        "mitigation": "Treat discovered bugs as bonus improvements"
+      },
+      {
+        "item": "Rate limiting",
+        "sprint": "03",
+        "risk": "Legitimate users may hit limits",
+        "mitigation": "Set conservative limits, clear error messages"
+      }
+    ],
+    "low": [
+      {
+        "item": "Documentation",
+        "sprint": "06",
+        "risk": "Docs may become outdated",
+        "mitigation": "Keep docs close to code (JSDoc)"
+      }
+    ]
+  },
+
+  "successMetrics": {
+    "sprint01": ["No double-booking possible", "0 high/critical npm vulnerabilities", "All mutations use ConvexError"],
+    "sprint02": ["Convex function coverage ≥ 60%", "All tests passing"],
+    "sprint03": ["Audit logs LCP < 2.5s", "Dashboard LCP < 2s", "Rate limiting active"],
+    "sprint04": ["typecheck passes", "No type safety gaps"],
+    "sprint05": ["All 10 test scenarios pass", "20+ evidence screenshots"],
+    "sprint06": ["SETUP_GUIDE.md exists", "TESTING_GUIDE.md exists"]
+  }
+}

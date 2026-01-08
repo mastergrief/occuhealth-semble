@@ -10,4 +10,11 @@ crons.daily(
   internal.scheduled.dataRetention.cleanupAuditLogs
 );
 
+// Refresh GDPR stats cache every 5 minutes
+crons.interval(
+  "refresh gdpr stats cache",
+  { minutes: 5 },
+  internal.scheduled.gdprStatsCache.updateGDPRStatsCache
+);
+
 export default crons;

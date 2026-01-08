@@ -1,0 +1,504 @@
+{
+  "id": "improvements-4-sprint-2026-01-08",
+  "type": "plan",
+  "metadata": {
+    "promptId": "90d3f07d-d8a3-4ce3-996c-55ec20922ad1",
+    "sessionId": "20260108_16-25_90d3f07d-d8a3-4ce3-996c-55ec20922ad1",
+    "timestamp": "2026-01-08T16:30:00.000Z",
+    "version": "1.0.0"
+  },
+  "summary": "4-Sprint Improvements Plan: P0 Deployment Documentation, P0 GDPR Performance Optimization, P1 CI/CD Pipeline, and P1 Browser-CLI Comprehensive Testing. Sprints 01 and 02 are parallel-capable but will execute sequentially due to single-agent constraint.",
+
+  "phases": [
+    {
+      "id": "phase-1",
+      "name": "Sprint 01 - Deployment Documentation (P0)",
+      "description": "Create comprehensive deployment documentation to eliminate tribal knowledge dependency. Critical gap blocking production deployments.",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-1.1",
+          "description": "Read and analyze existing deployment references in package.json scripts and environment configurations",
+          "agentType": "explore",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": [
+              "package.json",
+              ".env.local"
+            ],
+            "memories": [
+              "IMPROVEMENTS_SPRINT_01_DEPLOYMENT_DOCS",
+              "00_TEMPLATE_CONVEX_DEPLOYMENT_GUIDE",
+              "10_CONVEX_DEPLOYMENT_OCCUHEALTH"
+            ]
+          },
+          "acceptanceCriteria": [
+            "All VITE_, CONVEX_, WORKOS_ env vars cataloged",
+            "npm scripts for deploy identified",
+            "Staging vs production differences documented"
+          ]
+        },
+        {
+          "id": "task-1.2",
+          "description": "CREATE docs/DEPLOYMENT.md with Prerequisites, Environment Configuration, Deployment Steps (Backend + Frontend), WorkOS Configuration, Rollback Procedures, and Health Check documentation",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": ["task-1.1"],
+          "estimatedTokens": 8000,
+          "context": {
+            "files": [
+              "docs/DEPLOYMENT.md"
+            ],
+            "memories": [
+              "IMPROVEMENTS_SPRINT_01_DEPLOYMENT_DOCS"
+            ]
+          },
+          "acceptanceCriteria": [
+            "docs/DEPLOYMENT.md exists with all 6 sections",
+            "All environment variables documented with examples",
+            "Staging deployment: npm run convex:deploy documented",
+            "Production deployment: npm run convex:deploy:prod documented",
+            "Health check endpoint: {CONVEX_SITE_URL}/health documented",
+            "Rollback procedure documented"
+          ]
+        },
+        {
+          "id": "task-1.3",
+          "description": "MODIFY README.md: Add deployment section referencing docs/DEPLOYMENT.md, remove any Semble references",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-1.2"],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": [
+              "README.md"
+            ]
+          },
+          "acceptanceCriteria": [
+            "README.md has Deployment section linking to docs/DEPLOYMENT.md",
+            "grep -i semble README.md returns empty",
+            "WorkOS AuthKit authentication mentioned"
+          ]
+        }
+      ],
+      "gateCondition": "docs/DEPLOYMENT.md exists and contains all required sections, README.md updated"
+    },
+    {
+      "id": "phase-2",
+      "name": "Sprint 02 - GDPR Stats Performance (P0)",
+      "description": "Optimize getGDPRStats query which performs full table scans. Implement server-side caching via scheduled job to achieve <2s load time.",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-2.1",
+          "description": "MODIFY convex/schema.ts: Add gdprStatsCache table with fields pendingErasures, activePatients, activeConsents, recentAuditCount, computedAt",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": [],
+          "estimatedTokens": 4000,
+          "context": {
+            "files": [
+              "convex/schema.ts"
+            ],
+            "memories": [
+              "IMPROVEMENTS_SPRINT_02_GDPR_PERFORMANCE",
+              "DB_SCHEMA_GDPR_DISCOVERY_2026_01_08"
+            ]
+          },
+          "acceptanceCriteria": [
+            "gdprStatsCache table added to schema.ts",
+            "Fields: pendingErasures (number), activePatients (number), activeConsents (number), recentAuditCount (number), computedAt (number)",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-2.2",
+          "description": "CREATE convex/scheduled/gdprStatsCache.ts: Internal mutation computeStats that aggregates counts from erasureRequests, patients, consents tables and writes to cache",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": ["task-2.1"],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [
+              "convex/scheduled/gdprStatsCache.ts"
+            ],
+            "memories": [
+              "IMPROVEMENTS_SPRINT_02_GDPR_PERFORMANCE"
+            ]
+          },
+          "acceptanceCriteria": [
+            "convex/scheduled/gdprStatsCache.ts exists",
+            "computeStats internal mutation implemented",
+            "Uses withIndex for efficient counting where available",
+            "Writes to gdprStatsCache table",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-2.3",
+          "description": "MODIFY convex/crons.ts: Register 5-minute interval cron job calling gdprStatsCache.computeStats",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-2.2"],
+          "estimatedTokens": 2000,
+          "context": {
+            "files": [
+              "convex/crons.ts"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Cron job registered: refresh gdpr stats",
+            "Interval: 5 minutes",
+            "Calls internal.scheduled.gdprStatsCache.computeStats",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-2.4",
+          "description": "REPLACE convex/gdprModules/stats.ts: getGDPRStats query reads from cache first (if <5min old), falls back to limited live computation with take(100)",
+          "agentType": "developer",
+          "priority": "critical",
+          "dependencies": ["task-2.3"],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [
+              "convex/gdprModules/stats.ts"
+            ],
+            "memories": [
+              "IMPROVEMENTS_SPRINT_02_GDPR_PERFORMANCE"
+            ]
+          },
+          "acceptanceCriteria": [
+            "getGDPRStats reads gdprStatsCache first",
+            "Cache validity: 5 minutes (300000ms)",
+            "Fallback uses take(100) not collect()",
+            "No full table scans in production query path",
+            "npm run typecheck passes"
+          ]
+        },
+        {
+          "id": "task-2.5",
+          "description": "Deploy and verify: Run convex dev, trigger scheduled job, verify GDPR dashboard loads in <2 seconds",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-2.4"],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "npx convex dev starts without errors",
+            "Scheduled job can be triggered manually",
+            "npx convex logs shows computeStats execution",
+            "GDPR dashboard query time <500ms in logs"
+          ]
+        }
+      ],
+      "gateCondition": "GDPR stats caching implemented, scheduled job registered, getGDPRStats reads from cache"
+    },
+    {
+      "id": "phase-3",
+      "name": "Sprint 03 - CI/CD Pipeline (P1)",
+      "description": "Implement GitHub Actions CI/CD pipeline for test enforcement on PRs and automated deployments. Depends on Sprint 01 deployment docs.",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-3.1",
+          "description": "CREATE .github/workflows/ci.yml: Jobs for typecheck, lint, test, e2e with proper caching and artifact uploads",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 6000,
+          "context": {
+            "files": [
+              ".github/workflows/ci.yml"
+            ],
+            "memories": [
+              "IMPROVEMENTS_SPRINT_03_CICD_PIPELINE"
+            ]
+          },
+          "acceptanceCriteria": [
+            ".github/workflows/ci.yml exists",
+            "Triggers on push to main and pull_request to main",
+            "Jobs: typecheck, lint, test, e2e (in dependency order)",
+            "Uses Node.js 20 with npm caching",
+            "E2E uploads playwright-report on failure",
+            "Coverage uploads to codecov"
+          ]
+        },
+        {
+          "id": "task-3.2",
+          "description": "CREATE .github/workflows/deploy.yml: Automated Convex deployment on main branch push with production environment protection",
+          "agentType": "developer",
+          "priority": "high",
+          "dependencies": ["task-3.1"],
+          "estimatedTokens": 4000,
+          "context": {
+            "files": [
+              ".github/workflows/deploy.yml"
+            ],
+            "memories": [
+              "IMPROVEMENTS_SPRINT_03_CICD_PIPELINE"
+            ]
+          },
+          "acceptanceCriteria": [
+            ".github/workflows/deploy.yml exists",
+            "Triggers on push to main and workflow_dispatch",
+            "Uses environment: production",
+            "Uses secret: CONVEX_DEPLOY_KEY",
+            "Runs npx convex deploy"
+          ]
+        },
+        {
+          "id": "task-3.3",
+          "description": "Verify CI workflow locally: Run npm run typecheck, npm run lint, npm run test:coverage to ensure all would pass",
+          "agentType": "developer",
+          "priority": "medium",
+          "dependencies": ["task-3.2"],
+          "estimatedTokens": 3000,
+          "context": {
+            "files": []
+          },
+          "acceptanceCriteria": [
+            "npm run typecheck passes",
+            "npm run lint passes (warnings OK)",
+            "npm run test passes",
+            "All CI checks would succeed on PR"
+          ]
+        }
+      ],
+      "gateCondition": "Both workflow files created, local verification passes"
+    },
+    {
+      "id": "phase-4",
+      "name": "Sprint 04 - Browser-CLI Comprehensive Testing (P1)",
+      "description": "Validate all improvements through end-to-end browser testing. 16 tests across 6 suites covering all portals and improvements.",
+      "parallelizable": false,
+      "subtasks": [
+        {
+          "id": "task-4.1",
+          "description": "Test Suite 1: Landing Page & Navigation - T1.1 Landing page load, T1.2 Navigation links",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": [],
+          "estimatedTokens": 4000,
+          "context": {
+            "files": [
+              ".claude/rules/BROWSER-CLI/NAV-MAP.md",
+              ".claude/rules/BROWSER-CLI/SKILL.md"
+            ],
+            "memories": [
+              "IMPROVEMENTS_SPRINT_04_BROWSER_TESTING"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Landing page renders with hero and Provider Login",
+            "Anchor navigation works (#features, #pricing)",
+            "No console errors",
+            "Screenshots: T1_1_landing.png, T1_2_pricing.png"
+          ]
+        },
+        {
+          "id": "task-4.2",
+          "description": "Test Suite 2: Employer Portal - T2.1 Dashboard, T2.2 Employees, T2.3 Bookings (uses restoreState authenticated-employer)",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": ["task-4.1"],
+          "estimatedTokens": 6000,
+          "context": {
+            "memories": [
+              "IMPROVEMENTS_SPRINT_04_BROWSER_TESTING"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Dashboard loads with stats cards",
+            "Employees page renders list or empty state",
+            "Bookings page accessible",
+            "Screenshots: T2_1_employer_dashboard.png, T2_2_employees.png, T2_3_bookings.png"
+          ]
+        },
+        {
+          "id": "task-4.3",
+          "description": "Test Suite 3: Admin Portal GDPR Performance - T3.1 GDPR Dashboard (<2s load), T3.2 Audit Logs, T3.3 Erasure Requests, T3.4 Employer Verification",
+          "agentType": "browser",
+          "priority": "critical",
+          "dependencies": ["task-4.2"],
+          "estimatedTokens": 8000,
+          "context": {
+            "memories": [
+              "IMPROVEMENTS_SPRINT_04_BROWSER_TESTING"
+            ]
+          },
+          "acceptanceCriteria": [
+            "GDPR dashboard loads in <2 seconds (validates Sprint 02)",
+            "Stats cards render: Pending Erasures, Active Patients",
+            "Audit logs page loads with entries or empty state",
+            "Erasure requests page accessible",
+            "Employer verification page loads",
+            "Screenshots: T3_1_gdpr_dashboard.png, T3_2_audit_logs.png, T3_3_erasure.png, T3_4_employers.png"
+          ]
+        },
+        {
+          "id": "task-4.4",
+          "description": "Test Suite 4: Doctor Portal - T4.1 Dashboard, T4.2 Schedule, T4.3 Appointments (uses restoreState authenticated-doctor)",
+          "agentType": "browser",
+          "priority": "high",
+          "dependencies": ["task-4.3"],
+          "estimatedTokens": 5000,
+          "context": {
+            "memories": [
+              "IMPROVEMENTS_SPRINT_04_BROWSER_TESTING"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Doctor dashboard loads with today's appointments",
+            "Schedule page renders calendar view",
+            "Appointments page accessible",
+            "Screenshots: T4_1_doctor_dashboard.png, T4_2_schedule.png, T4_3_appointments.png"
+          ]
+        },
+        {
+          "id": "task-4.5",
+          "description": "Test Suite 5: Error Handling & Edge Cases - T5.1 Invalid route (404), T5.2 Console error check, T5.3 Network health",
+          "agentType": "browser",
+          "priority": "medium",
+          "dependencies": ["task-4.4"],
+          "estimatedTokens": 4000,
+          "context": {
+            "memories": [
+              "IMPROVEMENTS_SPRINT_04_BROWSER_TESTING"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Invalid route shows 404 or redirect",
+            "assertConsole --level=error passes (no critical errors)",
+            "Convex websocket connection active",
+            "Screenshot: T5_1_404.png"
+          ]
+        },
+        {
+          "id": "task-4.6",
+          "description": "Test Suite 6: Health Endpoint Verification - T6.1 Backend health check (validates Sprint 01 docs)",
+          "agentType": "browser",
+          "priority": "medium",
+          "dependencies": ["task-4.5"],
+          "estimatedTokens": 2000,
+          "context": {
+            "memories": [
+              "IMPROVEMENTS_SPRINT_04_BROWSER_TESTING"
+            ]
+          },
+          "acceptanceCriteria": [
+            "Health endpoint returns {status: ok}",
+            "Response time <500ms",
+            "Validates deployment docs accuracy"
+          ]
+        },
+        {
+          "id": "task-4.7",
+          "description": "Evidence Collection: Organize screenshots into EVIDENCE_YYYYMMDD/, generate test summary SUMMARY.md",
+          "agentType": "browser",
+          "priority": "low",
+          "dependencies": ["task-4.1", "task-4.2", "task-4.3", "task-4.4", "task-4.5", "task-4.6"],
+          "estimatedTokens": 3000,
+          "context": {},
+          "acceptanceCriteria": [
+            "EVIDENCE_20260108/ directory created",
+            "All T*.png screenshots moved",
+            "SUMMARY.md with pass/fail table generated",
+            "16+ test results documented"
+          ]
+        }
+      ],
+      "gateCondition": "All 16 browser tests executed, screenshots collected, SUMMARY.md generated with results"
+    }
+  ],
+
+  "totalEstimatedTokens": 78000,
+
+  "risks": [
+    {
+      "description": "GDPR stats caching requires schema migration - may cause brief service interruption",
+      "mitigation": "Convex handles schema changes automatically; test on dev deployment first",
+      "severity": "medium"
+    },
+    {
+      "description": "Scheduled job may not trigger immediately after deployment",
+      "mitigation": "Manual trigger available via Convex dashboard; initial cache will be populated on first access",
+      "severity": "low"
+    },
+    {
+      "description": "CI/CD workflows require GitHub secrets configuration",
+      "mitigation": "Document required secrets (CONVEX_DEPLOY_KEY) in deployment docs; workflow will fail gracefully if missing",
+      "severity": "medium"
+    },
+    {
+      "description": "Browser state files (authenticated-admin, authenticated-employer, authenticated-doctor) may be stale",
+      "mitigation": "Re-authenticate and save new states if restoreState fails; credentials in .env.local",
+      "severity": "low"
+    },
+    {
+      "description": "glob@13 compatibility may affect convex-test",
+      "mitigation": "If test failures occur, downgrade with npm install glob@10 --save-dev",
+      "severity": "medium"
+    }
+  ],
+
+  "executionNotes": {
+    "parallelCapability": "Phases 1 and 2 are logically parallel-capable but will execute sequentially due to single-agent orchestration",
+    "criticalPath": "Phase 1 -> Phase 3 (CI/CD depends on deployment docs)",
+    "independentPath": "Phase 2 can execute any time before Phase 4",
+    "validationPhase": "Phase 4 validates all previous phases through E2E testing",
+    "estimatedDuration": "10-11 hours total (as per IMPROVEMENTS_INDEX)"
+  },
+
+  "deliverables": [
+    {
+      "file": "docs/DEPLOYMENT.md",
+      "phase": "phase-1",
+      "type": "create"
+    },
+    {
+      "file": "README.md",
+      "phase": "phase-1",
+      "type": "modify"
+    },
+    {
+      "file": "convex/schema.ts",
+      "phase": "phase-2",
+      "type": "modify"
+    },
+    {
+      "file": "convex/scheduled/gdprStatsCache.ts",
+      "phase": "phase-2",
+      "type": "create"
+    },
+    {
+      "file": "convex/crons.ts",
+      "phase": "phase-2",
+      "type": "modify"
+    },
+    {
+      "file": "convex/gdprModules/stats.ts",
+      "phase": "phase-2",
+      "type": "replace"
+    },
+    {
+      "file": ".github/workflows/ci.yml",
+      "phase": "phase-3",
+      "type": "create"
+    },
+    {
+      "file": ".github/workflows/deploy.yml",
+      "phase": "phase-3",
+      "type": "create"
+    },
+    {
+      "file": "EVIDENCE_20260108/SUMMARY.md",
+      "phase": "phase-4",
+      "type": "create"
+    }
+  ]
+}

@@ -1,0 +1,359 @@
+{
+  "planId": "improvements-4sprint-2026-01-08",
+  "title": "OccuHealth 4-Sprint Improvements",
+  "description": "Deployment docs, GDPR performance optimization, CI/CD pipeline, and browser testing",
+  "createdAt": "2026-01-08T12:00:00Z",
+  "status": "archived",
+  "totalEstimatedEffort": "10-11 hours",
+  "executionDependencies": {
+    "parallel": [
+      "sprint-01",
+      "sprint-02"
+    ],
+    "sequential": [
+      {
+        "after": [
+          "sprint-01"
+        ],
+        "run": "sprint-03"
+      },
+      {
+        "after": [
+          "sprint-01",
+          "sprint-02",
+          "sprint-03"
+        ],
+        "run": "sprint-04"
+      }
+    ]
+  },
+  "sprints": [
+    {
+      "id": "sprint-01",
+      "name": "Deployment Documentation",
+      "priority": "P0",
+      "estimatedEffort": "2-3 hours",
+      "dependencies": [],
+      "objective": "Create comprehensive deployment documentation covering staging and production workflows",
+      "deliverables": [
+        {
+          "action": "CREATE",
+          "file": "docs/DEPLOYMENT.md",
+          "estimatedLines": 220,
+          "description": "Complete deployment guide with prerequisites, env vars, deployment steps, rollback, health checks"
+        },
+        {
+          "action": "MODIFY",
+          "file": "README.md",
+          "estimatedLines": 10,
+          "description": "Add deployment section with link to docs/DEPLOYMENT.md"
+        }
+      ],
+      "acceptanceCriteria": [
+        "docs/DEPLOYMENT.md exists with all 8 sections",
+        "All environment variables documented",
+        "Staging vs production differences clear",
+        "Health endpoint documented (/health)",
+        "README.md updated with link"
+      ]
+    },
+    {
+      "id": "sprint-02",
+      "name": "GDPR Stats Performance",
+      "priority": "P0",
+      "estimatedEffort": "3 hours",
+      "dependencies": [],
+      "objective": "Optimize getGDPRStats query to eliminate full table scans",
+      "currentState": {
+        "file": "convex/gdprModules/stats.ts",
+        "lines": "8-97",
+        "issues": [
+          "Line 14-17: erasureRequests.collect() - unbounded",
+          "Line 19-22: patients.collect() - unbounded (5K-20K docs)",
+          "Line 24-27: consents.collect() - unbounded (15K-60K docs)",
+          "Line 50-53: auditLogs.collect() - unbounded (2K-8K docs)"
+        ],
+        "currentLatency": "500ms - 5s",
+        "targetLatency": "<100ms (cached)"
+      },
+      "deliverables": [
+        {
+          "action": "MODIFY",
+          "file": "convex/schema.ts",
+          "estimatedLines": 15,
+          "description": "Add gdprStatsCache table and by_granted index to consents"
+        },
+        {
+          "action": "CREATE",
+          "file": "convex/scheduled/gdprStatsCache.ts",
+          "estimatedLines": 110,
+          "description": "Scheduled job to compute and cache GDPR stats every 5 minutes"
+        },
+        {
+          "action": "MODIFY",
+          "file": "convex/crons.ts",
+          "estimatedLines": 6,
+          "description": "Register gdprStatsCache interval cron (5 minutes)"
+        },
+        {
+          "action": "REPLACE",
+          "file": "convex/gdprModules/stats.ts",
+          "estimatedLines": 90,
+          "description": "Replace getGDPRStats to read from cache first with bounded fallback"
+        }
+      ],
+      "acceptanceCriteria": [
+        "Schema updated with gdprStatsCache table",
+        "by_granted index added to consents table",
+        "Scheduled job computes stats every 5 minutes",
+        "getGDPRStats reads from cache first",
+        "Fallback computation uses .take() limits",
+        "npm run typecheck passes"
+      ]
+    },
+    {
+      "id": "sprint-03",
+      "name": "CI/CD Pipeline",
+      "priority": "P1",
+      "estimatedEffort": "3 hours",
+      "dependencies": [
+        "sprint-01"
+      ],
+      "objective": "Implement GitHub Actions CI/CD pipeline for test enforcement and auto-deployment",
+      "currentState": {
+        "issue": ".github/ directory does NOT exist",
+        "availableScripts": [
+          "typecheck",
+          "lint",
+          "test:coverage",
+          "test:e2e"
+        ]
+      },
+      "deliverables": [
+        {
+          "action": "CREATE",
+          "file": ".github/workflows/ci.yml",
+          "estimatedLines": 95,
+          "description": "CI pipeline: typecheck, lint, unit tests, e2e tests on PRs"
+        },
+        {
+          "action": "CREATE",
+          "file": ".github/workflows/deploy.yml",
+          "estimatedLines": 65,
+          "description": "Deployment pipeline: auto-deploy to staging on main push"
+        }
+      ],
+      "githubConfiguration": {
+        "secrets": [
+          "CONVEX_DEPLOY_KEY - Staging deployment token",
+          "CONVEX_PROD_DEPLOY_KEY - Production deployment token (optional)",
+          "CODECOV_TOKEN - Coverage upload token (optional)"
+        ],
+        "branchProtection": {
+          "branch": "main",
+          "requiredChecks": [
+            "Typecheck",
+            "Lint",
+            "Unit Tests",
+            "E2E Tests"
+          ],
+          "requireReviews": 1
+        }
+      },
+      "acceptanceCriteria": [
+        ".github/workflows/ci.yml exists",
+        ".github/workflows/deploy.yml exists",
+        "CI runs on all PRs",
+        "Deploy runs on main branch push",
+        "E2E test artifacts uploaded on failure"
+      ]
+    },
+    {
+      "id": "sprint-04",
+      "name": "Browser-CLI Testing",
+      "priority": "P1",
+      "estimatedEffort": "2 hours",
+      "dependencies": [
+        "sprint-01",
+        "sprint-02",
+        "sprint-03"
+      ],
+      "objective": "Comprehensive end-to-end validation of all improvements using Browser-CLI",
+      "testSuites": [
+        {
+          "id": "T1",
+          "name": "Landing Page & Navigation",
+          "tests": 2
+        },
+        {
+          "id": "T2",
+          "name": "Employer Portal",
+          "tests": 3
+        },
+        {
+          "id": "T3",
+          "name": "Admin GDPR Portal (Performance)",
+          "tests": 4
+        },
+        {
+          "id": "T4",
+          "name": "Doctor Portal",
+          "tests": 3
+        },
+        {
+          "id": "T5",
+          "name": "Error Handling",
+          "tests": 3
+        },
+        {
+          "id": "T6",
+          "name": "Health Endpoint",
+          "tests": 1
+        }
+      ],
+      "totalTests": 16,
+      "keyValidation": {
+        "test": "T3.1",
+        "description": "GDPR dashboard loads in <2 seconds (validates Sprint 02)",
+        "commands": [
+          "restoreState authenticated-admin",
+          "navigate http://localhost:5175/admin/gdpr",
+          "wait 2000",
+          "snapshot",
+          "assert 'text:Pending Erasures' visible",
+          "screenshot T3_1_gdpr_dashboard.png"
+        ]
+      },
+      "acceptanceCriteria": [
+        "All T1.x tests pass (Landing)",
+        "All T2.x tests pass (Employer Portal)",
+        "T3.1 GDPR dashboard loads in <2 seconds",
+        "All T3.x tests pass (Admin/GDPR)",
+        "All T4.x tests pass (Doctor Portal)",
+        "All T5.x tests pass (Error handling)",
+        "T6.1 health endpoint returns 200",
+        "No critical console errors",
+        "Screenshots collected in EVIDENCE_YYYYMMDD/"
+      ]
+    }
+  ],
+  "fileSummary": {
+    "create": [
+      {
+        "file": "docs/DEPLOYMENT.md",
+        "lines": 220,
+        "sprint": "01"
+      },
+      {
+        "file": "convex/scheduled/gdprStatsCache.ts",
+        "lines": 110,
+        "sprint": "02"
+      },
+      {
+        "file": ".github/workflows/ci.yml",
+        "lines": 95,
+        "sprint": "03"
+      },
+      {
+        "file": ".github/workflows/deploy.yml",
+        "lines": 65,
+        "sprint": "03"
+      }
+    ],
+    "modify": [
+      {
+        "file": "README.md",
+        "linesAdded": 10,
+        "sprint": "01"
+      },
+      {
+        "file": "convex/schema.ts",
+        "linesAdded": 15,
+        "sprint": "02"
+      },
+      {
+        "file": "convex/crons.ts",
+        "linesAdded": 6,
+        "sprint": "02"
+      },
+      {
+        "file": "convex/gdprModules/stats.ts",
+        "action": "replace function",
+        "lines": 90,
+        "sprint": "02"
+      }
+    ],
+    "totalNewLines": 490,
+    "totalModifiedLines": 121
+  },
+  "risks": [
+    {
+      "risk": "Schema migration breaks existing data",
+      "probability": "Low",
+      "impact": "High",
+      "mitigation": "Convex handles migrations automatically; test in dev first"
+    },
+    {
+      "risk": "Cron job timeout",
+      "probability": "Medium",
+      "impact": "Medium",
+      "mitigation": "Use .take() limits in scheduled job"
+    },
+    {
+      "risk": "Cache staleness complaints",
+      "probability": "Low",
+      "impact": "Low",
+      "mitigation": "5-minute refresh; can reduce interval if needed"
+    },
+    {
+      "risk": "CI workflow failures",
+      "probability": "Medium",
+      "impact": "Low",
+      "mitigation": "Comprehensive error handling in workflows"
+    },
+    {
+      "risk": "E2E tests flaky in CI",
+      "probability": "Medium",
+      "impact": "Medium",
+      "mitigation": "Retry logic, proper wait times, chromium-only"
+    }
+  ],
+  "scoutSummary": {
+    "ui": {
+      "totalFiles": 60,
+      "totalLines": 8138,
+      "keyFiles": [
+        "src/pages/admin/GDPRDashboard.tsx (207 lines)",
+        "src/pages/admin/AuditLogs.tsx (258 lines)",
+        "src/pages/AdminLayout.tsx (222 lines)"
+      ]
+    },
+    "api": {
+      "totalFiles": 46,
+      "totalLines": 5552,
+      "keyFiles": [
+        "convex/gdprModules/stats.ts (99 lines) - P0 BOTTLENECK",
+        "convex/http.ts (375 lines) - 7 endpoints",
+        "convex/crons.ts (13 lines) - 1 cron job"
+      ],
+      "gaps": [
+        "No CI/CD pipeline",
+        "No deployment documentation",
+        "No GDPR stats caching"
+      ]
+    },
+    "db": {
+      "schemaFile": "convex/schema.ts (317 lines)",
+      "gdprTables": [
+        "erasureRequests",
+        "consents",
+        "auditLogs",
+        "patients"
+      ],
+      "missingTable": "gdprStatsCache",
+      "missingIndexes": [
+        "consents.by_granted"
+      ]
+    }
+  }
+}

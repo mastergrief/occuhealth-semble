@@ -1,0 +1,213 @@
+{
+  "planId": "remediation-sprints-2026-01-07",
+  "createdAt": "2026-01-07T12:00:00Z",
+  "status": "pending",
+  "title": "4 Remediation Sprints - Security, GDPR, Data Export",
+  "estimatedEffort": "8 hours",
+  "phases": [
+    {
+      "phase": 1,
+      "name": "Security & Architecture",
+      "sprints": ["01", "02"],
+      "parallel": true,
+      "effort": "2-3 hours",
+      "tasks": [
+        {
+          "sprint": "01",
+          "name": "Employer Booking Verification Fix",
+          "effort": "15 min",
+          "priority": "P1-IMMEDIATE",
+          "files": [
+            {
+              "path": "convex/appointments.ts",
+              "action": "edit",
+              "description": "Add employer.status check after line 192 in book mutation"
+            },
+            {
+              "path": "convex/authModules/authorization.ts",
+              "action": "edit",
+              "description": "Add EMPLOYER_NOT_VERIFIED to AuthErrorCode type"
+            }
+          ]
+        },
+        {
+          "sprint": "02",
+          "name": "GDPR Module Split",
+          "effort": "2-3 hours",
+          "priority": "P1-SHORT_TERM",
+          "files": [
+            {
+              "path": "convex/gdprModules/types.ts",
+              "action": "create",
+              "description": "Shared types (ConsentType, ErasureStatus, ActorType, GDPRStats)"
+            },
+            {
+              "path": "convex/gdprModules/audit.ts",
+              "action": "create",
+              "description": "logAction, getAuditLogs, getAuditLogsByResource"
+            },
+            {
+              "path": "convex/gdprModules/consent.ts",
+              "action": "create",
+              "description": "createConsent, withdrawConsent, getConsentsByPatient"
+            },
+            {
+              "path": "convex/gdprModules/erasure.ts",
+              "action": "create",
+              "description": "requestErasure, listErasureRequests, processErasure"
+            },
+            {
+              "path": "convex/gdprModules/stats.ts",
+              "action": "create",
+              "description": "getGDPRStats"
+            },
+            {
+              "path": "convex/gdprModules/index.ts",
+              "action": "create",
+              "description": "Module index with re-exports"
+            },
+            {
+              "path": "convex/gdpr.ts",
+              "action": "replace",
+              "description": "Transform 651-line file to ~30-line facade"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "GDPR Compliance Feature",
+      "sprints": ["03"],
+      "parallel": false,
+      "depends_on": ["02"],
+      "effort": "4 hours",
+      "tasks": [
+        {
+          "sprint": "03",
+          "name": "Data Export Feature (Article 20)",
+          "effort": "4 hours",
+          "priority": "P2-MEDIUM_TERM",
+          "files": [
+            {
+              "path": "convex/gdprModules/export.ts",
+              "action": "create",
+              "description": "exportPatientData query for GDPR data portability"
+            },
+            {
+              "path": "convex/gdprModules/index.ts",
+              "action": "edit",
+              "description": "Add exportPatientData export"
+            },
+            {
+              "path": "convex/gdpr.ts",
+              "action": "edit",
+              "description": "Add exportPatientData re-export to facade"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Verification Testing",
+      "sprints": ["04"],
+      "parallel": false,
+      "depends_on": ["01", "02", "03"],
+      "effort": "1-2 hours",
+      "tasks": [
+        {
+          "sprint": "04",
+          "name": "Browser-CLI E2E Testing",
+          "effort": "1-2 hours",
+          "priority": "P1-VERIFICATION",
+          "testSuites": [
+            {
+              "name": "Suite 1: Employer Booking Verification",
+              "tests": ["Pending employer cannot book", "API returns EMPLOYER_NOT_VERIFIED", "Verified employer can book"]
+            },
+            {
+              "name": "Suite 2: GDPR Module Split",
+              "tests": ["api.gdpr.* paths work", "Dashboard loads", "Audit logs display", "Erasure page functions"]
+            },
+            {
+              "name": "Suite 3: Data Export",
+              "tests": ["Export returns JSON", "All fields present", "Non-admin rejected"]
+            },
+            {
+              "name": "Suite 4: Integration Regression",
+              "tests": ["Employer portal workflow", "Admin portal workflow", "No console errors"]
+            }
+          ],
+          "evidence": [
+            "EVIDENCE_SPRINT01_pending_booking_disabled.png",
+            "EVIDENCE_SPRINT01_verified_booking_enabled.png",
+            "EVIDENCE_SPRINT02_gdpr_dashboard.png",
+            "EVIDENCE_SPRINT02_audit_logs.png",
+            "EVIDENCE_SPRINT03_data_export.json",
+            "Console output (no errors)"
+          ]
+        }
+      ]
+    }
+  ],
+  "criticalFiles": {
+    "sprint01": [
+      "convex/appointments.ts",
+      "convex/authModules/authorization.ts"
+    ],
+    "sprint02": [
+      "convex/gdpr.ts",
+      "convex/gdprModules/*"
+    ],
+    "sprint03": [
+      "convex/gdprModules/export.ts"
+    ],
+    "sprint04": [
+      "BROWSER-CLI/SCRIPTS/browser-cmd.ts"
+    ]
+  },
+  "risks": [
+    {
+      "sprint": "01",
+      "level": "medium",
+      "description": "Security gap - unverified employers can book via direct API",
+      "mitigation": "Single if-block addition, easy rollback"
+    },
+    {
+      "sprint": "02",
+      "level": "low",
+      "description": "Refactoring 651-line monolith",
+      "mitigation": "Facade pattern preserves API paths, no logic changes"
+    },
+    {
+      "sprint": "03",
+      "level": "low",
+      "description": "New feature implementation",
+      "mitigation": "Additive change, no breaking modifications"
+    }
+  ],
+  "successCriteria": {
+    "sprint01": [
+      "AuthErrorCode includes EMPLOYER_NOT_VERIFIED",
+      "Backend rejects bookings from status !== verified employers",
+      "TypeScript compiles without errors"
+    ],
+    "sprint02": [
+      "gdpr.ts < 35 lines (facade only)",
+      "6 new files in gdprModules/",
+      "All api.gdpr.* paths work",
+      "GDPR Dashboard loads correctly"
+    ],
+    "sprint03": [
+      "exportPatientData returns complete JSON",
+      "Includes patient, employer, consents, appointments, reports",
+      "Only admins can execute"
+    ],
+    "sprint04": [
+      "All test suites pass",
+      "Evidence screenshots collected",
+      "No console errors"
+    ]
+  }
+}
