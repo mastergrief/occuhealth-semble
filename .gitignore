@@ -31,3 +31,4 @@ BROWSER-CLI/states/*.json
 *.png
 T*-*
 
+.vercel

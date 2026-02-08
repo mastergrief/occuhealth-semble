@@ -1,212 +1,299 @@
 ## SESSION START SEQUENCE (MANDATORY)
 
 1. **Read Context** (in order):
-- `.env.local` → `mcp__serena__list_memories()` → `mcp__serena__read_memory(name)` (relevant ones)
+   - `.env.local` → `mcp__serena__list_memories()` → `mcp__serena__read_memory(name)` (relevant ones)
+   - `package.json` for dependencies & npm commands
 
-2. **Create Todo List** (if complex task):
-- TodoWrite tool with concrete steps
+2. **Create Task List** (if complex task):
+   - TaskCreate tool with concrete steps
 
-**Full-stack development directive (FE+BE+DB)** NO MOCK CODE, NO MOCK DATA, ONLY REAL WORKING FEATURES & FUNCTIONALITY
+---
+
+## **General Directives**
+
+- **Full-stack (FE+BE+DB)** — NO MOCK CODE, NO MOCK DATA, ONLY REAL WORKING FEATURES & FUNCTIONALITY
 - NO GIT ACTIONS unless explicitly requested
-- Read entire documentation files with 100% coverage i.e `.md` files, don't skim read
-- Typecheck is BLOCKING - failures must be fixed immediately
+- Read entire documentation files with 100% coverage (`.md` files), don't skim read
+- Typecheck is BLOCKING — failures must be fixed immediately
 - Auth: Convex Auth (coaches/clients), Clerk Auth (admins)
 - READ `.env.local` for API keys/implementations & test user credentials
-- Read `package.json` for dependencies & npm commands
-- LLM: gpt-5-mini key in `.env.local` uses default temperature of (1)
-- Serena memory structure: project subdirectory `.serena\memories\project` contains architecture, code conventions, project overview, tech stack etc
-- When presented with an image or screenshot analyse deeply with 100% content & coverage, think about what you're looking at in relation to the query or request given, leave no stones unturned & create ASCII wireframe diagram of what you have observed/analysed to present as findings.
-- Modular Architecture (Facade Pattern):
-- **Threshold**: >400 lines = flag as concern, >800 lines = must split before adding features
-- **Pattern**: Facade file (<100 lines, re-exports only) + focused modules (~150-400 lines each)
-- **Structure**: `module.ts` (facade) → `moduleModules/{mutations,queries,domain}.ts`
-- **Reference implementations**: `calendarWorkoutsModules/`, `trainingBlockMarkersModules/`
-- **Critical**: Preserve API paths - facade re-exports maintain `api.module.function` compatibility
-- **On analysis**: Flag monolithic files with split recommendation showing target structure
-- Always use planning mode for all analysis & implementation tasks
-- Never run subagents in the background, keep them in the foreground and wait for completion!
+- LLMs: gpt-5-mini via OpenAI SDK (`OPENAI_API_KEY` in `.env.local`), same key for RAG embeddings (`text-embedding-3-small`)
+- Serena memory structure: project subdirectory `.serena/memories/project` contains architecture, code conventions, project overview, tech stack etc
+- When presented with an image or screenshot analyse deeply with 100% content & coverage, think about what you're looking at in relation to the query or request given, leave no stones unturned & create ASCII dependency graph of what you have observed/analysed to present as findings.
+
+## **Modular Architecture (Facade Pattern)**
+- Threshold: >400 lines = flag as concern, >800 lines = must split before adding features
+- Pattern Facade file: (<100 lines, re-exports only) + focused modules (~150-400 lines each)
+- Structure: `module.ts` (facade) → `moduleModules/{mutations,queries,domain}.ts`
+- Reference implementations: `calendarWorkoutsModules/`, `trainingBlockMarkersModules/`
+- Critical: Preserve API paths — facade re-exports maintain `api.module.function` compatibility
+- On analysis: Flag monolithic files with split recommendation showing target structure
 
 ---
 
-#**Serena Memory Management & Memory Lifecycle**
-**Initial Setup**:
-- `mcp__serena__check_onboarding_performed()` → verify if project has been explored
-- `mcp__serena__nboarding()` → initial project familiarization (if not performed)
-- Creates `.serena/memories/` with architectural insights
-**Working with Memories**:
-- `mcp__serena__list_memories()` → see available knowledge before starting work
-- `mcp__serena__read_memory(name)` → load relevant context (only if task-relevant)
-- `mcp__serena__write_memory(name, content)` → persist discoveries in markdown format
-- `mcp__serena__delete_memory(name)` → remove outdated/incorrect information (user request only)
-What to Memorise?
-**Architecture patterns**: How auth works, data flow, module organization
-**Key entry points**: Main services, routers, initialization
-**Conventions**: Naming patterns, testing approach, build process
-**Complex discoveries**: Multi-file investigations, dependency graphs
-**Session continuations**: Current state for resuming in new conversation
-When to Use Memories?
-**Read at start**: Check `mcp__serena__list_memories()` → avoid re-discovering existing knowledge
-**Write after discovery**: Significant architecture understanding, complex investigation results
-**Write before context limit**: Save progress for continuation in new session
-Essential Rules:
-1. **Read memories first** - don't re-explore what's already known
-2. **Memory names are descriptive** - `authentication_architecture_[Timestamp]`
-3. **Write after significant discovery** - not every small finding, just architectural insights
-4. **Memories persist across sessions** - future-you will thank present-you
-
-#**Serena Symbolic Search Workflow (SEMANTIC ANALYSIS PROTOCOL)**
-3-Phase Pattern: LOCATE → UNDERSTAND → VALIDATE
-**Phase 1: LOCATE** (structure without bodies)
-- Files known (from memories) → Direct to symbolic tools
-- `mcp__serena__get_symbols_overview(file)` → See all symbols without reading implementations
-- `mcp__serena__find_symbol(name_path, include_body=False, depth=1, relative_path=<file>)` → Map class/interface structure
-**Phase 2: UNDERSTAND** (targeted deep reads)
-- `mcp__serena__find_symbol(name_path, include_body=True, relative_path=<specific>)` → read ONLY needed symbols
-- `mcp__serena__find_referencing_symbols(name_path, file)` → analyze usage/dependencies
-- `mcp__serena__search_for_pattern(regex)` → for strings/pattern/non-code only
-**Phase 3: VALIDATE**
-- `mcp__serena__think_about_collected_information()` → verify sufficiency before proceeding
-Essential Rules:
-1. **Never `include_body=True` until you know exactly which symbol** - structure first, implementation last
-2. **Always restrict with `relative_path`** when context known - faster, fewer results
-3. **Name paths**: `"symbol"` (anywhere), `"Class/method"` (nested), `"/Class/method"` (absolute top-level)
-4. **Symbolic for code, pattern for text** - use `find_symbol` for functions/classes, `search_for_pattern` for strings
-5. **Call thinking tools after search sequences** - especially before editing code
-6. **Discovery hierarchy**: Memories > Serena symbolic tools
-
-#**Editing Operations Workflow**
-**Replace entire symbol** (function, method, class):
-- `mcp__serena__replace_symbol_body(name_path, file, body)` → body includes signature, excludes docstrings/imports
-**Insert new code**:
-- `mcp__serena__insert_before_symbol(name_path, file, body)` → add imports (use first symbol as anchor)
-- `mcp__serena__insert_after_symbol(name_path, file, body)` → add new functions (use last symbol for end-of-file)
-**Refactor names**:
-- `mcp__serena__rename_symbol(name_path, file, new_name)` → updates all references codebase-wide
-Essential Rules:
-1. **Think before edit** - `mcp__serena__think_about_task_adherence()` is mandatory before modifications
-2. **Symbol bodies exclude docstrings/imports** - don't include preceding comments in replacement
-3. **Use anchors for position** - first symbol for imports, last symbol for end-of-file additions
-4. **Verify impact first** - call `mcp__serena__find_referencing_symbols` before signature changes
-5. **Editing tools are reliable** - no verification needed if no error returned
-
-#**Serena Reflection Workflow**
-3 Thinking Checkpoints:
-**After Search** (validate sufficiency):
-- `mcp__serena__think_about_collected_information()` → call after ANY non-trivial search sequence
-- Questions: Do I have what I need? Missing critical context? Ready to proceed?
-**Before Edit** (verify alignment):
-- `mcp__serena__think_about_task_adherence()` → **MANDATORY** before any code modification
-- Questions: Still on track? Plan matches user request? Assumptions valid?
-**Task Completion** (confirm done):
-- `mcp__serena__think_about_whether_you_are_done()` → call when you believe task is complete
-- Questions: All requirements met? Edge cases handled? Tests passing?
-When to Think:
-**Always after**: Multiple find_symbol calls, search_for_pattern sequences, referencing symbol checks
-**Always before**: replace_symbol_body, insert operations, rename_symbol
-**Always when**: Feeling "done" with a task or subtask
-Essential Rules:
-1. **Thinking is mandatory, not optional** - these aren't suggestions, they're quality gates
-2. **Think prevents drift** - catches mistakes before they propagate
-3. **Think saves tokens** - finding gaps early prevents redundant work later
-
-
-#**Convex-cli**
-Run CLI scripts directly (or via TypeScript SDK/advanced SDK for programmatic access)
-**Architecture** (3 layers: CLI → API → SDK, ~2,000 TypeScript lines, LRU cache, telemetry):
-- CLI scripts: 7 individual commands (status, tables, data, functions, run, env, logs)
-- TypeScript API: ConvexCLI class with Zod validation
-- Advanced SDK: Builder pattern, caching, batch operations, streaming, monitoring
-- Response format: `{ success, data, error, metadata }` with type safety
-- Performance: 2-4s per operation (cold start), < 1ms (cached)
-**Core Data Operations**: Query → Cache → Execute → Validate
-1. **Query** - CLI scripts or SDK builders construct operations
-2. **Cache** - LRU cache checks (60s TTL status/env, 300s tables/functions)
-3. **Execute** - Spawn `npx convex` subprocess with timeout (default: 30s)
-4. **Validate** - Zod schemas verify response structure
-**Essential Commands**
-```bash
-# Status & Discovery
-npx tsx CONVEX-CLI/SCRIPTS/convex-status.ts --json          # Deployment info (< 1ms)
-npx tsx CONVEX-CLI/SCRIPTS/convex-tables.ts --json          # List tables (3.5s cold, 300s cache)
-npx tsx CONVEX-CLI/SCRIPTS/convex-functions.ts --json       # List functions (2ms, 300s cache)
-# Data Operations
-npx tsx CONVEX-CLI/SCRIPTS/convex-data.ts <table> --limit=10 --json  # Query data (2.5s, no cache)
-npx tsx CONVEX-CLI/SCRIPTS/convex-run.ts <fn:name> '{}' --json       # Execute function (2.5s, no cache)
-# Environment Management
-npx tsx CONVEX-CLI/SCRIPTS/convex-env.ts list --json        # List env vars (2.5s, 60s cache)
-npx tsx CONVEX-CLI/SCRIPTS/convex-env.ts get VAR --json     # Get variable (2.5s, 60s cache)
-npx tsx CONVEX-CLI/SCRIPTS/convex-env.ts set VAR val        # Set variable (invalidates cache)
-npx tsx CONVEX-CLI/SCRIPTS/convex-env.ts list --masked      # Mask secrets (sk-p***z789)
-# Logs & Debugging
-npx tsx CONVEX-CLI/SCRIPTS/convex-logs.ts --history=20 --json       # Recent logs (5-10s)
-npx tsx CONVEX-CLI/SCRIPTS/convex-logs.ts --history=5 --timeout=15000  # With timeout
-npx tsx CONVEX-CLI/SCRIPTS/convex-logs.ts --follow          # Stream logs (EventEmitter)
-# Security Features
-- Auto-masks: /key|secret|token|password|jwks|jwt|api_key|private|auth|credential/i
-- Format: "sk-proj-xyz123" → "sk-p***z789" (first 4 + last 4 chars)
-- SDK default: masked=true (security by default)
-```
-**Critical Rules**
-- **Always use --json flag** → Ensures parseable output, no mixed messages
-- **Respect cache TTLs** → Status/env 60s, tables/functions 300s, data/run no cache
-- **Timeout parameter required for logs** → Default 30s, increase for large history
-- **Mask secrets in production** → Use `--masked` flag to hide sensitive env vars
-- **Input validation** → Rejects NaN/negative limits (FIX-009), validates var existence (FIX-007)
-- **Builder pattern for queries** → `.limit()`, `.order()`, `.noCache()` chaining
-- **Stream for large datasets** → Reduces memory 99% (50MB → 500KB for 10K docs)
-- **Batch parallel for independence** → Reduces latency 33% (6s → 4s for 3 ops)
-**Performance Optimization**:
-- **Reuse SDK instances** → Connection pooling reduces overhead (6s → 4s for 3 ops)
-- **Cache repeated queries** → Eliminates redundant API calls (6s → 2s for repeated status)
-- **Stream large datasets** → Memory-efficient iteration (15s/50MB → 1s/500KB)
-- **Batch parallel operations** → Execute independent ops concurrently (8s → 4s)
-**Debugging**
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Timeout (> 30s) | Logs without timeout, large history | Add `--timeout=60000`, reduce `--history=10` |
-| Empty results | Table empty, limit too small | Verify table exists (`tables`), increase `--limit` |
-| Invalid JSON | Mixed output modes | Use `--json` only, avoid mixing flags |
-| Function not found | Wrong path format | Use `module:functionName` not `module.functionName` |
-| Cache stale data | Long TTL, data changed | Use `.noCache()` or `clearCache()` for fresh data |
-| Memory high | Loading large datasets | Use `sdk.stream()` instead of `.execute()` |
-| Slow repeated queries | Cache disabled | Enable cache: `{ cache: { enabled: true } }` |
-| Cold start slow (3.5s) | Convex CLI initialization | Expected first-command penalty, subsequent calls faster |
-**Golden Operations Workflow**
-```bash
-# Status → Tables → Query → Run → Verify
-npx tsx CONVEX-CLI/SCRIPTS/convex-status.ts --json  # Check deployment
-npx tsx CONVEX-CLI/SCRIPTS/convex-tables.ts --json  # List available tables
-npx tsx CONVEX-CLI/SCRIPTS/convex-data.ts users --limit=5 --json  # Query data
-npx tsx CONVEX-CLI/SCRIPTS/convex-run.ts users:list '{}' --json   # Execute function
-npx tsx CONVEX-CLI/SCRIPTS/convex-env.ts list --masked            # Verify config
-```
+## **ORCHESTRATOR ROLE, TOOL RESTRICTIONS & SUBAGENT DIRECTIVE (ENFORCED)**
+**You are a DISPATCHER, not a worker.** Violating this degrades session quality. Use `task` tool extensively!
+### **Your Role (Orchestrator)**
+| ✅ DO | ❌ DON'T |
+|-------|----------|
+| Spawn agents with clear prompts | Multi-file investigation |
+| Interpret agent results | Code editing |
+| Report to user | Browser testing |
+| Quick context reads (single file, <50 lines) | Deep search sequences |
+### **Tool Restrictions**
+| Tool Category | Direct Use? | Required Agent |
+|---------------|-------------|----------------|
+| `Edit`, `Write`, Serena edit tools | ❌ NO | `developer` |
+| `Grep`, `Read` (multi-file investigation) | ❌ NO | `Explore` |
+| `mcp__chrome-devtools__*` | ❌ NO | `browser` |
+| Quick single-file `Read` (<50 lines) | ✅ OK | - |
+| `.claude/` config edits | ✅ OK | - |
+### **Pre-Tool Checkpoint (MANDATORY)**
+Before using Edit, Grep, Read, or MCP tools, ask:
+1. Single trivial lookup? → OK to proceed
+2. Investigation/search? → **STOP** → Spawn `Explore`, model `opus`, thoroughness level `very thorough`
+3. Code modification? → **STOP** → Spawn `developer`, model `opus`
+4. Browser interaction? → **STOP** → Spawn `browser`, model `opus`
+5. Data/schema check? → **STOP** → Spawn `data`, model `opus`
+### **Failure Recovery**
+Test FAILS (code issue) → Spawn `Explore`, model `opus`, thoroughness level `very thorough` (NOT self-investigation)
+Test FAILS (data issue) → Spawn `data`, model `opus` (schema/migration/missing data)
+`data` + `Explore` return → Synthesize → Spawn `developer`, model `opus` (NOT self-editing)
+`developer` returns → Spawn `browser`, model `opus` (NOT self-testing)
 
 ---
-#**SEQUENTIAL FILE MODIFICATIONS**
-- **ONE edit per file per message** → Prevents concurrent hook execution
-- **Batch changes** → Combine multiple edits into single tool call
-- **Hook awareness** → PostToolUse:Edit triggers typecheck (1-60s), never stack edits
 
-#**CONFIGURATION EDITING DISCIPLINE**
-When editing `.claude/` configs (agents, CLAUDE.md, commands):
+## **VDD Protocol (Validation Driven Development) - MANDATORY**
+3-phase agent pattern for full-stack implementation using `Task` tool:
+**Phase 1: DISCOVERY** → Agents: 2x `Explore` and 1x `data` (Parallel, Model `opus`)
+- **Spawn all three in single message** with `Task` tool
+- **EXPLORE agent 1** (code): Code patterns, file dependencies, implementation approach (thoroughness level `very thorough`)
+- **EXPLORE agent 2** (architecture): Related components, shared utilities, side-effects & regression risks (thoroughness level `very thorough`)
+- **DATA agent** (diagnostic only): Schema analysis, data sampling, migration status, test data availability
+- **Synthesis**: Orchestrator (Parent) combines all three findings into developer task list
+- **Output**: Code context + Architectural impact +  Data diagnosis 
+**Phase 2: DEVELOP** → Agent: `developer` (Model `opus`)
+- Purpose: ALL modifications — code AND data (migrations, seeds)
+- Sequence: DISCOVER → LOCATE → UNDERSTAND → EDIT (data ops + code) → VALIDATE
+- During EDIT: Run migrations → seed data → write feature code → typecheck
+- Receives: Data diagnosis + code context from Phase 1
+**Phase 3: TEST** → Agent: `browser` (Model `opus`)
+- **Snapshot-first**: Never guess selectors — `take_snapshot` before every interaction.
+- **Real input only**: No programmatic injection. Use `click`, `fill`, `press_key`, etc
+- **Fresh data always**: Create test data manually via UI — never rely on existing state.
+- **Evidence chains**: Every assertion backed by snapshot or screenshot.
+- **Lazy debugging**: Console/network checks only on failure, not preemptively.
+**Sequence**
+| Phase | Steps | Tools | Gate |
+|-------|-------|-------|------|
+| **PREPARE** | Navigate → wait for content → snapshot → create fresh test data via UI | `navigate_page`, `wait_for`, `take_snapshot`, `click`, `fill` | App loaded, data exists |
+| **ACT** | Perform the user action being tested | `click`, `fill`, `drag`, `press_key` | Action executed |
+| **VERIFY** | Snapshot + screenshot → confirm UI reflects expected state | `take_snapshot`, `take_screenshot` | UI correct |
+| **PERSIST** | Reload → wait → snapshot → confirm state survived | `navigate_page type="reload"`, `wait_for`, `take_snapshot` | Data matches pre-reload |
+**VERIFY sub-step — backend**: `timeout 5 npx convex logs --history 5` runs by default after UI check (not escalation-only). Catches optimistic updates masking rejected mutations.
+**Escalation (only on VERIFY or PERSIST failure)**
+VERIFY/PERSIST fails
+    ├─ Step 1: Console errors?
+    │   └─ list_console_messages types=["error"]
+    ├─ Step 2: Backend mutation fired?
+    │   └─ timeout 5 npx convex logs --history 10
+    ├─ Step 3: Network failures?
+    │   └─ list_network_requests resourceTypes=["xhr","fetch"]
+    │
+    ├─ Diagnosis: CODE issue → Explore agent → developer agent → re-test
+    ├─ Diagnosis: DATA issue → data agent → developer agent → re-test
+    └─ Diagnosis: FLAKY/timing → increase wait timeout, retry once
+**Example: Full E2E Workflow**
+  Fitness app — chain across features to prove integration:
+  1. **Calendar**: Create workout via Quick Program → VERIFY
+  2. **Logger**: Open workout → log sets with weight/reps → VERIFY + PERSIST
+  3. **Analytics**: Navigate → confirm new data appears in charts → VERIFY
+**Iteration**: DISCOVERY → DEVELOP → TEST → (pass: next task | fail: loop)
+**Rules**:
+- `data` + `Explore` x2 run **parallel** in single message (`Task` tool)
+- Orchestrator (Parent) synthesizes all three outputs before spawning `developer`
+- `developer` handles ALL modifications (migrations, seeds, code)
+- `browser` pass → proceed to next task
+- `browser` fail (code issue) → new `Explore` → `developer` → `browser`
+- `browser` fail (data issue) → new `data` → `developer` → `browser` 
+- Typecheck is blocking — never skip
+- Two-layer verification: frontend + backend
+- Never run subagents in background
+
+---
+
+## **Config .claude/ Editing Directive**
+
+When editing `.claude/` configs (agents, CLAUDE.md, commands, skills, rules etc):
 - **Preserve structure** → Match existing formatting (bullets, sections, headers)
 - **Match tone** → Imperative, terse, no fluff (e.g., "Do X" not "You should consider doing X")
 - **Add value** → Every word must serve purpose (examples only if essential)
-- **No verbosity** → If edit adds >25% word count, refactor for conciseness
+- **No verbosity** → 500 lines is hard limit, 250-500 is sweet spot. Be concise without losing context.
 - **Maintain style & patterns** → Use existing conventions
 - **No duplication** → Don't repeat information already present elsewhere
 - **Verify integration** → New content must flow naturally with surrounding text
 
 ---
 
-**ANTI-PATTERNS TO AVOID**
-1. Reading entire code files with Read() (use Serena symbolic tools)
-2. Using search_for_pattern on .md files (use Read for documentation)
-3. Skipping typecheck after mutations (BLOCKING requirement)
-4. UI testing on backend-only changes (no UI = skip STEP 4)
-5. Creating files unnecessarily (prefer editing existing files)
-6. Multiple edits to same file in one message (concurrent hook errors)
-7. Calling Edit/replace_symbol_body on same file before hook completes
-8. Skipping memory check before analysis (Discovery Hierarchy violation)
-9. Running subagents in the background (always run in foreground and wait for completion)
+## **Serena Workflows**
+See `.claude/rules/SERENA/SKILL.md` for memory management, codebase search, editing, and reflection workflows.
 
+---
+
+## **Convex CLI (Native)**
+Native `npx convex` commands for dev (`accurate-warbler-380`) and prod (`exciting-herring-835`).
+**Essential Commands**
+```bash
+# Status & Discovery
+npx convex status                             # Dev deployment info
+npx convex status --prod                      # Prod deployment info
+# Data Operations
+npx convex data <table> --limit 10            # Query dev table
+npx convex data <table> --limit 10 --prod     # Query prod table
+npx convex run <module:function> '{}'         # Run function on dev
+npx convex run <module:function> '{}' --prod  # Run function on prod
+# Environment Management
+npx convex env list                            # Dev env vars
+npx convex env list --prod                     # Prod env vars
+npx convex env set VAR val                     # Set dev variable
+npx convex env set VAR val --prod              # Set prod variable
+# Logs & Debugging (always use timeout — can hang)
+timeout 5 npx convex logs --history 20        # Dev logs
+timeout 5 npx convex logs --history 20 --prod # Prod logs
+# Functions & Tables
+npx convex functions                           # List dev functions
+npx convex functions --prod                    # List prod functions
+```
+
+**Critical Rules**
+- **`--prod` flag** → Appending `--prod` targets production for any command
+- **Timeout required for logs** → Always wrap with `timeout 5` to prevent hangs
+- **Function format** → `module:functionName` (colon separator, not dot)
+- **Never expose secrets** → Avoid logging env values containing keys/tokens
+**Debugging**
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Timeout (> 30s) | Logs without timeout | Wrap with `timeout 5`, reduce `--history` |
+| Empty results | Table empty or wrong name | Verify with `npx convex data` without limit |
+| Function not found | Wrong path format | Use `module:functionName` not `module.functionName` |
+
+---
+
+## **Convex TS2589 Deep Type Instantiation**
+Convex's generated `api.*` and `internal.*` types can exceed TypeScript's instantiation depth limit (~50-100 levels) when called from action context.
+**Cause**: Action→Query/Mutation bridging creates deeply nested generics through `ActionCtx` → `QueryCtx` type inference.
+**Behavior**: TS2589 is **non-deterministic** — appears/disappears based on overall file complexity, TS version, and other suppressions.
+**Pattern**:
+```typescript
+// @ts-ignore TS2589 - Convex deep type instantiation (non-deterministic)
+const result = await ctx.runQuery(api.module.function, { args });
+```
+
+**Why `@ts-ignore` over `@ts-expect-error`**: `@ts-expect-error` fails with TS2578 if underlying error resolves; `@ts-ignore` is stable for non-deterministic errors.
+**When needed**: `ctx.runQuery`/`ctx.runMutation`/`ctx.runAction` calls inside `action()` handlers referencing `api.*` or `internal.*`.
+
+---
+
+## **AI Integration Patterns**
+GPT-5 Mini for all AI generation tasks via OpenAI SDK.
+**Model**: `gpt-5-mini` (key in `.env.local` as `OPENAI_API_KEY`, model in `OPENAI_MODEL_SUGGESTIONS`)
+**SDK**: `openai`
+**Rate Limiting**: Per-user limits enforced in Convex actions
+**Error Handling**:
+- Retry with exponential backoff (3 attempts, 500ms base, 4s max)
+- Fallback to cached/static response if available
+- User-friendly error messages on failure
+**GPT-5 Mini Constraints** (differs from GPT-4):
+- `temperature` NOT supported (uses 1.0 default)
+- `max_tokens` deprecated → use `max_completion_tokens`
+- `top_p` NOT supported
+- `response_format: { type: "json_object" }` recommended for structured output
+**Code Pattern**:
+```typescript
+import OpenAI from "openai";
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const response = await openai.chat.completions.create({
+  model: process.env.OPENAI_MODEL || "gpt-5-mini",
+  messages: [
+    { role: "system", content: "Return valid JSON only." },
+    { role: "user", content: prompt },
+  ],
+  response_format: { type: "json_object" },
+  max_completion_tokens: 1000,
+});
+const result = JSON.parse(response.choices[0].message.content || "{}");
+```
+
+**RAG Embeddings**: `text-embedding-3-small` (1536-dim) via same `OPENAI_API_KEY`
+
+---
+
+## **Vercel Deployment**
+- **Account**: `m4stergr1ef@gmail.com` (client handover account, slug: `m4stergr1ef-4279`)
+- **Token**: `CLIENT_VERCEL_TOKEN` in `.env.local` — use `--token` flag, NOT `VERCEL_TOKEN` env var (env var doesn't override global CLI auth)
+- **All commands**: `vercel --token $(grep CLIENT_VERCEL_TOKEN .env.local | cut -d= -f2) <command>`
+- **Config**: `vercel.json` overrides build command, `.vercelignore` controls upload size
+- **Build**: Uses `vite build` directly (tsgo/native-preview incompatible with Vercel)
+- **Env vars**: All `VITE_*` vars must be set in Vercel dashboard (build-time injection)
+- **Debugging**: `vercel --token $TOKEN --prod --debug` for upload issues
+- **Common failures**: Missing env vars, excessive upload size (check `.vercelignore`), build command incompatibility
+
+---
+
+## **Chrome DevTools MCP (Custom Fork)**
+Using local fork at `/home/gabe/chrome-devtools-mcp-fork/` with bug fixes applied.
+**Why Fork**: Upstream `fill` tool had concatenation bug on number inputs (keyboard.type before fill).
+**Current Fix**: Removed `keyboard.type()` in `src/tools/input.ts` — Playwright's `fill()` clears first.
+**MCP Limitations During Testing?** Fork is modifiable:
+```bash
+cd ~/chrome-devtools-mcp-fork
+# Edit src/tools/*.ts as needed
+npm run build
+# Changes take effect on next browser agent spawn
+```
+
+**Upgrade/Sync with Upstream**:
+```bash
+cd ~/chrome-devtools-mcp-fork && git pull origin main && npm install && npm run build
+```
+**Config**: `~/.claude.json` → `projects.<path>.mcpServers.chrome-devtools` points to local build
+**Docs**: `.serena/memories/MCP_SERVER_REVERSE_ENGINEERING.md`
+
+---
+
+## **Sequential File Modifications**
+- **ONE edit per file per message** → Prevents concurrent hook execution
+- **Batch changes** → Combine multiple edits into single tool call
+- **Hook awareness** → PostToolUse:Edit triggers typecheck (1-60s), never stack edits
+
+---
+
+## **Infrastructure Diagnosis**
+- Process name checks (`pgrep`, `ps aux | grep`) are unreliable — npm spawns child processes
+- If code changes aren't reflected after browser test:
+  1. Verify changes are in files (`git diff`)
+  2. Check dev server ports: `lsof -i :5173 && lsof -i :5174 && lsof -i :5175`
+  3. If ports active but changes not reflected → **ASK USER**: "Are changes syncing?"
+  4. Never assume server is down based on process checks alone
+
+---
+
+## **BLOCKING VIOLATIONS**
+| Violation | Why It's Blocking |
+|-----------|-------------------|
+| Using `Edit`/`Write` directly for code | Pollutes context, use `developer` agent |
+| Multi-file `Grep`/`Read` investigation | Pollutes context, use `Explore` agent |
+| Direct `mcp__chrome-devtools__*` usage | Pollutes context, use `browser` agent |
+| Direct `npx convex data/run` for diagnosis | Pollutes context, use `data` agent |
+| Self-investigation after test failure | VDD violation — spawn `Explore` & `data` |
+| Skipping DISCOVERY phase | Data mismatch discovered too late |
+| Running subagents in background | Loses results, always foreground |
+| Skipping typecheck after mutations | Type errors compound |
+
+**OTHER ANTI-PATTERNS**
+1. Reading entire code files with Read() → use Serena symbolic workflow
+2. Using `search_for_pattern` before ripgrep scoping → rg is faster for discovery
+3. Using search_for_pattern on .md files → use Read for documentation
+4. Creating files unnecessarily → prefer editing existing files
+5. Multiple edits to same file in one message → concurrent hook errors
+6. Skipping memory check before analysis → Discovery Hierarchy violation

@@ -109,7 +109,15 @@ export function EmployerRegistrationForm() {
         postcode: formData.postcode,
       });
 
-      // Store GDPR consents
+      // Store auth tokens BEFORE consent mutations so the Convex client
+      // has the JWT when createConsent checks requireEmployerOwnership()
+      loginAsEmployer(workosUserId, accessToken, refreshToken, sessionId || undefined);
+
+      // Brief wait for the Convex client to pick up the new JWT from localStorage
+      // (ConvexProviderWithAuthKit calls getAccessToken which reads from localStorage)
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Store GDPR consents (now authenticated)
       const consentVersion = "1.0";
       await Promise.all([
         createConsent({
@@ -135,9 +143,6 @@ export function EmployerRegistrationForm() {
         }),
       ]);
 
-      // Store auth tokens (including sessionId for proper logout)
-      loginAsEmployer(workosUserId, accessToken, refreshToken, sessionId || undefined);
-
       // Redirect to employer dashboard
       navigate("/employer");
     } catch (err) {
@@ -145,7 +150,7 @@ export function EmployerRegistrationForm() {
     } finally {
       setIsSubmitting(false);
     }
-  };
+  };;
 
   // Show error if required tokens are missing
   if (!tokensValid) {

@@ -185,14 +185,14 @@ http.route({
         ctx.runQuery(internal.adminUsers.getByWorkosId, { workosUserId: user.id }),
       ]);
 
-      // Determine redirect path based on role
+      // Determine redirect path based on role (admin highest privilege first)
       let redirectPath = "/register/choose-role";
-      if (employer) {
-        redirectPath = "/employer";
+      if (adminUser) {
+        redirectPath = "/admin";
       } else if (doctor) {
         redirectPath = "/doctor";
-      } else if (adminUser) {
-        redirectPath = "/admin";
+      } else if (employer) {
+        redirectPath = "/employer";
       }
 
       // If admin user, upsert to update last login
