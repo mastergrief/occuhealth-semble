@@ -69,6 +69,35 @@ export const create = mutation({
   },
 });
 
+/**
+ * Internal version of create for use in server-side actions.
+ * Same logic as create but callable via internal API (no client auth needed).
+ */
+export const createInternal = internalMutation({
+  args: {
+    workosUserId: v.string(),
+    email: v.string(),
+    companyType: v.union(v.literal("employer"), v.literal("insurer")),
+    companyName: v.string(),
+    companyRegistrationNumber: v.optional(v.string()),
+    contactName: v.string(),
+    contactPhone: v.optional(v.string()),
+    addressLine1: v.string(),
+    addressLine2: v.optional(v.string()),
+    city: v.string(),
+    postcode: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    return ctx.db.insert("employers", {
+      ...args,
+      status: "pending",
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
 // Update employer
 export const update = mutation({
   args: {

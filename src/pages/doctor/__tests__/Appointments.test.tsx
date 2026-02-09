@@ -21,8 +21,9 @@ const mockAppointmentsResult = {
       scheduledTime: "09:00",
       patientId: "patient_1" as Id<"patients">,
       employerId: "employer_1" as Id<"employers">,
-      doctorId: "doctor_123" as Id<"doctorSettings">,
-      appointmentType: "initial_assessment",
+      appointmentTypeId: "type_1" as Id<"appointmentTypes">,
+      slotId: "slot_1" as Id<"availableSlots">,
+      createdAt: Date.now(),
       patient: { firstName: "John", lastName: "Doe" },
       employer: { companyName: "Test Corp" },
       reasonForAppointment: "Annual checkup",
@@ -35,15 +36,16 @@ const mockAppointmentsResult = {
       scheduledTime: "10:00",
       patientId: "patient_2" as Id<"patients">,
       employerId: "employer_1" as Id<"employers">,
-      doctorId: "doctor_123" as Id<"doctorSettings">,
-      appointmentType: "follow_up",
+      appointmentTypeId: "type_2" as Id<"appointmentTypes">,
+      slotId: "slot_2" as Id<"availableSlots">,
+      createdAt: Date.now(),
       patient: { firstName: "Jane", lastName: "Smith" },
       employer: { companyName: "Test Corp" },
     },
   ],
   cursor: null,
   hasMore: false,
-};
+};;
 
 describe("DoctorAppointments", () => {
   let mockMarkCompleted: ReturnType<typeof createMockMutation>;

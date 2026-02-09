@@ -1,15 +1,17 @@
 ## SESSION START SEQUENCE (MANDATORY)
 
 1. **Read Context** (in order):
-   - `.env.local` → `mcp__serena__list_memories()` → `mcp__serena__read_memory(name)` (relevant ones)
-   - `package.json` for dependencies & npm commands
+- `.env.local` → `mcp__serena__list_memories()` → `mcp__serena__read_memory(name)` (relevant ones)
+- `package.json` for dependencies & npm commands
 
-2. **Task-Directive**:
-   - Use `TaskCreate` tool with If responding to query/request to plan concrete steps
-   - Use `TaskList` to understand what to do or what tasks are outstanding
-   - Use `TaskGet` tool to continue with outstanding tasks 
-   - Use `TaskUpdate` tool to change or update focus with new context
-   
+2. **Create Task Lists for complex tasks (More than single step requests & issues)_**:
+- Use `TaskCreate` tool with If responding to query/request to plan concrete steps
+- Use `TaskList` to understand what to do or what tasks are outstanding
+- Use `TaskGet` tool to continue with outstanding tasks 
+- Use `TaskUpdate` tool to change or update focus with new context
+
+3. **Subagent Directive**
+- When launching subagents In parallel with `Task` tool ALWAYS send message In a single block to prevent sequential launch
 
 ---
 
@@ -278,7 +280,7 @@ cd ~/chrome-devtools-mcp-fork && git pull origin main && npm install && npm run 
 - Process name checks (`pgrep`, `ps aux | grep`) are unreliable — npm spawns child processes
 - If code changes aren't reflected after browser test:
   1. Verify changes are in files (`git diff`)
-  2. Check dev server ports: `lsof -i :5173 && lsof -i :5174 && lsof -i :5175`
+  2. Check dev server ports: `lsof -i :5175 && lsof -i :5176
   3. If ports active but changes not reflected → **ASK USER**: "Are changes syncing?"
   4. Never assume server is down based on process checks alone
 
@@ -291,7 +293,7 @@ cd ~/chrome-devtools-mcp-fork && git pull origin main && npm install && npm run 
 | Multi-file `Grep`/`Read` investigation | Pollutes context, use `Explore` agent |
 | Direct `mcp__chrome-devtools__*` usage | Pollutes context, use `browser` agent |
 | Direct `npx convex data/run` for diagnosis | Pollutes context, use `data` agent |
-| Self-investigation after test failure | VDD violation — spawn `Explore` & `data` |
+| Self-investigation after test failure | VDD violation — spawn `Explore` & `data` in parallel in single block with `Task` tool |
 | Skipping DISCOVERY phase | Data mismatch discovered too late |
 | Running subagents in background | Loses results, always foreground |
 | Skipping typecheck after mutations | Type errors compound |

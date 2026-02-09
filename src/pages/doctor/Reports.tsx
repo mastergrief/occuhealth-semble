@@ -56,10 +56,7 @@ export function DoctorReports() {
   const [aiAccepted, setAiAccepted] = useState(false);
   const [aiModified, setAiModified] = useState(false);
 
-  const todaysAppointments = useQuery(api.appointments.getTodaysAppointments);
-  const completedWithoutReport = todaysAppointments?.filter(
-    apt => apt.status === "completed" && !apt.reportId
-  );
+  const completedWithoutReport = useQuery(api.appointments.getCompletedAwaitingReport);
 
   const createReportWithAI = useMutation(api.reports.createWithAI);
   const sendToEmployer = useMutation(api.reports.sendToEmployer);
@@ -167,7 +164,7 @@ export function DoctorReports() {
                 <div key={apt._id} className="flex justify-between items-center p-3 border rounded-lg">
                   <div>
                     <p className="font-medium">{apt.scheduledTime}</p>
-                    <p className="text-sm text-muted-foreground">Patient: {apt.patientId}</p>
+                    <p className="text-sm text-muted-foreground">Patient: {apt.patientName}</p>
                   </div>
                   <Button onClick={() => setSelectedAppointment(apt._id)} data-testid="create-report-btn">
                     Create Report

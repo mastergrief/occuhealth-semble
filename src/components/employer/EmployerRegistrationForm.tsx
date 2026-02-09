@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { useMutation } from "convex/react";
+import { useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,8 +41,7 @@ export function EmployerRegistrationForm() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { loginAsEmployer } = useEmployerAuth();
-  const createEmployer = useMutation(api.employers.create);
-  const createConsent = useMutation(api.gdpr.createConsent);
+  const registerEmployer = useAction(api.actions.employerRegistration.registerEmployer);
 
   const workosUserId = searchParams.get("userId") || "";
   const accessToken = searchParams.get("accessToken") || "";
@@ -95,7 +94,9 @@ export function EmployerRegistrationForm() {
     setError("");
 
     try {
-      const employerId = await createEmployer({
+      // Server-side action atomically creates employer + GDPR consents
+      // (eliminates race condition with JWT propagation)
+      await registerEmployer({
         workosUserId,
         email: formData.email,
         companyType: formData.companyType,
@@ -107,41 +108,15 @@ export function EmployerRegistrationForm() {
         addressLine2: formData.addressLine2 || undefined,
         city: formData.city,
         postcode: formData.postcode,
+        consents: {
+          dataProcessing: consents.dataProcessing,
+          healthData: consents.healthData,
+          employerSharing: consents.employerSharing,
+        },
       });
 
-      // Store auth tokens BEFORE consent mutations so the Convex client
-      // has the JWT when createConsent checks requireEmployerOwnership()
+      // Store auth tokens for subsequent navigation (employer portal auth)
       loginAsEmployer(workosUserId, accessToken, refreshToken, sessionId || undefined);
-
-      // Brief wait for the Convex client to pick up the new JWT from localStorage
-      // (ConvexProviderWithAuthKit calls getAccessToken which reads from localStorage)
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Store GDPR consents (now authenticated)
-      const consentVersion = "1.0";
-      await Promise.all([
-        createConsent({
-          patientEmail: formData.email,
-          consentType: "data_processing",
-          consentText: "I consent to the processing of employee health data for occupational health assessments",
-          consentVersion,
-          collectedByEmployerId: employerId,
-        }),
-        createConsent({
-          patientEmail: formData.email,
-          consentType: "health_data",
-          consentText: "I understand that sensitive health data will be collected and processed in accordance with GDPR Article 9",
-          consentVersion,
-          collectedByEmployerId: employerId,
-        }),
-        createConsent({
-          patientEmail: formData.email,
-          consentType: "employer_sharing",
-          consentText: "I consent to receiving anonymized fitness-for-work reports for my employees",
-          consentVersion,
-          collectedByEmployerId: employerId,
-        }),
-      ]);
 
       // Redirect to employer dashboard
       navigate("/employer");

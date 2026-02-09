@@ -342,7 +342,7 @@ http.route({
 // Calendar Download Endpoint (ICS file for appointment)
 // ---------------------------------------------------------------------------
 http.route({
-  path: "/calendar/:token",
+  pathPrefix: "/calendar/",
   method: "GET",
   handler: httpAction(async (ctx, request) => {
     // Extract token from URL path

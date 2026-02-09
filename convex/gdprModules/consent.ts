@@ -1,7 +1,7 @@
 // convex/gdprModules/consent.ts
 // Consent management functions for GDPR compliance
 
-import { mutation, query } from "../_generated/server";
+import { mutation, query, internalMutation } from "../_generated/server";
 import { v, ConvexError } from "convex/values";
 import { requireEmployerOwnership } from "../authModules";
 import { internal } from "../_generated/api";
@@ -43,6 +43,56 @@ export const createConsent = mutation({
         patientEmail: args.patientEmail,
         consentType: args.consentType,
         consentVersion: args.consentVersion,
+      },
+    });
+
+    return consentId;
+  },
+});
+
+/**
+ * Internal version of createConsent for use in server-side actions.
+ * Skips requireEmployerOwnership auth check (already validated by calling action).
+ * Logs with actorType "system" and source "employer_registration".
+ */
+export const createConsentInternal = internalMutation({
+  args: {
+    patientEmail: v.string(),
+    patientId: v.optional(v.id("patients")),
+    consentType: v.union(
+      v.literal("data_processing"),
+      v.literal("health_data"),
+      v.literal("employer_sharing")
+    ),
+    consentText: v.string(),
+    consentVersion: v.string(),
+    collectedByEmployerId: v.id("employers"),
+    granted: v.boolean(),
+    grantedAt: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const consentId = await ctx.db.insert("consents", {
+      patientEmail: args.patientEmail,
+      patientId: args.patientId,
+      consentType: args.consentType,
+      consentText: args.consentText,
+      consentVersion: args.consentVersion,
+      collectedByEmployerId: args.collectedByEmployerId,
+      granted: args.granted,
+      grantedAt: args.grantedAt,
+    });
+
+    // Audit logging for GDPR compliance (system actor for registration flow)
+    await ctx.runMutation(internal.gdpr.logAction, {
+      action: "consent_granted",
+      actorType: "system",
+      resourceType: "consent",
+      resourceId: consentId,
+      details: {
+        patientEmail: args.patientEmail,
+        consentType: args.consentType,
+        consentVersion: args.consentVersion,
+        source: "employer_registration",
       },
     });
 

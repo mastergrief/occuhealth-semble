@@ -15,9 +15,10 @@ const mockAppointmentsWithPendingReports = [
     scheduledTime: "09:00",
     patientId: "patient_1" as Id<"patients">,
     employerId: "employer_1" as Id<"employers">,
-    doctorId: "doctor_123" as Id<"doctorSettings">,
-    appointmentType: "initial_assessment",
-    // No reportId - needs report
+    appointmentTypeId: "type_1" as Id<"appointmentTypes">,
+    slotId: "slot_1" as Id<"availableSlots">,
+    createdAt: Date.now(),
+    patientName: "John Doe",
   },
   {
     _id: "apt_2" as Id<"appointments">,
@@ -27,26 +28,14 @@ const mockAppointmentsWithPendingReports = [
     scheduledTime: "10:00",
     patientId: "patient_2" as Id<"patients">,
     employerId: "employer_1" as Id<"employers">,
-    doctorId: "doctor_123" as Id<"doctorSettings">,
-    appointmentType: "follow_up",
-    reportId: "report_123" as Id<"reports">, // Already has report
+    appointmentTypeId: "type_2" as Id<"appointmentTypes">,
+    slotId: "slot_2" as Id<"availableSlots">,
+    createdAt: Date.now(),
+    patientName: "Jane Smith",
   },
 ];
 
-const mockAppointmentsAllWithReports = [
-  {
-    _id: "apt_1" as Id<"appointments">,
-    _creationTime: Date.now(),
-    status: "completed" as const,
-    scheduledDate: "2026-01-05",
-    scheduledTime: "09:00",
-    patientId: "patient_1" as Id<"patients">,
-    employerId: "employer_1" as Id<"employers">,
-    doctorId: "doctor_123" as Id<"doctorSettings">,
-    appointmentType: "initial_assessment",
-    reportId: "report_1" as Id<"reports">,
-  },
-];
+const mockAppointmentsAllWithReports: typeof mockAppointmentsWithPendingReports = [];
 
 describe("DoctorReports", () => {
   let mockCreateReport: ReturnType<typeof createMockMutation>;
@@ -69,9 +58,10 @@ describe("DoctorReports", () => {
 
     expect(screen.getByText("Create Reports")).toBeInTheDocument();
     expect(screen.getByText("Completed Appointments Awaiting Report")).toBeInTheDocument();
-    // Should show the appointment without a report
+    // Should show appointments awaiting reports
     expect(screen.getByText("09:00")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /create report/i })).toBeInTheDocument();
+    expect(screen.getByText("10:00")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /create report/i })).toHaveLength(2);
   });
 
   it("shows empty state when no pending reports", () => {
@@ -87,9 +77,9 @@ describe("DoctorReports", () => {
 
     render(<DoctorReports />);
 
-    // Click Create Report button
-    const createButton = screen.getByRole("button", { name: /create report/i });
-    fireEvent.click(createButton);
+    // Click first Create Report button
+    const createButtons = screen.getAllByRole("button", { name: /create report/i });
+    fireEvent.click(createButtons[0]);
 
     // Dialog should open
     await waitFor(() => {
@@ -106,8 +96,8 @@ describe("DoctorReports", () => {
     render(<DoctorReports />);
 
     // Open dialog
-    const createButton = screen.getByRole("button", { name: /create report/i });
-    fireEvent.click(createButton);
+    const createButtons = screen.getAllByRole("button", { name: /create report/i });
+    fireEvent.click(createButtons[0]);
 
     // Wait for dialog to open
     await waitFor(() => {

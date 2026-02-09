@@ -38,8 +38,9 @@ const mockAppointments = {
       scheduledTime: "09:00",
       patientId: "patient_1" as Id<"patients">,
       employerId: "employer_123" as Id<"employers">,
-      doctorId: "doctor_1" as Id<"doctorSettings">,
-      appointmentType: "initial_assessment",
+      appointmentTypeId: "type_1" as Id<"appointmentTypes">,
+      slotId: "slot_1" as Id<"availableSlots">,
+      createdAt: Date.now(),
       patient: {
         firstName: "John",
         lastName: "Doe",
@@ -53,8 +54,9 @@ const mockAppointments = {
       scheduledTime: "14:30",
       patientId: "patient_2" as Id<"patients">,
       employerId: "employer_123" as Id<"employers">,
-      doctorId: "doctor_1" as Id<"doctorSettings">,
-      appointmentType: "follow_up",
+      appointmentTypeId: "type_2" as Id<"appointmentTypes">,
+      slotId: "slot_2" as Id<"availableSlots">,
+      createdAt: Date.now(),
       patient: {
         firstName: "Jane",
         lastName: "Smith",
@@ -68,15 +70,16 @@ const mockAppointments = {
       scheduledTime: "11:00",
       patientId: "patient_3" as Id<"patients">,
       employerId: "employer_123" as Id<"employers">,
-      doctorId: "doctor_1" as Id<"doctorSettings">,
-      appointmentType: "routine_checkup",
+      appointmentTypeId: "type_3" as Id<"appointmentTypes">,
+      slotId: "slot_3" as Id<"availableSlots">,
+      createdAt: Date.now(),
       patient: {
         firstName: "Bob",
         lastName: "Wilson",
       },
     },
   ],
-};
+};;
 
 describe("BookingsPage", () => {
   beforeEach(() => {

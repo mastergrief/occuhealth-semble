@@ -15,6 +15,17 @@
 
 ---
 
+## Deployment URLs
+
+| Environment | URL | Convex Backend |
+|-------------|-----|----------------|
+| **Production (Vercel)** | `https://convex-medical-starter-phi.vercel.app` | `accurate-warbler-380` (DEV) |
+| **Local Development** | `http://localhost:5175` | `accurate-warbler-380` (DEV) |
+
+Both URLs work interchangeably for testing. Auth redirects dynamically return to the originating domain via the `returnTo` parameter.
+
+---
+
 ## Quick Reference - Complete Route Table
 
 | Route | Portal | Auth Required | Role | Page Component |
@@ -45,7 +56,7 @@
 
 ## Deep Link Support
 
-All routes support direct URL navigation when proper auth state exists:
+All routes support direct URL navigation when proper auth state exists. Works on both localhost and Vercel deployment (`vercel.json` SPA rewrites handle client-side routing).
 
 | Route | Works as Direct URL? | Required State |
 |-------|---------------------|----------------|
@@ -97,19 +108,34 @@ snapshot
 
 **Login Flow (WorkOS AuthKit):**
 ```bash
-# 1. Navigate to landing page
-navigate localhost:5175
+# 1. Navigate to app (localhost or Vercel)
+navigate localhost:5175           # OR https://convex-medical-starter-phi.vercel.app
 snapshot
 
 # 2. Click Provider Login (floating button bottom-right)
 click "text:Provider Login"
+# -> Login URL includes ?returnTo=${encodeURIComponent(window.location.origin)}
 # -> Redirects to WorkOS authentication
 
-# 3. After WorkOS auth, callback routes to:
-#    - /admin (if admin user)
-#    - /employer/dashboard (if employer)
-#    - /doctor/dashboard (if doctor)
-#    - /register/choose-role (if new user)
+# 3. After WorkOS auth, Convex callback reads returnTo from OAuth state
+#    and redirects back to the originating domain:
+#    - {origin}/admin (if admin user)
+#    - {origin}/employer/dashboard (if employer)
+#    - {origin}/doctor/dashboard (if doctor)
+#    - {origin}/register/choose-role (if new user)
+```
+
+**Auth Redirect Chain:**
+```
+Login button → Convex HTTP action (?returnTo=origin) → WorkOS AuthKit →
+Convex callback (reads returnTo from OAuth state) → {origin}/auth/callback
+Fallback: returnTo from state → APP_URL env var → http://localhost:5175
+```
+
+**Logout Flow:**
+```
+Sign Out → Convex HTTP action (?returnTo=origin&sessionId=...) →
+WorkOS session end → redirect to {origin}
 ```
 
 **Role-Based Routing:**
@@ -557,17 +583,19 @@ assert "text:Some features are restricted" visible
 |---------|---------|-------|
 | Admin nav | `<a href="/admin/employers">` | Uses href, not react-router Link |
 | Dashboard cards | `<a href="/admin/gdpr">` | Uses href, not react-router Link |
-| Auth buttons | `window.location.href = WorkOS URL` | Full page redirect to WorkOS |
+| Auth buttons | `window.location.href = Convex HTTP action + ?returnTo=origin` | Full page redirect via Convex to WorkOS |
 
 ### Auth Callback Flow
 
 ```
 1. User clicks login button
-2. window.location.href -> WorkOS AuthKit
-3. WorkOS authenticates user
-4. Redirect to /auth/callback?accessToken=...&userId=...&sessionId=...
-5. AdminAuthCallback extracts tokens, calls loginAsAdmin()
-6. navigate(redirectPath || "/admin")
+2. window.location.href -> Convex HTTP action with ?returnTo=origin
+3. Convex stores returnTo in OAuth state, redirects to WorkOS AuthKit
+4. WorkOS authenticates user
+5. Convex callback reads returnTo from OAuth state
+6. Redirect to {returnTo}/auth/callback?accessToken=...&userId=...&sessionId=...
+7. AdminAuthCallback extracts tokens, calls loginAsAdmin()
+8. navigate(redirectPath || "/admin")
 ```
 
 ---
@@ -761,7 +789,7 @@ All actions are audit-logged. Testable workflows:
 
 ---
 
-## Known Limitations (2026-01-04)
+## Known Limitations (2026-02-09)
 
 ### Active Bugs
 
@@ -770,6 +798,12 @@ All actions are audit-logged. Testable workflows:
 | **BUG-001** | Critical | Token loss during registration | Use saved states instead |
 | **BUG-002** | High | Admin UI visible to non-admins | Backend protected, UX only |
 | **BUG-003** | Medium | WorkOS session persists after logout | Restart browser |
+
+### Resolved Bugs
+
+| Bug | Resolution | Commit |
+|-----|-----------|--------|
+| Auth redirect to localhost from Vercel | Fixed via dynamic `returnTo` origin passthrough | `c724a67` |
 
 ### Routing Gaps
 

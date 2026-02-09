@@ -11,7 +11,7 @@
 export { logAction, getAuditLogs, getAuditLogsByResource } from "./gdprModules/audit";
 
 // Consent management
-export { createConsent, withdrawConsent, getConsentsByPatient } from "./gdprModules/consent";
+export { createConsent, createConsentInternal, withdrawConsent, getConsentsByPatient } from "./gdprModules/consent";
 
 // Erasure requests
 export { requestErasure, listErasureRequests, processErasure } from "./gdprModules/erasure";

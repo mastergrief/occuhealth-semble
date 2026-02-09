@@ -265,6 +265,11 @@ export function WorkOSAuthProvider({ children }: { children: ReactNode }) {
           };
 
     localStorage.setItem(STORAGE_KEYS[role], JSON.stringify(storageData));
+    // Notify same-tab listeners (native StorageEvent only fires cross-tab)
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: STORAGE_KEYS[role],
+      newValue: JSON.stringify(storageData),
+    }));
     setState({
       isAuthenticated: true,
       isLoading: false,
@@ -275,7 +280,13 @@ export function WorkOSAuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     if (state.role) {
-      localStorage.removeItem(STORAGE_KEYS[state.role]);
+      const key = STORAGE_KEYS[state.role];
+      localStorage.removeItem(key);
+      // Notify same-tab listeners
+      window.dispatchEvent(new StorageEvent('storage', {
+        key,
+        newValue: null,
+      }));
     }
     setState({
       isAuthenticated: false,

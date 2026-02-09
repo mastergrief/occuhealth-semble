@@ -109,19 +109,31 @@ export const listByEmployer = query({
  */
 export const listByDate = query({
   args: { date: v.string(), ...paginatedQueryArgs },
-  handler: async (ctx, { date, paginationOpts }) => {
-    // Verify caller is a doctor
-    await requireDoctorAccess(ctx);
+  handler: async (ctx, { date }) => {
+    const doctor = await requireDoctorAccess(ctx);
 
-    const paginatedResult = await ctx.db
-      .query("appointments")
-      .withIndex("by_date", (q) => q.eq("scheduledDate", date))
-      .paginate(paginationOpts);
+    // Query slots for this doctor on the given date
+    const slots = await ctx.db
+      .query("availableSlots")
+      .withIndex("by_doctor_date", (q) =>
+        q.eq("doctorId", doctor._id).eq("date", date)
+      )
+      .collect();
+
+    // Collect booked slot appointment IDs
+    const appointmentIds = slots
+      .filter((s) => s.appointmentId != null)
+      .map((s) => s.appointmentId!);
+
+    // Batch-fetch appointments
+    const appointments = (
+      await Promise.all(appointmentIds.map((id) => ctx.db.get(id)))
+    ).filter((a): a is Doc<"appointments"> => a != null);
 
     // Batch fetch all three relations to avoid 3N+1 pattern
-    const patientIds = extractUniqueIds(paginatedResult.page, (a) => a.patientId);
-    const employerIds = extractUniqueIds(paginatedResult.page, (a) => a.employerId);
-    const typeIds = extractUniqueIds(paginatedResult.page, (a) => a.appointmentTypeId);
+    const patientIds = extractUniqueIds(appointments, (a) => a.patientId);
+    const employerIds = extractUniqueIds(appointments, (a) => a.employerId);
+    const typeIds = extractUniqueIds(appointments, (a) => a.appointmentTypeId);
 
     const [patientMap, employerMap, typeMap] = await Promise.all([
       batchGet(ctx, patientIds),
@@ -130,14 +142,18 @@ export const listByDate = query({
     ]);
 
     // Enrich with all three relations in a single map
-    const enriched = paginatedResult.page.map((apt) => ({
+    const enriched = appointments.map((apt) => ({
       ...apt,
       patient: patientMap.get(apt.patientId) ?? null,
       employer: employerMap.get(apt.employerId) ?? null,
       appointmentType: typeMap.get(apt.appointmentTypeId) ?? null,
     }));
 
-    return toPaginatedResult({ ...paginatedResult, page: enriched });
+    return {
+      items: enriched,
+      cursor: null,
+      hasMore: false,
+    };
   },
 });
 
@@ -152,14 +168,68 @@ export const listByDate = query({
 export const getTodaysAppointments = query({
   args: {},
   handler: async (ctx): Promise<Doc<"appointments">[]> => {
-    // Verify caller is a doctor
-    await requireDoctorAccess(ctx);
+    const doctor = await requireDoctorAccess(ctx);
 
     const today = new Date().toISOString().split("T")[0];
-    return ctx.db
-      .query("appointments")
-      .withIndex("by_date", (q) => q.eq("scheduledDate", today))
+
+    // Query slots for this doctor on today's date
+    const slots = await ctx.db
+      .query("availableSlots")
+      .withIndex("by_doctor_date", (q) =>
+        q.eq("doctorId", doctor._id).eq("date", today)
+      )
       .collect();
+
+    // Collect booked slot appointment IDs
+    const appointmentIds = slots
+      .filter((s) => s.appointmentId != null)
+      .map((s) => s.appointmentId!);
+
+    // Batch-fetch appointments
+    const appointments = (
+      await Promise.all(appointmentIds.map((id) => ctx.db.get(id)))
+    ).filter((a): a is Doc<"appointments"> => a != null);
+
+    return appointments;
+  },
+});
+
+export const getCompletedAwaitingReport = query({
+  args: {},
+  handler: async (ctx) => {
+    const doctor = await requireDoctorAccess(ctx);
+
+    // Get ALL booked slots for this doctor (no date filter)
+    const slots = await ctx.db
+      .query("availableSlots")
+      .withIndex("by_doctor", (q) => q.eq("doctorId", doctor._id))
+      .collect();
+
+    // Collect slots with appointmentId
+    const appointmentIds = extractUniqueIds(slots, (s) => s.appointmentId);
+
+    // Batch-fetch appointments
+    const appointmentMap = await batchGet(ctx, appointmentIds);
+    const appointments = [...appointmentMap.values()];
+
+    // Filter to completed without report
+    const awaitingReport = appointments.filter(
+      (a) => a.status === "completed" && !a.reportId
+    );
+
+    // Enrich with patient name for display
+    const patientIds = extractUniqueIds(awaitingReport, (a) => a.patientId);
+    const patientMap = await batchGet(ctx, patientIds);
+
+    return awaitingReport.map((apt) => {
+      const patient = patientMap.get(apt.patientId);
+      return {
+        ...apt,
+        patientName: patient
+          ? `${patient.firstName} ${patient.lastName}`
+          : "Unknown Patient",
+      };
+    });
   },
 });
 

@@ -199,12 +199,16 @@ export default function ViewAppointment() {
 
         {/* Action buttons */}
         <div className="flex gap-3">
-          <Link to={`/calendar/${token}`} className="flex-1">
+          <a
+            href={`${(import.meta.env.VITE_CONVEX_URL as string).replace('.convex.cloud', '.convex.site')}/calendar/${token}`}
+            className="flex-1"
+            download="appointment.ics"
+          >
             <Button variant="outline" className="w-full">
               <Download className="h-4 w-4 mr-2" />
               Add to Calendar
             </Button>
-          </Link>
+          </a>
           <Button
             variant="outline"
             className="flex-1"

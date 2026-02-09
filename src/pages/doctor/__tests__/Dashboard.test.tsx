@@ -32,8 +32,9 @@ const mockAppointments = [
     scheduledTime: "09:00",
     patientId: "patient_1" as Id<"patients">,
     employerId: "employer_1" as Id<"employers">,
-    doctorId: "doctor_123" as Id<"doctorSettings">,
-    appointmentType: "initial_assessment",
+    appointmentTypeId: "type_1" as Id<"appointmentTypes">,
+    slotId: "slot_1" as Id<"availableSlots">,
+    createdAt: Date.now(),
   },
   {
     _id: "apt_2" as Id<"appointments">,
@@ -43,8 +44,9 @@ const mockAppointments = [
     scheduledTime: "10:00",
     patientId: "patient_2" as Id<"patients">,
     employerId: "employer_1" as Id<"employers">,
-    doctorId: "doctor_123" as Id<"doctorSettings">,
-    appointmentType: "follow_up",
+    appointmentTypeId: "type_2" as Id<"appointmentTypes">,
+    slotId: "slot_2" as Id<"availableSlots">,
+    createdAt: Date.now(),
   },
   {
     _id: "apt_3" as Id<"appointments">,
@@ -54,10 +56,11 @@ const mockAppointments = [
     scheduledTime: "11:00",
     patientId: "patient_3" as Id<"patients">,
     employerId: "employer_1" as Id<"employers">,
-    doctorId: "doctor_123" as Id<"doctorSettings">,
-    appointmentType: "routine_checkup",
+    appointmentTypeId: "type_3" as Id<"appointmentTypes">,
+    slotId: "slot_3" as Id<"availableSlots">,
+    createdAt: Date.now(),
   },
-];
+];;
 
 describe("DoctorDashboard", () => {
   beforeEach(() => {
