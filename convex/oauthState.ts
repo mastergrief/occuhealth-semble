@@ -8,7 +8,8 @@ import { internalMutation, internalQuery } from "./_generated/server";
 export const create = internalMutation({
   args: {
     state: v.string(),
-    expiresAt: v.number()
+    expiresAt: v.number(),
+    returnTo: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     return ctx.db.insert("oauthStates", args);

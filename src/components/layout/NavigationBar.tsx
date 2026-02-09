@@ -6,7 +6,7 @@ import { Container } from "./Container"
 
 const getLoginUrl = () => {
   const baseUrl = import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site');
-  return `${baseUrl}/auth/login`;
+  return `${baseUrl}/auth/login?returnTo=${encodeURIComponent(window.location.origin)}`;
 };
 
 export function NavigationBar() {

@@ -206,7 +206,7 @@ function LandingPage() {
           size="lg"
           className="shadow-lg"
           onClick={() => {
-            window.location.href = `${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/login`;
+            window.location.href = `${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/login?returnTo=${encodeURIComponent(window.location.origin)}`;
           }}
         >
           Provider Login

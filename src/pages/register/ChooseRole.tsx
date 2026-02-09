@@ -109,7 +109,7 @@ export function ChooseRole() {
               onClick={() => {
                 // Clear any local storage and redirect to WorkOS logout
                 localStorage.clear();
-                const logoutUrl = `${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/logout${sessionId ? `?sessionId=${sessionId}` : ''}`;
+                const logoutUrl = `${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/logout?returnTo=${encodeURIComponent(window.location.origin)}${sessionId ? `&sessionId=${sessionId}` : ''}`;
                 window.location.href = logoutUrl;
               }}
             >

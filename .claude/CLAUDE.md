@@ -4,8 +4,12 @@
    - `.env.local` → `mcp__serena__list_memories()` → `mcp__serena__read_memory(name)` (relevant ones)
    - `package.json` for dependencies & npm commands
 
-2. **Create Task List** (if complex task):
-   - TaskCreate tool with concrete steps
+2. **Task-Directive**:
+   - Use `TaskCreate` tool with If responding to query/request to plan concrete steps
+   - Use `TaskList` to understand what to do or what tasks are outstanding
+   - Use `TaskGet` tool to continue with outstanding tasks 
+   - Use `TaskUpdate` tool to change or update focus with new context
+   
 
 ---
 
@@ -19,7 +23,9 @@
 - READ `.env.local` for API keys/implementations & test user credentials
 - LLMs: gpt-5-mini via OpenAI SDK (`OPENAI_API_KEY` in `.env.local`), same key for RAG embeddings (`text-embedding-3-small`)
 - Serena memory structure: project subdirectory `.serena/memories/project` contains architecture, code conventions, project overview, tech stack etc
-- When presented with an image or screenshot analyse deeply with 100% content & coverage, think about what you're looking at in relation to the query or request given, leave no stones unturned & create ASCII dependency graph of what you have observed/analysed to present as findings.
+- When presented with an image or screenshot analyse deeply with 100% content & coverage, think about what you're looking at in relation to the query or request given, leave no stones unturned & create ASCII dependency graph of what you have observed/analysed to present as findings
+**Subagent Directive**
+- When launching subagents in parallel with `Task` tool ALWAYS send message in a single block to prevent sequential launch
 
 ## **Modular Architecture (Facade Pattern)**
 - Threshold: >400 lines = flag as concern, >800 lines = must split before adding features
@@ -51,12 +57,12 @@
 ### **Pre-Tool Checkpoint (MANDATORY)**
 Before using Edit, Grep, Read, or MCP tools, ask:
 1. Single trivial lookup? → OK to proceed
-2. Investigation/search? → **STOP** → Spawn `Explore`, model `opus`, thoroughness level `very thorough`
+2. Investigation/search? → **STOP** → Spawn `Explore`, model `opus` (prompt must include "VERY THOROUGH")
 3. Code modification? → **STOP** → Spawn `developer`, model `opus`
 4. Browser interaction? → **STOP** → Spawn `browser`, model `opus`
 5. Data/schema check? → **STOP** → Spawn `data`, model `opus`
 ### **Failure Recovery**
-Test FAILS (code issue) → Spawn `Explore`, model `opus`, thoroughness level `very thorough` (NOT self-investigation)
+Test FAILS (code issue) → Spawn `Explore`, model `opus`, prompt includes "VERY THOROUGH" (NOT self-investigation)
 Test FAILS (data issue) → Spawn `data`, model `opus` (schema/migration/missing data)
 `data` + `Explore` return → Synthesize → Spawn `developer`, model `opus` (NOT self-editing)
 `developer` returns → Spawn `browser`, model `opus` (NOT self-testing)
@@ -66,9 +72,9 @@ Test FAILS (data issue) → Spawn `data`, model `opus` (schema/migration/missing
 ## **VDD Protocol (Validation Driven Development) - MANDATORY**
 3-phase agent pattern for full-stack implementation using `Task` tool:
 **Phase 1: DISCOVERY** → Agents: 2x `Explore` and 1x `data` (Parallel, Model `opus`)
-- **Spawn all three in single message** with `Task` tool
-- **EXPLORE agent 1** (code): Code patterns, file dependencies, implementation approach (thoroughness level `very thorough`)
-- **EXPLORE agent 2** (architecture): Related components, shared utilities, side-effects & regression risks (thoroughness level `very thorough`)
+- **Spawn all three agents in parallel** in a single block with `Task` tool
+- **EXPLORE agent 1** (code): Code patterns, file dependencies, implementation approach (prompt includes "VERY THOROUGH")
+- **EXPLORE agent 2** (architecture): Related components, shared utilities, side-effects & regression risks (prompt includes "VERY THOROUGH")
 - **DATA agent** (diagnostic only): Schema analysis, data sampling, migration status, test data availability
 - **Synthesis**: Orchestrator (Parent) combines all three findings into developer task list
 - **Output**: Code context + Architectural impact +  Data diagnosis 
@@ -110,7 +116,7 @@ VERIFY/PERSIST fails
   3. **Analytics**: Navigate → confirm new data appears in charts → VERIFY
 **Iteration**: DISCOVERY → DEVELOP → TEST → (pass: next task | fail: loop)
 **Rules**:
-- `data` + `Explore` x2 run **parallel** in single message (`Task` tool)
+- 2x `Explore`+ 1x `data` always run parallel with `Task` tool
 - Orchestrator (Parent) synthesizes all three outputs before spawning `developer`
 - `developer` handles ALL modifications (migrations, seeds, code)
 - `browser` pass → proceed to next task

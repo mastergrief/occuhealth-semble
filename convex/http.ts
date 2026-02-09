@@ -58,13 +58,19 @@ http.route({
       const clientId = process.env.WORKOS_CLIENT_ID!;
       const url = new URL(request.url);
       const fresh = url.searchParams.get("fresh") === "true";
+      const returnTo = url.searchParams.get("returnTo");
 
       // SEC-002 FIX: Generate and store CSRF state
       const state = crypto.randomUUID();
-      await ctx.runMutation(internal.oauthState.create, {
+      const createArgs: { state: string; expiresAt: number; returnTo?: string } = {
         state,
         expiresAt: Date.now() + 5 * 60 * 1000, // 5-minute TTL
-      });
+      };
+      // Store validated returnTo origin in OAuth state for callback redirect
+      if (returnTo && (returnTo.startsWith("http://") || returnTo.startsWith("https://"))) {
+        createArgs.returnTo = returnTo;
+      }
+      await ctx.runMutation(internal.oauthState.create, createArgs);
 
       const authParams: Parameters<typeof workos.userManagement.getAuthorizationUrl>[0] = {
         provider: "authkit",
@@ -104,7 +110,11 @@ http.route({
   handler: httpAction(async (_, request) => {
     const url = new URL(request.url);
     const sessionId = url.searchParams.get("sessionId");
-    const appUrl = process.env.APP_URL || "http://localhost:5175";
+    const returnToParam = url.searchParams.get("returnTo");
+    const appUrl =
+      (returnToParam && (returnToParam.startsWith("http://") || returnToParam.startsWith("https://")) ? returnToParam : null)
+      || process.env.APP_URL
+      || "http://localhost:5175";
 
     if (!sessionId) {
       return Response.redirect(appUrl, 302);
@@ -133,7 +143,8 @@ http.route({
     const state = url.searchParams.get("state");
     const error = url.searchParams.get("error");
     const errorDescription = url.searchParams.get("error_description");
-    const appUrl = process.env.APP_URL || "http://localhost:5175";
+    // appUrl is determined after state validation (returnTo from stored OAuth state)
+    let appUrl = process.env.APP_URL || "http://localhost:5175";
 
     // Handle OAuth errors from WorkOS
     if (error) {
@@ -154,6 +165,11 @@ http.route({
     if (!storedState) {
       console.error("Invalid or expired OAuth state");
       return Response.redirect(`${appUrl}/login?error=invalid_state`, 302);
+    }
+
+    // Use stored returnTo origin if available (dynamic origin passthrough)
+    if (storedState.returnTo) {
+      appUrl = storedState.returnTo;
     }
 
     // Delete used state to prevent replay attacks

@@ -45,6 +45,7 @@ export default defineSchema({
   oauthStates: defineTable({
     state: v.string(),
     expiresAt: v.number(),
+    returnTo: v.optional(v.string()),
   }).index("by_state", ["state"]),
 
   // ---------------------------------------------------------------------------

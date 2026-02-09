@@ -76,7 +76,7 @@ export function AdminLayout() {
     sessionStorage.clear();
     // Redirect to WorkOS logout endpoint to clear their session
     if (sessionId) {
-      window.location.href = `${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/logout?sessionId=${sessionId}`;
+      window.location.href = `${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/logout?returnTo=${encodeURIComponent(window.location.origin)}&sessionId=${sessionId}`;
     } else {
       window.location.href = "/";
     }
@@ -110,7 +110,7 @@ export function AdminLayout() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-4">Admin Access Required</h1>
           <p className="text-muted-foreground mb-6">Please sign in with your admin credentials.</p>
           <a
-            href={`${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/login`}
+            href={`${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/login?returnTo=${encodeURIComponent(window.location.origin)}`}
             className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
           >
             Sign in as Admin

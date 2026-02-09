@@ -62,7 +62,7 @@ export function DoctorLayout() {
     localStorage.clear();
     sessionStorage.clear();
     if (sessionId) {
-      window.location.href = `${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/logout?sessionId=${sessionId}`;
+      window.location.href = `${import.meta.env.VITE_CONVEX_URL?.replace('.cloud', '.site')}/auth/logout?returnTo=${encodeURIComponent(window.location.origin)}&sessionId=${sessionId}`;
     } else {
       window.location.href = "/";
     }
