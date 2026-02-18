@@ -270,6 +270,70 @@ npx convex dashboard                          # Open dashboard URL
 | Empty results | Table empty or wrong name | Verify with `npx convex data` without limit |
 | `npx convex run` fails | Wrong path format | Use `module:functionName` not `module.functionName` |
 
+### Convex CLI Nuances
+- Non-interactive deploys can fail at confirmation prompts. Use `-y` in automation:
+  - `npx convex deploy -y`
+- `--dry-run` can still request confirmation in non-interactive shells. Use:
+  - `npx convex deploy --dry-run -y`
+- `npx convex deploy` targets production by default. Be explicit with `--prod` on inspection/run commands when validating post-deploy state.
+- Use a fast verification sequence after deploy:
+  - `npx convex function-spec --prod | rg "auth\\.js:|identifier"`
+  - `npx convex run <module:function> '<valid args>' --prod`
+  - `timeout 5 npx convex logs --history 20 --prod`
+- Failure signature interpretation:
+  - `Could not find function for ...` usually means deployment mismatch (code not pushed to that deployment yet).
+  - `ArgumentValidationError` usually means the function exists, but args are invalid.
+- For large function metadata, capture then grep for reliability:
+  - `npx convex function-spec --prod > /tmp/convex-prod-spec.json`
+  - `rg -n "auth\\.js:" /tmp/convex-prod-spec.json`
+
+### Nuance Debugging
+| Symptom | Interpretation | Next command |
+|---------|----------------|--------------|
+| `Cannot prompt for input in non-interactive terminals` during deploy | Deploy waiting for interactive confirmation | `npx convex deploy -y` |
+| `Could not find function for '<module:function>'` | Target deployment does not include that function version | `npx convex function-spec --prod | rg "<module>\\.js:"` |
+| `ArgumentValidationError` on `convex run` | Function resolved; payload shape is wrong | Re-run with valid args from `function-spec` validator |
+| Logs command appears stuck | Log stream is open by design | `timeout 5 npx convex logs --history 20 [--prod]` |
+
+---
+
+## Vercel CLI
+Use Vercel via global install (`vercel`) or one-off execution (`npx vercel`) depending on environment constraints.
+
+### Install and Invocation
+```bash
+# Global install
+npm install -g vercel
+
+# One-off (no global install required)
+npx --yes vercel --version
+```
+
+### Auth and Scope Checks
+```bash
+vercel --version
+vercel whoami
+vercel projects ls
+```
+
+- `vercel projects ls` is team/account scoped; check the "Fetching projects in ..." line to confirm the active scope.
+- If the expected project is missing, verify account/team context before deploying.
+
+### Recommended Workflow
+1. `vercel --version` to confirm CLI availability.
+2. `vercel whoami` to confirm authenticated identity.
+3. `vercel projects ls` to confirm correct team/project scope.
+4. `vercel link` inside repo (if not already linked).
+5. `vercel deploy` (preview) or `vercel deploy --prod` (production).
+
+### Troubleshooting
+| Symptom | Likely cause | Fix |
+|---------|--------------|-----|
+| `vercel: command not found` | Global CLI not installed in this shell | `npm install -g vercel` or use `npx --yes vercel ...` |
+| CLI runs but account is wrong | Auth session points to different user/team | `vercel logout` then `vercel login` |
+| Expected project not listed | Wrong team/account scope | Re-check `vercel whoami`, then inspect `vercel projects ls` scope line |
+| Deploy target unclear | Project not linked locally | Run `vercel link` before deploy |
+
 ---
 
 ## Codex in Claude Code

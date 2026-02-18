@@ -10,8 +10,10 @@
 - Use `TaskGet` tool to continue with outstanding tasks 
 - Use `TaskUpdate` tool to change or update focus with new context
 
-3. **Subagent Directive**
-- When launching subagents In parallel with `Task` tool ALWAYS send message In a single block to prevent sequential launch
+3. **IMPORTANT - SUBAGENT DIRECTIVE**
+- PARALLEL subagents: ALL `Task` invocations MUST be in a single `<function_calls>` block with ZERO text between `</invoke>` and the next `<invoke>`. Any text output between calls forces a round-trip, serializing them.
+- Plan ALL agent prompts BEFORE emitting the function_calls block — never start writing tool calls until every prompt is ready.
+- Model `Opus` used for all subagents at all times
 
 ---
 
@@ -26,8 +28,6 @@
 - LLMs: gpt-5-mini via OpenAI SDK (`OPENAI_API_KEY` in `.env.local`), same key for RAG embeddings (`text-embedding-3-small`)
 - Serena memory structure: project subdirectory `.serena/memories/project` contains architecture, code conventions, project overview, tech stack etc
 - When presented with an image or screenshot analyse deeply with 100% content & coverage, think about what you're looking at in relation to the query or request given, leave no stones unturned & create ASCII dependency graph of what you have observed/analysed to present as findings
-**Subagent Directive**
-- When launching subagents in parallel with `Task` tool ALWAYS send message in a single block to prevent sequential launch
 
 ## **Modular Architecture (Facade Pattern)**
 - Threshold: >400 lines = flag as concern, >800 lines = must split before adding features
@@ -59,12 +59,12 @@
 ### **Pre-Tool Checkpoint (MANDATORY)**
 Before using Edit, Grep, Read, or MCP tools, ask:
 1. Single trivial lookup? → OK to proceed
-2. Investigation/search? → **STOP** → Spawn `Explore`, model `opus` (prompt must include "VERY THOROUGH")
+2. Investigation/search? → **STOP** → Spawn `Explore`, model `opus`, thoroughness level `very thorough`
 3. Code modification? → **STOP** → Spawn `developer`, model `opus`
 4. Browser interaction? → **STOP** → Spawn `browser`, model `opus`
 5. Data/schema check? → **STOP** → Spawn `data`, model `opus`
 ### **Failure Recovery**
-Test FAILS (code issue) → Spawn `Explore`, model `opus`, prompt includes "VERY THOROUGH" (NOT self-investigation)
+Test FAILS (code issue) → Spawn `Explore`, model `opus`, thoroughness level `very thorough` (NOT self-investigation)
 Test FAILS (data issue) → Spawn `data`, model `opus` (schema/migration/missing data)
 `data` + `Explore` return → Synthesize → Spawn `developer`, model `opus` (NOT self-editing)
 `developer` returns → Spawn `browser`, model `opus` (NOT self-testing)
@@ -75,8 +75,8 @@ Test FAILS (data issue) → Spawn `data`, model `opus` (schema/migration/missing
 3-phase agent pattern for full-stack implementation using `Task` tool:
 **Phase 1: DISCOVERY** → Agents: 2x `Explore` and 1x `data` (Parallel, Model `opus`)
 - **Spawn all three agents in parallel** in a single block with `Task` tool
-- **EXPLORE agent 1** (code): Code patterns, file dependencies, implementation approach (prompt includes "VERY THOROUGH")
-- **EXPLORE agent 2** (architecture): Related components, shared utilities, side-effects & regression risks (prompt includes "VERY THOROUGH")
+- **EXPLORE agent 1** (code): Code patterns, file dependencies, implementation approach (thoroughness level `very thorough`)
+- **EXPLORE agent 2** (architecture): Related components, shared utilities, side-effects & regression risks (thoroughness level `very thorough`)
 - **DATA agent** (diagnostic only): Schema analysis, data sampling, migration status, test data availability
 - **Synthesis**: Orchestrator (Parent) combines all three findings into developer task list
 - **Output**: Code context + Architectural impact +  Data diagnosis 
@@ -85,12 +85,11 @@ Test FAILS (data issue) → Spawn `data`, model `opus` (schema/migration/missing
 - Sequence: DISCOVER → LOCATE → UNDERSTAND → EDIT (data ops + code) → VALIDATE
 - During EDIT: Run migrations → seed data → write feature code → typecheck
 - Receives: Data diagnosis + code context from Phase 1
-**Phase 3: TEST** → Agent: `browser` (Model `opus`)
-- **Snapshot-first**: Never guess selectors — `take_snapshot` before every interaction.
-- **Real input only**: No programmatic injection. Use `click`, `fill`, `press_key`, etc
-- **Fresh data always**: Create test data manually via UI — never rely on existing state.
-- **Evidence chains**: Every assertion backed by snapshot or screenshot.
-- **Lazy debugging**: Console/network checks only on failure, not preemptively.
+**Phase 3: VALIDATE** → Agents: `Explore` (review) & `browser` (E2E) — **Parallel, Model `opus`**
+- **Review agent** (Explore): Verifies code against plan's testable assertions, regression risks, API contracts, logic correctness
+- **Browser agent**: E2E test — snapshot-first, real input only, fresh data, evidence chains
+- Both spawn in parallel, both must pass to proceed
+- Lazy debugging: Console/network checks only on failure, not preemptively.
 **Sequence**
 | Phase | Steps | Tools | Gate |
 |-------|-------|-------|------|
@@ -116,16 +115,19 @@ VERIFY/PERSIST fails
   1. **Calendar**: Create workout via Quick Program → VERIFY
   2. **Logger**: Open workout → log sets with weight/reps → VERIFY + PERSIST
   3. **Analytics**: Navigate → confirm new data appears in charts → VERIFY
-**Iteration**: DISCOVERY → DEVELOP → TEST → (pass: next task | fail: loop)
+**Iteration**: DISCOVERY → DEVELOP → VALIDATE [review + browser] → (both pass: next task | either fail: loop)
 **Rules**:
 - 2x `Explore`+ 1x `data` always run parallel with `Task` tool
 - Orchestrator (Parent) synthesizes all three outputs before spawning `developer`
 - `developer` handles ALL modifications (migrations, seeds, code)
-- `browser` pass → proceed to next task
-- `browser` fail (code issue) → new `Explore` → `developer` → `browser`
-- `browser` fail (data issue) → new `data` → `developer` → `browser` 
+- Phase 3 VALIDATE: `review` (Explore) + `browser` spawn **in parallel** — both must pass
+- Review PASS + browser PASS → proceed to next task
+- Review FAIL (code issue) → new `Explore` → `developer` → re-validate
+- Browser FAIL (code issue) → new `Explore` → `developer` → re-validate
+- Browser FAIL (data issue) → new `data` → `developer` → re-validate
+- Both FAIL → synthesize combined issues → `Explore` & `data` parallel → `developer` → re-validate
 - Typecheck is blocking — never skip
-- Two-layer verification: frontend + backend
+- Three-layer verification: code review + frontend E2E + backend logs
 - Never run subagents in background
 
 ---
@@ -152,7 +154,13 @@ See `.claude/rules/SERENA/SKILL.md` for memory management, codebase search, edit
 Native `npx convex` commands for dev (`accurate-warbler-380`) and prod (`exciting-herring-835`).
 **Essential Commands**
 ```bash
-# Status & Discovery
+# Discovery
+npx convex data                               # List all dev tables
+npx convex data --prod                         # List all prod tables
+npx convex function-spec                       # JSON of all deployed functions (dev)
+npx convex function-spec --prod                # JSON of all deployed functions (prod)
+# function-spec outputs JSON; pipe through grep '"identifier"' for quick listing
+# Status
 npx convex status                             # Dev deployment info
 npx convex status --prod                      # Prod deployment info
 # Data Operations
@@ -183,7 +191,7 @@ npx convex functions --prod                    # List prod functions
 |-------|-------|----------|
 | Timeout (> 30s) | Logs without timeout | Wrap with `timeout 5`, reduce `--history` |
 | Empty results | Table empty or wrong name | Verify with `npx convex data` without limit |
-| Function not found | Wrong path format | Use `module:functionName` not `module.functionName` |
+| `npx convex run` fails | Wrong path format | Use `module:functionName` not `module.functionName` |
 
 ---
 
@@ -236,14 +244,40 @@ const result = JSON.parse(response.choices[0].message.content || "{}");
 
 ---
 
+## **Stripe CLI & Environment**
+**Two Stripe accounts**: Live for prod, Test/sandbox for dev.
+- Convex dev = test keys (`sk_test_*`, `pk_test_*`) from `.env.local`
+- Convex prod = live keys (`sk_live_*`, `pk_live_*`) via Convex env vars
+- Vercel prod has live `VITE_*` vars in dashboard (build-time injection)
+- Test card: `4242 4242 4242 4242`, any future expiry, any CVC
+
+**CLI** — cached auth is expired, **always pass key explicitly**:
+```bash
+STRIPE_API_KEY=sk_test_... stripe products list --limit 20
+STRIPE_API_KEY=sk_test_... stripe prices list --product prod_XXX
+STRIPE_API_KEY=sk_test_... stripe events list --limit 10
+STRIPE_API_KEY=sk_test_... stripe events list --type checkout.session.completed --limit 5
+STRIPE_API_KEY=sk_test_... stripe webhook_endpoints list
+STRIPE_API_KEY=sk_test_... stripe webhook_endpoints create --url "https://<deployment>.convex.site/stripe-webhook" --enabled-events "checkout.session.completed,..."
+```
+
+**Webhook URLs** — use `.convex.site` domain, NOT `.convex.cloud`:
+- Format: `https://<deployment-slug>.convex.site/stripe-webhook`
+- Signing secret per env: `npx convex env set STRIPE_WEBHOOK_SECRET whsec_...`
+- Common events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.created`, `customer.subscription.deleted`, `invoice.payment_failed`, `customer.subscription.trial_will_end`
+
+**Known Gotchas**
+- `stripe.webhooks.constructEvent()` must be `constructEventAsync()` in Convex (SubtleCrypto is async-only)
+- Stripe API `2025-08-27.basil`: `current_period_start`/`current_period_end` moved from subscription top-level to `subscription.items.data[0]`
+- Seeded subscription data must use real Stripe IDs — fake `cus_test_*` IDs break Customer Portal
+
+---
+
 ## **Vercel Deployment**
-- **Account**: `m4stergr1ef@gmail.com` (client handover account, slug: `m4stergr1ef-4279`)
-- **Token**: `CLIENT_VERCEL_TOKEN` in `.env.local` — use `--token` flag, NOT `VERCEL_TOKEN` env var (env var doesn't override global CLI auth)
-- **All commands**: `vercel --token $(grep CLIENT_VERCEL_TOKEN .env.local | cut -d= -f2) <command>`
 - **Config**: `vercel.json` overrides build command, `.vercelignore` controls upload size
 - **Build**: Uses `vite build` directly (tsgo/native-preview incompatible with Vercel)
 - **Env vars**: All `VITE_*` vars must be set in Vercel dashboard (build-time injection)
-- **Debugging**: `vercel --token $TOKEN --prod --debug` for upload issues
+- **Debugging**: `vercel --prod --debug` for upload issues, `vercel ls` for deployment status
 - **Common failures**: Missing env vars, excessive upload size (check `.vercelignore`), build command incompatibility
 
 ---
@@ -293,7 +327,7 @@ cd ~/chrome-devtools-mcp-fork && git pull origin main && npm install && npm run 
 | Multi-file `Grep`/`Read` investigation | Pollutes context, use `Explore` agent |
 | Direct `mcp__chrome-devtools__*` usage | Pollutes context, use `browser` agent |
 | Direct `npx convex data/run` for diagnosis | Pollutes context, use `data` agent |
-| Self-investigation after test failure | VDD violation — spawn `Explore` & `data` in parallel in single block with `Task` tool |
+| Self-investigation after test failure | VDD violation — spawn `Explore` & `data` in parallel with `Task` tool |
 | Skipping DISCOVERY phase | Data mismatch discovered too late |
 | Running subagents in background | Loses results, always foreground |
 | Skipping typecheck after mutations | Type errors compound |
@@ -305,3 +339,8 @@ cd ~/chrome-devtools-mcp-fork && git pull origin main && npm install && npm run 
 4. Creating files unnecessarily → prefer editing existing files
 5. Multiple edits to same file in one message → concurrent hook errors
 6. Skipping memory check before analysis → Discovery Hierarchy violation
+
+**IMPORTANT - SUBAGENT DIRECTIVE**
+- PARALLEL subagents: ALL `Task` invocations MUST be in a single `<function_calls>` block with ZERO text between `</invoke>` and the next `<invoke>`. Any text output between calls forces a round-trip, serializing them.
+- Plan ALL agent prompts BEFORE emitting the function_calls block — never start writing tool calls until every prompt is ready.
+- Model `Opus` used for all subagents at all times

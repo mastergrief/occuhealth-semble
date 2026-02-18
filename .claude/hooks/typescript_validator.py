@@ -7,6 +7,7 @@ import json
 import sys
 import os
 import subprocess
+import select
 from pathlib import Path
 
 def should_validate(file_path: str) -> bool:
@@ -166,8 +167,13 @@ def format_error_message(stderr: str, file_path: str) -> str:
 def main():
     """Main hook entry point."""
     try:
-        # Read hook input
-        input_data = json.load(sys.stdin)
+        # Read hook input if available
+        input_data = {}
+        if select.select([sys.stdin], [], [], 0.1)[0]:
+            try:
+                input_data = json.load(sys.stdin)
+            except json.JSONDecodeError:
+                pass
         
         # Debug: Log what we receive for MCP tools
         tool_name = input_data.get('tool_name', '')

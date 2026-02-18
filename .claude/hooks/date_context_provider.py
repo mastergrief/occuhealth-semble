@@ -10,6 +10,7 @@ current date and calculating actual elapsed time since key project milestones.
 import json
 import sys
 import os
+import select
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -60,7 +61,7 @@ def calculate_project_timeline():
     
     # Key project milestones (from memory analysis)
     milestones = {
-        "current_work_start": datetime(2025, 8, 28, tzinfo=timezone.utc),  # When current team started
+        "current_work_start": datetime(2025, 9, 11, tzinfo=timezone.utc),  # When current team started
     }
     
     timeline = {}
@@ -118,12 +119,7 @@ def format_context_message(data):
 - Unix Timestamp: {now['unix']}
 
 ## Project Timeline (Actual Elapsed Time)
-- **Reality Check Discovery**: {timeline.get('reality_check', 'unknown')}
-  - Found actual completion was 5%, not 18-25% claimed
-- **Strategic Pivot Decision**: {timeline.get('strategic_pivot', 'unknown')}
-  - Decided to focus on Doctor Portal only
-- **Current Work Started**: {timeline.get('current_work_start', 'unknown')}
-  - When the current team began working
+
 
 ## Git Repository Status
 - **Current Branch**: {git['branch']}
@@ -133,8 +129,7 @@ def format_context_message(data):
 ## Important Context
 - Your training date (December 31, 2024) is NOT the current date
 - Use the actual current date above for all time calculations
-- The "8 months ago" references in memories refer to time elapsed from Dec 2024 to Aug 2025
-- Current work on this project started only {timeline.get('current_work_start', 'recently')}
+
 
 ## Project Status Notes
 {data.get('project_status', {}).get('total_memories', 0)} Serena memories found
@@ -153,8 +148,13 @@ def format_context_message(data):
 def main():
     """Main hook execution."""
     try:
-        # Read input from stdin
-        input_data = json.load(sys.stdin)
+        # Read input from stdin if available
+        input_data = {}
+        if select.select([sys.stdin], [], [], 0.1)[0]:
+            try:
+                input_data = json.load(sys.stdin)
+            except json.JSONDecodeError:
+                pass
         
         # Get current date and time
         now = datetime.now(timezone.utc)
