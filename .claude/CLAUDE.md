@@ -274,11 +274,19 @@ STRIPE_API_KEY=sk_test_... stripe webhook_endpoints create --url "https://<deplo
 ---
 
 ## **Vercel Deployment**
-- **Config**: `vercel.json` overrides build command, `.vercelignore` controls upload size
-- **Build**: Uses `vite build` directly (tsgo/native-preview incompatible with Vercel)
+- **Config**: `vercel.json` overrides build command (`vite build`), `.vercelignore` controls upload size
+- **Build**: Uses `vite build` directly — tsgo typecheck skipped on Vercel (runs locally/CI only)
 - **Env vars**: All `VITE_*` vars must be set in Vercel dashboard (build-time injection)
+- **Two Vercel projects** (same repo): `occuhealth-semble` → `occuflow.co.uk` (primary), `convex-medical-starter` → staging
 - **Debugging**: `vercel --prod --debug` for upload issues, `vercel ls` for deployment status
 - **Common failures**: Missing env vars, excessive upload size (check `.vercelignore`), build command incompatibility
+
+### Convex Generated Types (Critical)
+- `convex/_generated/` is **committed to git** (NOT gitignored)
+- Vite bundler needs these files to resolve `src/` → `convex/_generated/` imports during build
+- `tsconfig.app.json` excludes `convex/_generated` from typechecking (avoids deep instantiation issues)
+- After schema changes: run `npx convex dev` locally to regenerate, then commit updated `_generated/` files
+- Pattern: zenith-fitness reference implementation
 
 ---
 

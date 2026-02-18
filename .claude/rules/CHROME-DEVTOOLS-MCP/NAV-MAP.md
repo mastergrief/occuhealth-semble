@@ -19,7 +19,7 @@
 
 | Environment | URL | Convex Backend |
 |-------------|-----|----------------|
-| **Production (Vercel)** | `https://convex-medical-starter-phi.vercel.app` | `accurate-warbler-380` (DEV) |
+| **Production (Vercel)** | `https://occuflow.co.uk` | `exciting-herring-835` (PROD) |
 | **Local Development** | `http://localhost:5175` | `accurate-warbler-380` (DEV) |
 
 Both URLs work interchangeably for testing. Auth redirects dynamically return to the originating domain via the `returnTo` parameter.
@@ -109,7 +109,7 @@ snapshot
 **Login Flow (WorkOS AuthKit):**
 ```bash
 # 1. Navigate to app (localhost or Vercel)
-navigate localhost:5175           # OR https://convex-medical-starter-phi.vercel.app
+navigate localhost:5175           # OR https://occuflow.co.uk
 snapshot
 
 # 2. Click Provider Login (floating button bottom-right)

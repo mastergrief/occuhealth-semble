@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "/home/handoff/chrome-devtools-mcp/build/src/index.js",
+        "--autoConnect"
+      ],
+      "env": {}
+    }
+  }
+}
