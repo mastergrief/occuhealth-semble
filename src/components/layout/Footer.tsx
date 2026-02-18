@@ -14,7 +14,7 @@ export function Footer() {
             <div className="col-span-1">
               <div className="flex items-center gap-2 mb-4">
                 <Stethoscope className="h-6 w-6 text-medical-blue" />
-                <span className="font-semibold">OccuHealth</span>
+                <span className="font-semibold">OccuFlow</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 Professional occupational health reports delivered fast and secure.
@@ -97,7 +97,7 @@ export function Footer() {
 
         <div className="py-6 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            &copy; {currentYear} OccuHealth. All rights reserved.
+            &copy; {currentYear} OccuFlow. All rights reserved.
           </p>
           <div className="flex gap-4 text-sm text-muted-foreground">
             <a href="#" className="hover:text-foreground transition-colors">

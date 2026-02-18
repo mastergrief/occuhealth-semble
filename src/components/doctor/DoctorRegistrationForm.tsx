@@ -131,7 +131,7 @@ export function DoctorRegistrationForm() {
         <CardHeader>
           <CardTitle>Doctor Registration</CardTitle>
           <CardDescription>
-            Complete your profile to start using OccuHealth
+            Complete your profile to start using OccuFlow
           </CardDescription>
         </CardHeader>
         <CardContent>

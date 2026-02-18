@@ -1,4 +1,4 @@
-# OccuHealth - Occupational Health Platform
+# OccuFlow - Occupational Health Platform
 
 A full-stack GDPR-compliant occupational health platform with **Convex** backend and **WorkOS AuthKit** authentication.
 
@@ -31,7 +31,7 @@ npm run dev
 
 ## Authentication
 
-OccuHealth uses **WorkOS AuthKit** for authentication with three role types:
+OccuFlow uses **WorkOS AuthKit** for authentication with three role types:
 - **Admin**: Platform administrators (WorkOS User Management)
 - **Employer**: Company/insurer accounts
 - **Doctor**: Healthcare provider accounts

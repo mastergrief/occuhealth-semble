@@ -51,7 +51,7 @@ export function ChooseRole() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4">
       <div className="w-full max-w-2xl space-y-6">
         <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-medical-blue">Welcome to OccuHealth</h1>
+          <h1 className="text-3xl font-bold text-medical-blue">Welcome to OccuFlow</h1>
           <p className="text-muted-foreground">Select how you'd like to use the platform</p>
         </div>
 

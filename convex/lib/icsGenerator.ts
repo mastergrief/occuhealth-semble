@@ -44,7 +44,7 @@ function formatICSDateTime(date: string, time: string): string {
 function generateUID(): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
-  return `${timestamp}-${random}@occuhealth.com`;
+  return `${timestamp}-${random}@occuflow.co.uk`;
 }
 
 /**
@@ -76,7 +76,7 @@ export function generateICS(event: ICSEventData): string {
   const lines: string[] = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//OccuHealth//Appointment System//EN",
+    "PRODID:-//OccuFlow//Appointment System//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     "BEGIN:VEVENT",
@@ -99,7 +99,7 @@ export function generateICS(event: ICSEventData): string {
 
   // Add optional organizer
   if (event.organizer) {
-    lines.push(`ORGANIZER;CN=OccuHealth:mailto:${event.organizer}`);
+    lines.push(`ORGANIZER;CN=OccuFlow:mailto:${event.organizer}`);
   }
 
   lines.push("STATUS:CONFIRMED");

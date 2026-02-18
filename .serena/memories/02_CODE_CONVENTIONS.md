@@ -1,4 +1,4 @@
-# OccuHealth - Code Conventions
+# OccuFlow - Code Conventions
 
 ## TypeScript
 - **Strict mode**: Enabled via tsconfig

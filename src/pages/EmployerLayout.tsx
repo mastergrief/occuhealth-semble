@@ -80,7 +80,7 @@ export function EmployerLayout() {
       {/* Sidebar */}
       <aside className="relative w-64 bg-white dark:bg-slate-800 border-r">
         <div className="p-6">
-          <h1 className="text-xl font-bold text-blue-600">OccuHealth</h1>
+          <h1 className="text-xl font-bold text-blue-600">OccuFlow</h1>
           <p className="text-sm text-muted-foreground">{employer?.companyName ?? "Loading..."}</p>
         </div>
 

@@ -2,7 +2,7 @@
   "name": "convex-medical-starter",
   "private": true,
   "version": "1.0.0",
-  "description": "OccuHealth - GDPR-compliant occupational health platform",
+  "description": "OccuFlow - GDPR-compliant occupational health platform",
   "type": "module",
   "scripts": {
     "dev": "npm-run-all --parallel dev:frontend dev:backend dev:typecheck",
@@ -102,7 +102,7 @@
   },
   "keywords": [
     "convex",
-    "occuhealth",
+    "occuflow",
     "healthcare",
     "medical",
     "gdpr",

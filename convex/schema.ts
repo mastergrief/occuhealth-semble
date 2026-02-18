@@ -4,7 +4,7 @@ import { authTables } from "@convex-dev/auth/server";
 import { rateLimitTables } from "convex-helpers/server/rateLimit";
 
 // =============================================================================
-// OCCUHEALTH GDPR-COMPLIANT SCHEMA
+// OCCUFLOW GDPR-COMPLIANT SCHEMA
 // =============================================================================
 // Includes:
 // - Auth tables (Convex Auth)

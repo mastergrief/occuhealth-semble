@@ -1,4 +1,4 @@
-# OccuHealth Developer Setup Guide
+# OccuFlow Developer Setup Guide
 
 ## Prerequisites
 

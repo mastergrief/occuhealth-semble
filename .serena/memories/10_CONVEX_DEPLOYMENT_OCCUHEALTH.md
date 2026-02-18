@@ -1,4 +1,4 @@
-# OccuHealth Convex Deployment Configuration
+# OccuFlow Convex Deployment Configuration
 
 ## Environments
 
@@ -10,7 +10,7 @@
 ## Production Details
 
 ```
-Project: OccuHealth
+Project: OccuFlow
 Account: Alt email (m4stergr1ef@gmail.com) — intended for client handover
 Production Slug: exciting-herring-835
 
@@ -53,7 +53,7 @@ npx convex dev
 npx convex deploy
 
 # Seed admin user on fresh deployment
-npx convex run seedAdmin:seedAdmin '{"workosUserId":"user_01KE4VZAPHYY71HZ0XWWWVK936","email":"testadmin@occuhealth.com","firstName":"Test","lastName":"Admin"}'
+npx convex run seedAdmin:seedAdmin '{"workosUserId":"user_01KE4VZAPHYY71HZ0XWWWVK936","email":"testadmin@occuflow.com","firstName":"Test","lastName":"Admin"}'
 ```
 
 ## WorkOS Integration
@@ -69,9 +69,9 @@ npx convex run seedAdmin:seedAdmin '{"workosUserId":"user_01KE4VZAPHYY71HZ0XWWWV
 
 | Role | Email | WorkOS ID | Password |
 |------|-------|-----------|----------|
-| Admin | testadmin@occuhealth.com | user_01KE4VZAPHYY71HZ0XWWWVK936 | (TestPass1234 |
-| Employer | testemployee@occuhealth.com | user_01KE2KZFNT7A3HRQJ980NKCHQV | (TestPass1234 |
-| Doctor | testdoc@occuhealth.com | user_01KE2KYS77D57ZE1M9NCK2365Y | (TestPass1234 |
+| Admin | testadmin@occuflow.com | user_01KE4VZAPHYY71HZ0XWWWVK936 | (TestPass1234 |
+| Employer | testemployee@occuflow.com | user_01KE2KZFNT7A3HRQJ980NKCHQV | (TestPass1234 |
+| Doctor | testdoc@occuflow.com | user_01KE2KYS77D57ZE1M9NCK2365Y | (TestPass1234 |
 
 ## Architecture
 

@@ -1,7 +1,7 @@
 # ICO Registration & Hosting Guidance
 
 ## Context
-OccuHealth is built for a single doctor who already practices private medical reports. The doctor already has ICO registration for their practice.
+OccuFlow is built for a single doctor who already practices private medical reports. The doctor already has ICO registration for their practice.
 
 ---
 

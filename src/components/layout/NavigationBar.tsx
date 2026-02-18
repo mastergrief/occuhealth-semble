@@ -26,7 +26,7 @@ export function NavigationBar() {
           {/* Logo */}
           <a href="/" className="flex items-center gap-2">
             <Stethoscope className="h-8 w-8 text-medical-blue" />
-            <span className="font-semibold text-xl">OccuHealth</span>
+            <span className="font-semibold text-xl">OccuFlow</span>
           </a>
 
           {/* Desktop Navigation */}

@@ -126,7 +126,7 @@ export function AdminLayout() {
         <div className="container mx-auto px-4 flex h-16 items-center justify-between">
           {/* Logo */}
           <div className="flex items-center gap-4">
-            <a href="/" className="font-semibold text-xl">OccuHealth</a>
+            <a href="/" className="font-semibold text-xl">OccuFlow</a>
             <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">Admin</span>
           </div>
 

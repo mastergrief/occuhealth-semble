@@ -1,8 +1,8 @@
-# OccuHealth Project Handover Guide
+# OccuFlow Project Handover Guide
 
 ## Overview
 
-This guide covers transferring the OccuHealth platform to the doctor client, including hosting accounts, data migration, and ongoing maintenance options.
+This guide covers transferring the OccuFlow platform to the doctor client, including hosting accounts, data migration, and ongoing maintenance options.
 
 ---
 
@@ -73,7 +73,7 @@ Doctor Receives Everything
 
 ```bash
 # 1. Export from current project
-npx convex export --path occuhealth-backup.zip
+npx convex export --path occuflow-backup.zip
 
 # 2. Get new project credentials from doctor's Convex dashboard
 #    - New CONVEX_DEPLOYMENT URL
@@ -86,7 +86,7 @@ CONVEX_DEPLOYMENT=https://doctors-project-123.convex.cloud
 npx convex deploy
 
 # 5. Import data to new project
-npx convex import --path occuhealth-backup.zip
+npx convex import --path occuflow-backup.zip
 
 # 6. Verify data migrated
 npx convex dashboard
@@ -191,7 +191,7 @@ New: https://doctors-domain.com/auth/callback (production)
 Deliver securely (encrypted email, password manager share, or in-person):
 
 ```
-OCCUHEALTH PLATFORM CREDENTIALS
+OCCUFLOW PLATFORM CREDENTIALS
 ================================
 Date: [DATE]
 Prepared for: Dr. [NAME]
@@ -314,7 +314,7 @@ A: Source code backup provided. New developer can take over with full access.
 HANDOVER COMPLETION CONFIRMATION
 ================================
 
-Project: OccuHealth
+Project: OccuFlow
 Date: _______________
 
 I confirm receipt of:

@@ -5,7 +5,7 @@ import { WorkOS } from "@workos-inc/node";
 import { generateICS } from "./lib/icsGenerator";
 
 /**
- * HTTP Routes for OccuHealth
+ * HTTP Routes for OccuFlow
  *
  * This module defines all HTTP endpoints for the Convex backend:
  *
@@ -375,7 +375,7 @@ http.route({
       startTime: result.appointment.startTime || "",
       endTime: result.appointment.endTime || "",
       location: result.doctor?.zoomLink,
-      organizer: "noreply@occuhealth.com",
+      organizer: "noreply@occuflow.co.uk",
     });
 
     return new Response(ics, {

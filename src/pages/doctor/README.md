@@ -3,7 +3,7 @@
 ## Overview
 
 The Doctor Portal provides occupational health doctors with tools to manage appointments,
-schedules, and fitness-for-work reports for the OccuHealth platform.
+schedules, and fitness-for-work reports for the OccuFlow platform.
 
 ## Architecture
 

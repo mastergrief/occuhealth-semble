@@ -1,4 +1,4 @@
-# Nav-Map for OccuHealth
+# Nav-Map for OccuFlow
 **GDPR-Compliant Occupational Health Platform**
 
 ---
@@ -104,7 +104,7 @@ snapshot
 
 ---
 
-## Authentication Flow - OccuHealth
+## Authentication Flow - OccuFlow
 
 **Login Flow (WorkOS AuthKit):**
 ```bash
@@ -317,7 +317,7 @@ assert "text:John Doe" visible   # Verify list updated (real-time)
 **Inactive State:** `hover:bg-slate-100 dark:hover:bg-slate-700`
 
 **Header Elements:**
-- Company logo: `text-xl font-bold text-blue-600` "OccuHealth"
+- Company logo: `text-xl font-bold text-blue-600` "OccuFlow"
 - Company name: Employer's companyName from database
 
 ```bash
@@ -344,7 +344,7 @@ click "text:Employees"                   # Text selector (may match multiple)
 **Inactive State:** `hover:bg-slate-100 dark:hover:bg-slate-700`
 
 **Header Elements:**
-- Company logo: `text-xl font-bold text-blue-600` "OccuHealth"
+- Company logo: `text-xl font-bold text-blue-600` "OccuFlow"
 - Doctor name: "Dr. {name}" from doctorSettings
 
 ```bash
@@ -360,7 +360,7 @@ snapshot
 
 | Nav Item | Route | CSS Selector | Text Selector |
 |----------|-------|--------------|---------------|
-| OccuHealth Logo | `/` | `a[href="/"]` | Links to home |
+| OccuFlow Logo | `/` | `a[href="/"]` | Links to home |
 | Admin Badge | - | `span.bg-primary/10` | "Admin" badge |
 | Dashboard | `/admin` | `a[href="/admin"]` | "Dashboard" link |
 | Employers | `/admin/employers` | `a[href="/admin/employers"]` | "Employers" link |
@@ -653,7 +653,7 @@ network --filter=convex
 | Element | Selector |
 |---------|----------|
 | Provider Login button | `text:Provider Login` |
-| Hero section | `text:Occupational Health` or `text:OccuHealth` |
+| Hero section | `text:Occupational Health` or `text:OccuFlow` |
 
 ### Employer Portal
 | Element | Selector |

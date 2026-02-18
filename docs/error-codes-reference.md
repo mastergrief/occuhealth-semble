@@ -1,6 +1,6 @@
 # Error Codes Reference
 
-This document provides a comprehensive reference for all standardized error codes used in the OccuHealth application.
+This document provides a comprehensive reference for all standardized error codes used in the OccuFlow application.
 
 ## Overview
 

@@ -1,4 +1,4 @@
-# Repository Guidelines (OccuHealth)
+# Repository Guidelines (OccuFlow)
 
 ## Bootstrap Documentation
 Bootstrap and Linux user provisioning instructions are maintained in `BOOTSTRAP.md`.
@@ -71,7 +71,7 @@ const result = await ctx.runQuery(api.module.function, { args });
 - Threshold: >400 lines = flag as concern, >800 lines = must split before adding features.
 - Pattern: facade file (<100 lines, re-exports only) + focused modules (~150-400 lines each).
 - Structure: `module.ts` (facade) -> `moduleModules/{mutations,queries,domain}.ts`.
-- OccuHealth examples: `auth.ts` with `authModules/`, `availableSlots.ts` with `availableSlotsModules/`, and `gdpr.ts` with `gdprModules/`.
+- OccuFlow examples: `auth.ts` with `authModules/`, `availableSlots.ts` with `availableSlotsModules/`, and `gdpr.ts` with `gdprModules/`.
 - Critical: preserve API paths; facade re-exports maintain `api.module.function` compatibility.
 - During analysis: flag monolithic files with split recommendation and target structure.
 
@@ -221,7 +221,7 @@ Browser automation via Chrome DevTools Protocol. Available in all sandbox modes.
 ---
 
 ## Convex CLI
-Native `npx convex` commands for OccuHealth development and production deployments.
+Native `npx convex` commands for OccuFlow development and production deployments.
 
 **Sandbox requirement**: Convex CLI requires `--sandbox danger-full-access` to reach the network. Commands fail in `workspace-write` mode.
 

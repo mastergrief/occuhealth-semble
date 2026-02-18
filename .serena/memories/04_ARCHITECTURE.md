@@ -1,4 +1,4 @@
-# OccuHealth - System Architecture
+# OccuFlow - System Architecture
 
 ## High-Level Overview
 ```

@@ -1,6 +1,6 @@
-# OccuHealth Deployment Guide
+# OccuFlow Deployment Guide
 
-Comprehensive guide for deploying the OccuHealth occupational health platform to staging and production environments.
+Comprehensive guide for deploying the OccuFlow occupational health platform to staging and production environments.
 
 ## Prerequisites
 
@@ -372,4 +372,4 @@ Never commit to version control:
 - [Convex Documentation](https://docs.convex.dev/)
 - [WorkOS AuthKit Documentation](https://workos.com/docs/user-management)
 - [Vite Build Guide](https://vitejs.dev/guide/build.html)
-- [OccuHealth Auth Architecture](../DOCUMENTS/AUTH.md)
+- [OccuFlow Auth Architecture](../DOCUMENTS/AUTH.md)

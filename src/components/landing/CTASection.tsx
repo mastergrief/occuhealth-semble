@@ -15,7 +15,7 @@ export function CTASection({ onDemoClick }: CTASectionProps) {
             Ready to Transform Your Occupational Health Process?
           </h2>
           <p className="text-lg text-white/80 mb-8">
-            Join UK employers who trust OccuHealth for their
+            Join UK employers who trust OccuFlow for their
             occupational health and medical assessment needs. Get started in minutes.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

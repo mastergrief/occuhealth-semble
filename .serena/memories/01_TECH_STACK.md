@@ -1,4 +1,4 @@
-# OccuHealth - Tech Stack
+# OccuFlow - Tech Stack
 
 ## Frontend
 | Technology | Version | Purpose |

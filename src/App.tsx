@@ -178,7 +178,7 @@ function AuthenticatedNav() {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto px-4 flex h-16 items-center justify-between">
-        <a href="/" className="font-semibold text-xl">OccuHealth</a>
+        <a href="/" className="font-semibold text-xl">OccuFlow</a>
         <SignOutButton />
       </div>
     </header>
@@ -236,7 +236,7 @@ function Dashboard() {
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Welcome to OccuHealth</h1>
+        <h1 className="text-3xl font-bold mb-2">Welcome to OccuFlow</h1>
         <p className="text-muted-foreground">Logged in as {viewer}</p>
       </div>
 

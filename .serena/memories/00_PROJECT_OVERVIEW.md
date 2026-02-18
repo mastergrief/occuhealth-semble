@@ -1,4 +1,4 @@
-# OccuHealth - Project Overview
+# OccuFlow - Project Overview
 
 ## Purpose
 GDPR-compliant occupational health platform for UK healthcare providers. Connects employers/insurers with occupational health doctors for medical assessments, fit-for-work reports, and compliance tracking.

@@ -1,7 +1,7 @@
 # Session Continuation - 2026-02-09
 
 ## Context
-Full cross-portal E2E testing + VDD bug fix cycles on OccuHealth.
+Full cross-portal E2E testing + VDD bug fix cycles on OccuFlow.
 
 ## What Was Done
 
@@ -49,7 +49,7 @@ Ran 3 sequential browser agents testing the complete appointment lifecycle acros
 - Files: `src/pages/patient/ViewAppointment.tsx`, `convex/http.ts`
 
 ## Test Data Created
-- **Employer 1**: TestCorp Ltd (testemployee@occuhealth.com) — verified
+- **Employer 1**: TestCorp Ltd (testemployee@occuflow.com) — verified
 - **Employer 2**: TestCorp Two Ltd (newemployer@testcorp2.com) — pending verification (WorkOS user deleted after test)
 - **Patient 1**: Jane Smith (jane.smith@testcorp.com) — has appointment, report
 - **Patient 2**: Bob Jones (bob.jones@testcorp.com) — regression test

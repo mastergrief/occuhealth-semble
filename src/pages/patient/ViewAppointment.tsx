@@ -227,10 +227,10 @@ export default function ViewAppointment() {
               <span>
                 Questions? Contact us at{" "}
                 <a
-                  href="mailto:support@occuhealth.com"
+                  href="mailto:support@occuflow.co.uk"
                   className="text-blue-600 hover:underline"
                 >
-                  support@occuhealth.com
+                  support@occuflow.co.uk
                 </a>
               </span>
             </div>

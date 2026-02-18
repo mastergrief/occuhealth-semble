@@ -2,7 +2,7 @@
 
 ## Overview
 
-OccuHealth uses WorkOS AuthKit for OAuth 2.0 authentication across all user types.
+OccuFlow uses WorkOS AuthKit for OAuth 2.0 authentication across all user types.
 
 ## User Roles
 
